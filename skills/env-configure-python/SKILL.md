@@ -1,7 +1,9 @@
 ---
 name: env-configure-python
 description: >-
-  Use this skill when the user wants to configure Python environment variables and add Python to system PATH.
+  Configure Python environment variables and add Python to PATH.
+  Invoke when user needs Python and pip commands accessible from command line.
+  Auto-detects Python installation if path not specified.
 version: 1.0.0
 displayName: Configure Python Environment Variables
 domain: env
@@ -37,25 +39,22 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if Python is installed**: Run `python --version` or `python3 --version`. If not found and `python_install_path` is not provided, inform user: "Python is not installed or not in PATH. Please install Python first or provide the installation path." Stop and do not proceed.
-- If prerequisites are not met, inform user and stop.
+- Check if Python is installed
+- If not installed and path not provided, inform user and stop
 
 ### Step 2: Detect Python Installation
 
 If `python_install_path` parameter is not provided:
 - Locate Python installation using system-specific methods
 - Check for both python and python3 executables
-- Verify Python is accessible from command line
 - If multiple versions exist, identify the preferred version
-- If Python is not found, inform user and stop
 
 ### Step 3: Check Current Configuration (Idempotency)
 
 Before making changes:
 - Check if Python installation directory is already in PATH
-- Check if python command is accessible
-- Check if pip command is accessible
-- If all are correctly configured, inform user: "Python environment variables are already configured correctly. No changes needed." and stop.
+- Check if python and pip commands are accessible
+- If already configured correctly, inform user and stop
 
 ### Step 4: Add Python to PATH
 
@@ -63,27 +62,25 @@ Ensure Python executables are accessible:
 - Add Python installation directory to PATH
 - Include both Python and pip script locations
 - Avoid duplicate entries in PATH
-- Use appropriate path separator for the platform
 
 ### Step 5: Verify Configuration
 
 After configuration:
-- Verify Python is accessible: `python --version` or `python3 --version`
-- Verify pip is accessible: `pip --version`
+- Verify Python is accessible
+- Verify pip is accessible
 - Confirm PATH configuration is correct
 
 ### Step 6: Inform User
 
 - Confirm Python environment variables have been configured
 - Provide version information for python and pip
-- Remind user that terminal restart may be required for changes to take effect
-- If pip registry configuration is needed, inform user this is not handled by this skill
+- Remind user that terminal restart may be required
 
 ## Constraints
 
-- **Single Responsibility**: Only configures Python PATH environment variables. Does not configure pip registry or other pip settings.
-- **Idempotent**: Check first, configure only if needed. If already configured correctly, do nothing.
-- **Prerequisite Check**: If Python is not installed, inform user and stop.
+- **Single Responsibility**: Only configures Python PATH environment variables, not pip registry or other settings
+- **Idempotent**: Check first, configure only if needed
+- **Prerequisite Check**: If Python is not installed, inform user and stop
 - User-level environment variables only
 
 ## Error Handling

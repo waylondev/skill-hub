@@ -1,7 +1,9 @@
 ---
 name: env-configure-git
 description: >-
-  Use this skill when the user wants to configure Git with username and email for commits.
+  Configure Git username and email for commits.
+  Invoke when user needs to set up Git identity or verify Git configuration.
+  Supports idempotent configuration (checks before applying).
 version: 1.0.0
 displayName: Configure Git
 domain: env
@@ -41,52 +43,40 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if Git is installed**: Run `git --version`. If not found, inform user: "Git is not installed. Please install Git first." Stop and do not proceed.
-- If prerequisites are not met, inform user and stop.
+- Check if Git is installed
+- If not installed, inform user and stop
 
 ### Step 2: Check Current Configuration (Idempotency)
 
 Before making changes:
-- Get current Git username: `git config --global user.name`
-- Get current Git email: `git config --global user.email`
-- If both are already set to the provided values, inform user: "Git username and email are already configured correctly. No changes needed." and stop.
+- Check current Git username and email
+- If both are already set to the provided values, inform user no changes needed and stop
 
-### Step 3: Configure Git Username
+### Step 3: Configure Git Identity
 
-Set the global username that will appear in commits:
-- Use the `user.name` configuration key
-- Apply at global level (~/.gitconfig)
-- Set to the provided `user_name` parameter
+Set the global Git username and email:
+- Apply configuration at global level (user's home directory)
+- Set username and email to the provided parameters
 
-### Step 4: Configure Git Email
-
-Set the email address that will be associated with commits:
-- Use the `user.email` configuration key
-- Apply at global level
-- Ensure the email format is valid
-- Set to the provided `user_email` parameter
-
-### Step 5: Verify Configuration
+### Step 4: Verify Configuration
 
 After configuration:
-- Verify username is correctly set: `git config --global user.name`
-- Verify email is correctly set: `git config --global user.email`
+- Verify username is correctly set
+- Verify email is correctly set
 - Display current Git configuration summary
 
-### Step 6: Inform User
+### Step 5: Inform User
 
 - Confirm Git has been configured successfully
-- Provide summary of configured settings (username and email)
+- Provide summary of configured settings
 - Remind user that these settings apply globally to all repositories
-- If needed, explain how to override settings for specific repositories
 
 ## Constraints
 
-- **Single Responsibility**: Only configures Git username and email. Does not configure credential helper, default branch, or other Git settings.
-- **Idempotent**: Check first, configure only if different. If already set correctly, do nothing.
-- **Prerequisite Check**: If Git is not installed, inform user and stop.
-- Configuration is at global level (~/.gitconfig), not repository-specific
-- Email should be the user's preferred email for commits
+- **Single Responsibility**: Only configures Git username and email, not other Git settings
+- **Idempotent**: Check first, configure only if different
+- **Prerequisite Check**: If Git is not installed, inform user and stop
+- Configuration is at global level, not repository-specific
 
 ## Error Handling
 

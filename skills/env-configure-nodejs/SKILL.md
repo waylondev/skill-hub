@@ -1,7 +1,9 @@
 ---
 name: env-configure-nodejs
 description: >-
-  Use this skill when the user wants to configure Node.js environment variables and add Node.js to system PATH.
+  Configure Node.js environment variables and add Node.js to PATH.
+  Invoke when user needs Node.js commands accessible from command line.
+  Auto-detects Node.js installation if path not specified.
 version: 1.0.0
 displayName: Configure Node.js Environment Variables
 domain: env
@@ -37,53 +39,47 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if Node.js is installed**: Run `node --version`. If not found and `node_install_path` is not provided, inform user: "Node.js is not installed or not in PATH. Please install Node.js first or provide the installation path." Stop and do not proceed.
-- If prerequisites are not met, inform user and stop.
+- Check if Node.js is installed
+- If not installed and path not provided, inform user and stop
 
 ### Step 2: Detect Node.js Installation
 
 If `node_install_path` parameter is not provided:
 - Locate Node.js installation using system-specific methods
-- Check common installation directories
 - Verify both node and npm executables exist
 - If multiple versions exist, identify the active version
-- If Node.js is not found, inform user and stop
 
 ### Step 3: Check Current Configuration (Idempotency)
 
 Before making changes:
 - Check if Node.js installation directory is already in PATH
-- Check if node command is accessible
-- Check if npm command is accessible
-- If all are correctly configured, inform user: "Node.js environment variables are already configured correctly. No changes needed." and stop.
+- Check if node and npm commands are accessible
+- If already configured correctly, inform user and stop
 
 ### Step 4: Add Node.js to PATH
 
 Ensure Node.js executables are accessible:
 - Add Node.js installation directory to PATH
-- Include both node and npm locations
 - Avoid duplicate entries in PATH
-- Use appropriate path separator for the platform (semicolon for Windows, colon for macOS/Linux)
 
 ### Step 5: Verify Configuration
 
 After configuration:
-- Verify Node.js is accessible: `node --version`
-- Verify npm is accessible: `npm --version`
+- Verify Node.js is accessible
+- Verify npm is accessible
 - Confirm PATH configuration is correct
 
 ### Step 6: Inform User
 
 - Confirm Node.js environment variables have been configured
 - Provide version information for node and npm
-- Remind user that terminal restart may be required for changes to take effect
-- If npm registry configuration is needed, suggest using `env-configure-npm` skill
+- Remind user that terminal restart may be required
 
 ## Constraints
 
-- **Single Responsibility**: Only configures Node.js PATH environment variables. Does not configure npm registry or other npm settings.
-- **Idempotent**: Check first, configure only if needed. If already configured correctly, do nothing.
-- **Prerequisite Check**: If Node.js is not installed, inform user and stop.
+- **Single Responsibility**: Only configures Node.js PATH environment variables, not npm registry or other settings
+- **Idempotent**: Check first, configure only if needed
+- **Prerequisite Check**: If Node.js is not installed, inform user and stop
 - User-level environment variables only
 
 ## Error Handling

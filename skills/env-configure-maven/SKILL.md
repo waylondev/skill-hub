@@ -1,7 +1,9 @@
 ---
 name: env-configure-maven
 description: >-
-  Use this skill when the user wants to configure Maven environment variables (MAVEN_HOME and PATH).
+  Configure Maven environment variables (MAVEN_HOME and PATH).
+  Invoke when user needs to set up Maven for Java project builds.
+  Requires Java to be configured first.
 version: 1.0.0
 displayName: Configure Maven Environment Variables
 domain: env
@@ -38,28 +40,27 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if Maven is installed**: If Maven command is not found and `maven_home` is not provided, inform user: "Maven is not installed or not in PATH. Please install Maven first or provide the installation path."
-- **Check if JAVA_HOME is set**: If JAVA_HOME is not configured, inform user: "JAVA_HOME is not configured. Please configure Java first using env-configure-java skill."
-- If prerequisites are not met, stop and inform user. Do not attempt configuration.
+- Check if Maven is installed
+- Check if JAVA_HOME is configured
+- If prerequisites are not met, inform user and stop
 
 ### Step 2: Detect Maven Installation
 
 If `maven_home` parameter is not provided:
 - Detect Maven installation location
-- If Maven is not found, inform user and stop
 
 ### Step 3: Check Current Configuration (Idempotency)
 
 Before making changes:
 - Check if MAVEN_HOME is already set to the correct path
 - Check if Maven bin directory is already in PATH
-- If both are correctly configured, inform user: "Maven environment variables are already configured correctly. No changes needed." and stop.
+- If both are correctly configured, inform user and stop
 
 ### Step 4: Set MAVEN_HOME Environment Variable
 
 Configure the MAVEN_HOME environment variable:
 - Point to the Maven installation directory
-- Use user-level environment variable (not system-level)
+- Use user-level environment variable
 
 ### Step 5: Add Maven to PATH
 
@@ -80,9 +81,9 @@ After configuration:
 
 ## Constraints
 
-- **Single Responsibility**: Only configures environment variables (MAVEN_HOME and PATH). Does not configure settings.xml or repositories.
-- **Idempotent**: Check first, configure only if needed. If already configured correctly, do nothing.
-- **Prerequisite Check**: If prerequisites are not met, inform user and stop. Do not attempt partial configuration.
+- **Single Responsibility**: Only configures environment variables (MAVEN_HOME and PATH), not settings.xml or repositories
+- **Idempotent**: Check first, configure only if needed
+- **Prerequisite Check**: If prerequisites are not met, inform user and stop
 - User-level environment variables only
 
 ## Error Handling

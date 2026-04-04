@@ -1,7 +1,9 @@
 ---
 name: env-configure-pnpm
 description: >-
-  Use this skill when the user wants to configure pnpm package manager settings and registry.
+  Configure pnpm package manager settings and registry.
+  Invoke when user needs to configure pnpm for efficient package management.
+  Supports custom registry, store directory, and peer dependencies settings.
 version: 1.0.0
 displayName: Configure pnpm
 domain: env
@@ -63,15 +65,12 @@ If `registry` parameter is provided:
 If `store_dir` parameter is provided:
 - Set custom pnpm store directory location
 - This controls where pnpm stores global package cache
-- Useful for systems with limited default disk space
 - Update pnpm configuration file
 
 ### Step 4: Configure Peer Dependencies (Optional)
 
 If `auto_install_peers` parameter is provided:
 - Enable or disable automatic peer dependency installation
-- If true, pnpm automatically installs peer dependencies
-- If false, user must manually install peer dependencies
 - Update pnpm configuration file
 
 ### Step 5: Verify Configuration
@@ -87,7 +86,6 @@ After configuration:
 - Confirm pnpm has been configured successfully
 - Explain pnpm's disk space advantages over npm
 - Provide guidance on common pnpm commands
-- Mention how to verify configuration in pnpm-workspace.yaml if using monorepo
 
 ## Constraints
 

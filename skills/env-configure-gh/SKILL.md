@@ -1,7 +1,9 @@
 ---
 name: env-configure-gh
 description: >-
-  Use this skill when the user wants to configure GitHub CLI (gh) for command-line GitHub operations.
+  Configure GitHub CLI (gh) for command-line GitHub operations.
+  Invoke when user needs to authenticate with GitHub for CLI operations.
+  Supports both GitHub.com and GitHub Enterprise.
 version: 1.0.0
 displayName: Configure GitHub CLI
 domain: env
@@ -62,12 +64,11 @@ Guide the authentication process:
 After authentication:
 - Configure GitHub CLI to work with Git operations
 - Set up credential helper for Git operations with GitHub if needed
-- Ensure seamless integration between GitHub CLI and git commands
 
 ### Step 4: Verify Configuration
 
 After setup:
-- Check authentication status with gh auth status
+- Check authentication status
 - Verify user is properly authenticated
 - Test basic gh command to confirm functionality
 - Display authenticated user and host information
@@ -76,8 +77,7 @@ After setup:
 
 - Confirm GitHub CLI has been configured successfully
 - Explain available gh commands and capabilities
-- Provide guidance on common operations (creating PRs, managing issues, etc.)
-- Mention how to configure additional GitHub Enterprise instances if needed
+- Provide guidance on common operations
 
 ## Constraints
 

@@ -1,7 +1,9 @@
 ---
 name: env-configure-java
 description: >-
-  Use this skill when the user wants to configure Java environment variables, set up JAVA_HOME, or configure JDK environment variables.
+  Configure Java environment variables (JAVA_HOME and PATH).
+  Invoke when user needs to set up Java environment for development tools.
+  Auto-detects Java installation if path not specified.
 version: 1.0.0
 displayName: Configure Java Environment Variables
 domain: env
@@ -32,69 +34,45 @@ Use this Skill when:
 
 ### Step 1: Determine Java Installation Path
 
-If `java_home` parameter is not provided, locate Java installation:
-
-**Approach:**
-- Search common installation directories for the operating system
-- Use system-specific tools to detect installed Java versions
+If `java_home` parameter is not provided:
+- Locate Java installation using system-specific methods
 - If multiple versions exist, prefer the latest stable version or ask user to specify
-
-**Platform considerations:**
-- Windows: Check Program Files directories for Java/jdk folders
-- macOS: Use system Java detection utilities
-- Linux: Check standard JVM installation directories
 
 ### Step 2: Validate Java Installation
 
 Before configuring:
 - Verify the detected/provided path exists
-- Confirm it contains Java executables (java, javac if JDK)
+- Confirm it contains Java executables
 - If validation fails, inform user and request correct path
 
 ### Step 3: Set JAVA_HOME Environment Variable
 
-**Approach:**
-- Set JAVA_HOME to point to the Java installation directory
+Set JAVA_HOME to point to the Java installation directory:
 - Use user-level environment variables (not system-level)
-- Check if JAVA_HOME already exists:
-  - If set correctly, skip this step (idempotent)
-  - If set incorrectly, update it
-  - If not set, create it
-
-**Implementation guidance:**
-- Windows: Use PowerShell/.NET Environment class methods
-- macOS/Linux: Append export statement to shell configuration file
+- Check if JAVA_HOME already exists and update only if needed (idempotent)
 
 ### Step 4: Add Java to PATH
 
-**Approach:**
-- Add Java bin directory to PATH environment variable
-- Ensure the bin subdirectory is included (JAVA_HOME/bin)
+Add Java bin directory to PATH environment variable:
+- Ensure the bin subdirectory is included
 - Avoid duplicate entries in PATH
-- Consider path priority (prepend vs append based on platform conventions)
-
-**Implementation guidance:**
-- Windows: Use semicolon as PATH separator
-- macOS/Linux: Use colon as PATH separator
 
 ### Step 5: Verify Configuration
 
 After setting environment variables:
-- Verify JAVA_HOME is correctly set by reading it back
+- Verify JAVA_HOME is correctly set
 - Test that java command is accessible
-- If JDK, test that javac command is accessible
 - Report Java version to confirm successful configuration
 
 ### Step 6: Inform User
 
 - Confirm JAVA_HOME has been configured successfully
 - Remind user that terminal restart may be required for changes to take effect
-- Provide verification commands appropriate for their system
 
 ## Constraints
 
 - Only responsible for environment variable configuration, not Java installation
-- Idempotent: check if JAVA_HOME is already correctly configured, do not rewrite if set properly
+- Idempotent: check if JAVA_HOME is already correctly configured
 - If multiple Java versions exist, use the one specified or detected as default
 - User-level environment variables only (no system-wide changes requiring admin privileges)
 - Do not hardcode specific installation paths - detect or use provided parameter

@@ -1,7 +1,9 @@
 ---
 name: env-configure-npm
 description: >-
-  Use this skill when the user wants to configure npm registry URL only.
+  Configure npm registry URL.
+  Invoke when user needs to switch npm registry (e.g., to internal Nexus/Artifactory).
+  Idempotent configuration (checks before applying).
 version: 1.0.0
 displayName: Configure npm Registry
 domain: env
@@ -36,43 +38,42 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if npm is installed**: Run `npm --version`. If npm is not found, inform user: "npm is not installed. Please install Node.js and npm first." Stop and do not proceed.
-- If prerequisites are not met, inform user and stop.
+- Check if npm is installed
+- If not installed, inform user and stop
 
 ### Step 2: Validate Registry URL
 
 - Verify the provided `registry_url` is a valid URL format
-- If invalid, inform user: "The provided registry URL is not valid. Please provide a valid URL." and stop.
+- If invalid, inform user and stop
 
 ### Step 3: Check Current Configuration (Idempotency)
 
 Before making changes:
-- Get current npm registry: `npm config get registry`
-- If current registry equals `registry_url`, inform user: "npm registry is already set to {{registry_url}}. No changes needed." and stop.
+- Get current npm registry
+- If current registry equals `registry_url`, inform user and stop
 
 ### Step 4: Configure npm Registry
 
 Set the npm registry:
-- Use appropriate configuration method for the environment
-- Apply at user level (typically ~/.npmrc or equivalent)
+- Apply at user level (user's npm configuration file)
 
 ### Step 5: Verify Configuration
 
 After configuration:
-- Verify registry is correctly set: `npm config get registry`
+- Verify registry is correctly set
 - Confirm it matches the provided `registry_url`
 
 ### Step 6: Inform User
 
-- Confirm npm registry has been configured to {{registry_url}}
-- If authentication is needed for this registry, inform user: "This registry may require authentication. Use your organization's credentials or token to authenticate."
+- Confirm npm registry has been configured
+- If authentication is needed for this registry, inform user
 
 ## Constraints
 
-- **Single Responsibility**: Only configures registry URL. Does not handle authentication, tokens, or scoped registries.
-- **Idempotent**: Check first, configure only if different. If already set correctly, do nothing.
-- **Prerequisite Check**: If npm is not installed, inform user and stop.
-- User-level configuration only (~/.npmrc)
+- **Single Responsibility**: Only configures registry URL, not authentication, tokens, or scoped registries
+- **Idempotent**: Check first, configure only if different
+- **Prerequisite Check**: If npm is not installed, inform user and stop
+- User-level configuration only
 
 ## Error Handling
 
