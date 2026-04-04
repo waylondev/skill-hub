@@ -1,19 +1,25 @@
 ---
 name: web-bilibili-trending
 description: >-
-  Use this skill when the user wants to browse Bilibili trending videos and retrieve popular content.
+  Browse Bilibili trending videos and show popular content.
+  Invoke when user asks "what's trending on Bilibili" or wants to discover popular videos.
+  Supports category filtering and time range selection.
+  Can open videos in browser for watching.
 version: 1.0.0
 displayName: Bilibili Trending Videos
 domain: web
 action: browse
 object: bilibili
-tags: [web, bilibili, trending, videos, automation, browser]
+tags: [web, bilibili, trending, videos, browse, open-browser, interactive]
 type: SKILL
 inputs:
   - name: category
     type: string
     required: false
-    description: Video category to filter trending videos (e.g., animation, music, dance, game, etc.)
+    description: >-
+      Filter videos by category. Common categories: animation, music, dance, game, 
+      technology, life, fashion, entertainment, food, automotive, sports.
+      If not specified, show all categories.
   - name: time_range
     type: string
     required: false
@@ -53,18 +59,12 @@ Before executing:
 - If `num_results` is not provided, default to 10
 - If validation fails, inform user with specific error message
 
-### Step 2: Choose Appropriate Tool
+### Step 2: Choose Approach
 
-Based on available tools and environment, select the most appropriate approach:
-- **Browser automation** (preferred for interactive tasks)
-- **API access** (if available)
-- **HTTP client + HTML parsing** (lightweight)
-- **Manual browser** (fallback - provide links)
-
-Select based on:
-- What's available in the environment
-- User's needs (interactive vs. data-only)
-- Complexity vs. speed trade-off
+Select the best approach based on environment and user needs:
+- **Interactive** (user wants to watch) → Use browser automation
+- **Data-only** (user wants info) → Use API or HTTP client
+- **Fallback** → Provide manual links
 
 ### Step 3: Navigate to Bilibili Trending Page
 
@@ -143,15 +143,12 @@ Present results to user:
 
 ## Constraints
 
-- **Single Responsibility**: Only responsible for Bilibili trending videos, not other pages or search
-- **Read-Only Operation**: Does not interact with videos beyond viewing (no login, no comments)
-- **Session Management**: Each browse is independent, no session persistence
-- **Rate Limiting**: Respect Bilibili's terms of service, avoid excessive automated requests
-- **No Authentication**: Does not handle logged-in Bilibili browsing
-- **Tool Agnostic**: Does not mandate specific automation tool - AI chooses based on availability
-- **Network Dependency**: Requires internet access to Bilibili.com
-- **Content Accuracy**: Trending content may vary based on region, time, and personalization
-- **Public Content Only**: Only accesses publicly available trending videos
+- **Single Responsibility**: Only handles Bilibili trending videos (not search or other pages)
+- **Read-Only**: No login, comments, or interactions beyond viewing
+- **Tool Agnostic**: AI chooses appropriate tools based on availability
+- **Respect Terms**: Follow Bilibili's terms of service, avoid excessive requests
+- **Public Content Only**: Only accesses publicly available videos
+- **No Session Persistence**: Each request is independent
 
 ## Error Handling
 
@@ -219,9 +216,14 @@ AI: Opens the 3rd video URL in browser automatically
 Result: Browser launches and plays the selected video
 ```
 
-## Implementation Notes
+**Example 7: Fallback When Automation Unavailable**
+```
+User: "Show me Bilibili trending"
+AI: Browser automation not available, provides manual links
+Result: User can click links to browse manually
+```
 
-**Approach**: Use browser automation to interact with Bilibili and extract trending videos.
+## Implementation Notes
 
 **Workflow**:
 1. Navigate to Bilibili trending page
@@ -235,39 +237,3 @@ Result: Browser launches and plays the selected video
 - Extract meaningful information (not just URLs)
 - Handle errors gracefully
 - Respect website terms of service
-
-**Option B: Bilibili API** (If available)
-
-Direct API calls if you have access to Bilibili open platform:
-```
-1. Call Bilibili ranking API
-2. Pass category and time range parameters
-3. Parse JSON response
-4. Format and return results
-```
-
-**Option C: HTTP Client + HTML Parser** (Lightweight)
-
-Using command-line tools or libraries:
-- Use HTTP client to fetch the trending page
-- Parse the HTML response to extract video information
-
-**Option D: Manual Browser** (Fallback)
-
-When no automation is available:
-```
-1. Open browser
-2. Navigate to Bilibili trending page
-3. Guide user through browsing
-4. Help analyze trending content
-```
-
-**Important**: 
-- AI should choose appropriate selectors based on the actual page structure
-- Focus on locating the trending video list container and extracting video information
-- Adapt to page structure changes dynamically
-- Focus on readable, user-friendly output
-- Respect robots.txt and terms of service
-- Choose tool based on what's available in the environment
-- Bilibili may have anti-scraping measures - use appropriate delays
-- Consider rate limiting to avoid IP blocking

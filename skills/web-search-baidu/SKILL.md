@@ -1,23 +1,26 @@
 ---
 name: web-search-baidu
 description: >-
-  Use this skill when the user wants to perform a web search on Baidu and retrieve search results.
+  Search on Baidu and retrieve search results.
+  Invoke when user asks to "search on Baidu" or needs information from Baidu.
+  Supports customizable result count.
+  Can open search results in browser for viewing.
 version: 1.0.0
-displayName: Baidu Web Search
+displayName: Baidu Search
 domain: web
 action: search
 object: baidu
-tags: [web, search, baidu, automation, browser]
+tags: [web, baidu, search, browse, open-browser, interactive]
 type: SKILL
 inputs:
   - name: query
     type: string
     required: true
-    description: Search keyword or phrase to search for on Baidu
+    description: Search query - the keywords or phrase to search for on Baidu
   - name: num_results
     type: number
     required: false
-    description: Number of search results to return (default: 5)
+    description: Number of search results to retrieve (default: 5, range: 1-20)
 ---
 # Baidu Web Search
 
@@ -47,18 +50,12 @@ Before executing:
 - If `num_results` is not provided, default to 5
 - If validation fails, inform user with specific error message
 
-### Step 2: Choose Appropriate Tool
+### Step 2: Choose Approach
 
-Based on available tools and environment, select the most appropriate approach:
-- **Browser automation** (preferred for interactive tasks)
-- **API access** (if available)
-- **HTTP client + HTML parsing** (lightweight)
-- **Manual browser** (fallback - provide links)
-
-Select based on:
-- What's available in the environment
-- User's needs (interactive vs. data-only)
-- Complexity vs. speed trade-off
+Select the best approach based on environment and user needs:
+- **Interactive** (user wants to browse results) → Use browser automation
+- **Data-only** (user wants info) → Use API or HTTP client
+- **Fallback** → Provide manual links
 
 ### Step 3: Navigate to Baidu
 
@@ -128,14 +125,12 @@ Present results to user:
 
 ## Constraints
 
-- **Single Responsibility**: Only responsible for Baidu search, not other search engines
-- **Read-Only Operation**: Does not interact with search results beyond viewing
-- **Session Management**: Each search is independent, no session persistence
-- **Rate Limiting**: Respect Baidu's terms of service, avoid excessive automated requests
-- **No Authentication**: Does not handle logged-in Baidu searches
-- **Tool Agnostic**: Does not mandate specific automation tool - AI chooses based on availability
-- **Network Dependency**: Requires internet access to Baidu.com
-- **Result Accuracy**: Search results may vary based on location, time, and personalization
+- **Single Responsibility**: Only handles Baidu search (not other search engines)
+- **Read-Only**: No login, form submissions, or interactions beyond searching
+- **Tool Agnostic**: AI chooses appropriate tools based on availability
+- **Respect Terms**: Follow Baidu's terms of service, avoid excessive requests
+- **Public Content Only**: Only searches publicly accessible content
+- **No Session Persistence**: Each search is independent
 
 ## Error Handling
 
@@ -195,9 +190,14 @@ AI: Opens the 2nd search result URL in browser automatically
 Result: Browser launches and displays the selected webpage
 ```
 
-## Implementation Notes
+**Example 6: Fallback When Automation Unavailable**
+```
+User: "Search for JavaScript guide"
+AI: Browser automation not available, provides search URL and manual links
+Result: User can click links to browse manually
+```
 
-**Approach**: Use browser automation to perform search on Baidu and extract results.
+## Implementation Notes
 
 **Workflow**:
 1. Navigate to Baidu homepage
@@ -212,36 +212,3 @@ Result: Browser launches and displays the selected webpage
 - Extract meaningful information (not just URLs)
 - Handle errors gracefully
 - Respect website terms of service
-
-**Option B: Search API** (If available)
-
-Direct API calls if you have access to a search API:
-```
-1. Call search API with query
-2. Parse JSON response
-3. Format and return results
-```
-
-**Option C: HTTP Client + HTML Parser** (Lightweight)
-
-Using command-line tools or libraries:
-- Use HTTP client to fetch the search results page with the query parameter
-- Parse the HTML response to extract search results
-
-**Option D: Manual Browser** (Fallback)
-
-When no automation is available:
-```
-1. Open browser
-2. Navigate to Baidu
-3. Guide user through search
-4. Help analyze results
-```
-
-**Important**: 
-- AI should choose appropriate selectors based on the actual page structure
-- Focus on locating the search input field, submitting the query, and extracting search results
-- Adapt to page structure changes dynamically
-- Focus on readable, user-friendly output
-- Respect robots.txt and terms of service
-- Choose tool based on what's available in the environment

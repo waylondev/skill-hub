@@ -22,4 +22,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
-.trae
+.trae/
+.playwright-cli/
+
