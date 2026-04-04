@@ -1,8 +1,8 @@
 # Skill-Hub
 
-> **Turn Confluence theoretical knowledge into AI execution capabilities**
+> **Turn theoretical knowledge into AI execution capabilities**
 >
-> Confluence tells you how, Skill-Hub lets AI do it for you.
+> Documentation tells you how, Skill-Hub lets AI do it for you.
 
 ## Core Value
 
@@ -11,6 +11,17 @@ Transform internal repetitive process knowledge into AI-executable operational c
 - **Knowledge Form**: From document reading → Structured instructions
 - **Operation Mode**: From manual operation → AI automated execution
 - **Efficiency Boost**: Complete multi-system operations with one sentence
+
+## What is Skill-Hub?
+
+Skill-Hub is a repository of reusable operational skills that AI Agents can read and execute. It captures knowledge from various sources:
+
+- 📄 **Confluence** documentation
+- 📚 **Internal wikis** and guides
+- 📋 **Standard operating procedures** (SOPs)
+- 🔐 **IT policies** and processes
+- 🧠 **Tribal knowledge** from senior employees
+- ✨ **Best practices** and playbooks
 
 ## Usage
 

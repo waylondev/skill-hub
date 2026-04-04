@@ -62,7 +62,10 @@ const { skill, skillMdContent } = Astro.props;
     </div>
 
     <div class="install-section">
-      <h3>Install & Run</h3>
+      <h3>Install & Read</h3>
+      <p style="color: #e0e0e0; margin-bottom: 1rem; font-size: 0.9rem;">
+        Skills are for AI Agents to read and execute, not for direct human execution.
+      </p>
       <div class="code-block">
         <span>$ skill install {skill.name}</span>
         <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">Copy</button>

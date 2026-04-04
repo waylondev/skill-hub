@@ -1,7 +1,7 @@
-# Skill-Hub Product Requirements Document (PRD) v3.3
+# Skill-Hub Product Requirements Document (PRD) v3.4
 
-> **Version**: v3.3 | **Date**: 2026-04-04  
-> **Core Positioning**: Turn Confluence theoretical knowledge into AI execution capabilities
+> **Version**: v3.4 | **Date**: 2026-04-04  
+> **Core Positioning**: Turn theoretical knowledge into AI execution capabilities
 >
 > **Skill Standards**: This project follows [Skill Design Principles](./SKILL-DESIGN-PRINCIPLES.md)
 
@@ -23,29 +23,55 @@
 
 ## 1. Project Overview
 
-### 1.1 Problem: Knowledge "Sleeps" in Confluence
+### 1.1 Problem: Knowledge "Sleeps" in Documentation
 
 Organizations have numerous **internal-only repetitive processes**:
 
 - New employees need to apply for VPN, Jenkins, ServiceNow, IKP, Vault, G3 permissions
 - Installing software requires ServiceNow requests, approval, Software Center installation, environment configuration
 - Configuring Maven/Node requires internal Nexus mirrors
+- Accessing internal systems requires following specific procedures
 
-**Current State**: Knowledge scattered across Confluence, docs, and senior employees' minds.
+**Current State**: Knowledge scattered across documentation (Confluence, wikis, guides) and senior employees' minds.
 
-**Core Issue**: Confluence is a **theoretical knowledge base**—you read, understand, then **do it yourself**. Every time: search docs → understand process → open systems → follow steps. Knowledge stays at "read" stage, never becoming "executed" capability.
+**Core Issue**: Documentation is a **theoretical knowledge base**—you read, understand, then **do it yourself**. Every time: search docs → understand process → open systems → follow steps. Knowledge stays at "read" stage, never becoming "executed" capability.
+
+**Example - Confluence Scenario**:
+```
+Confluence Page: "How to Install Java"
+1. Submit ServiceNow request (link to form)
+2. Wait for approval (1-2 business days)
+3. Install via Software Center
+4. Configure JAVA_HOME environment variable
+
+Problem: Every employee reads this page and manually executes all 4 steps.
+Waste: 30 minutes per employee × hundreds of employees = massive productivity loss
+```
 
 ### 1.2 Solution: Let AI Do the Work
 
-Skill-Hub transforms Confluence **theoretical knowledge** into **operational capabilities** that AI Agents can directly execute:
+Skill-Hub transforms **theoretical knowledge** into **operational capabilities** that AI Agents can directly execute:
 
-> **Confluence tells you how, Skill-Hub lets AI do it for you.**
+> **Documentation tells you how, Skill-Hub lets AI do it for you.**
 
 - **One Git repository** (`skill-hub`) - stores all Skills
 - **One CLI tool** (5 commands) - manages Skills
 - **One showcase site** - promotes available Skills
 
 **Core Value**: Employees say one sentence, AI Agent automatically completes all work that required searching docs, running processes, and operating systems.
+
+**Example - After Skill-Hub**:
+```
+User: "Help me install Java"
+→ AI reads Skills: sn-request-software, swc-install-package, env-configure-java
+→ AI executes automatically:
+  1. Submits ServiceNow request
+  2. Monitors approval status
+  3. Installs via Software Center
+  4. Configures JAVA_HOME
+→ Result: Java installed and configured, zero manual steps
+Savings: 30 minutes → 0 minutes per employee
+```
 
 ### 1.3 Why AI?
 
@@ -76,6 +102,25 @@ A Skill is a **structured natural language description** documenting the complet
 - ✅ **Internal-only operational knowledge**—which portal, approval chain, internal address
 - ✅ **High-frequency repetitive operations**—what every employee does repeatedly
 - ✅ **Bridge from "reading docs" to "doing for you"**
+- ✅ **Any reusable knowledge**—Confluence, wikis, guides, tribal knowledge, best practices
+
+**Sources of Skills** (with Confluence as primary example):
+- **Confluence** (most common) - Transform existing process docs into Skills
+- **Internal wikis and guides** - Any documentation platform
+- **Standard operating procedures (SOPs)** - Formal process documents
+- **IT policies and processes** - Compliance and governance workflows
+- **Senior employees' tribal knowledge** - Capture expertise before retirement
+- **Best practices and playbooks** - Repeatable success patterns
+
+**Confluence Example**:
+```
+Before: Confluence page "How to Request AD Group Access" (read-only)
+After:  Skill `sn-request-ad-group` (AI-executable)
+
+Benefit: Instead of reading and manually executing, 
+         user says "I need access to prod-deploy group" 
+         and AI handles the entire request process.
+```
 
 ### 1.5 Skill Granularity
 
@@ -411,5 +456,6 @@ Write SKILL.md → skill push → Auto validate → Submit PR → Review → Mer
 
 ## Change Log
 
+- **v3.4** (2026-04-04): Expanded positioning from "Confluence-only" to "all reusable knowledge" - Skills can now capture knowledge from Confluence, wikis, SOPs, tribal knowledge, and best practices
 - **v3.3** (2026-04-04): Consolidated documentation, added Skill Design Principles reference
 - **v3.2**: Initial version with complete architecture
