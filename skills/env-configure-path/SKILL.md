@@ -40,79 +40,79 @@ Use this Skill when:
 
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
-| `path` | string | No | Path to add to the PATH environment variable | `C:\Program Files\Java\jdk-21\bin` |
-| `variable_name` | string | No | Name of the environment variable to set (e.g., JAVA_HOME) | `JAVA_HOME` |
-| `variable_value` | string | No | Value for the environment variable | `C:\Program Files\Java\jdk-21` |
+| `path` | string | No | Path to add to the PATH environment variable | Path to software bin directory |
+| `variable_name` | string | No | Name of the environment variable to set | JAVA_HOME, NODE_HOME, etc. |
+| `variable_value` | string | No | Value for the environment variable | Installation directory path |
 
 ## Execution Steps
 
-### Windows System
+### Step 1: Validate Input Parameters
 
-1. **Validate the provided path** (if path parameter is given):
-   - Check if the path exists using `Test-Path`
-   - If path doesn't exist, inform the user and stop
+- If `path` is provided, verify the path exists on the system
+- If `variable_name` and `variable_value` are provided, validate the variable name format (alphanumeric and underscore only)
+- If validation fails, inform the user with specific error message
 
-2. **Set environment variable** (if variable_name and variable_value are given):
-   ```powershell
-   # Set user-level environment variable
-   [Environment]::SetEnvironmentVariable("{{variable_name}}", "{{variable_value}}", "User")
-   ```
+### Step 2: Determine Current Shell Configuration
 
-3. **Add path to PATH** (if path parameter is given):
-   ```powershell
-   # Get current PATH
-   $currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-   
-   # Check if path already exists in PATH
-   if ($currentPath -notlike "*{{path}}*") {
-       # Append new path
-       $newPath = $currentPath + ";{{path}}"
-       [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-   }
-   ```
+**Windows:**
+- Use PowerShell environment variable cmdlets
+- Operate at User level (not Machine/System level)
 
-4. **Inform the user**:
-   - Environment variable has been set/updated
-   - May need to restart terminal or system for changes to take effect
+**macOS/Linux:**
+- Detect user's shell (bash, zsh, etc.)
+- Identify the appropriate shell configuration file (~/.bashrc, ~/.zshrc, etc.)
 
-### macOS/Linux System
+### Step 3: Set Environment Variable (if requested)
 
-1. **Validate the provided path** (if path parameter is given):
-   - Check if the path exists using `test -d`
-   - If path doesn't exist, inform the user and stop
+If `variable_name` and `variable_value` are provided:
 
-2. **Set environment variable** (if variable_name and variable_value are given):
-   - Determine shell config file (`~/.bashrc`, `~/.zshrc`, etc.)
-   - Check if variable already exists
-   - If exists, update it; if not, append:
-   ```bash
-   export {{variable_name}}="{{variable_value}}"
-   ```
+**Approach:**
+- Check if the environment variable already exists
+- If exists with different value, update it
+- If doesn't exist, create it
+- Avoid duplicate entries
 
-3. **Add path to PATH** (if path parameter is given):
-   - Check if path already in PATH
-   - If not, append to shell config file:
-   ```bash
-   export PATH="{{path}}:$PATH"
-   ```
+**Implementation guidance:**
+- Windows: Use .NET Environment class methods for user-level variables
+- macOS/Linux: Append export statement to shell configuration file
 
-4. **Inform the user**:
-   - Environment variable has been set/updated
-   - May need to run `source ~/.bashrc` or restart terminal
+### Step 4: Add Path to PATH (if requested)
+
+If `path` is provided:
+
+**Approach:**
+- Read current PATH environment variable
+- Check if the path already exists in PATH (avoid duplicates)
+- If not present, append the path to PATH
+- Windows: Use semicolon separator
+- macOS/Linux: Use colon separator, typically prepend for priority
+
+**Implementation guidance:**
+- Windows: Use .NET Environment class methods for user-level PATH
+- macOS/Linux: Modify shell configuration file with export PATH statement
+
+### Step 5: Verify and Inform User
+
+After configuration:
+- Confirm the changes have been applied
+- Inform user that terminal restart may be required for changes to take effect
+- Provide verification commands appropriate for their system
 
 ## Constraints
 
 - Only responsible for environment variable configuration, not software installation
-- Idempotent: check if correctly configured, do not rewrite if already set
-- Validate path existence before adding
-- Avoid duplicate entries in PATH
-- User-level environment variables only (no system-wide changes)
+- Idempotent: check if correctly configured, do not rewrite if already set properly
+- Validate path existence before adding to avoid invalid PATH entries
+- Avoid duplicate entries in PATH or duplicate variable definitions
+- User-level environment variables only (no system-wide changes requiring admin privileges)
+- Do not assume specific directory structures - use provided parameters
 
 ## Error Handling
 
-- **Path doesn't exist**: Inform user with clear error message, suggest checking the path
-- **Permission denied**: Inform user that admin privileges may be required for system variables
-- **Invalid variable name**: Validate environment variable name format (alphanumeric and underscore only)
+- **Path doesn't exist**: Inform user with clear error message, suggest verifying the installation path
+- **Permission denied**: Inform user that admin privileges may be required for system-level variables, suggest using user-level instead
+- **Invalid variable name**: Validate environment variable name format before attempting to set
+- **Shell config file not found**: Inform user and suggest creating appropriate file for their shell
 
 ## Related Skills
 

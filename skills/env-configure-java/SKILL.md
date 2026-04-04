@@ -30,73 +30,84 @@ Use this Skill when:
 
 ## Execution Steps
 
-### Step 1: Detect Java Installation Path
+### Step 1: Determine Java Installation Path
 
-If `java_home` parameter is not provided, detect Java installation:
+If `java_home` parameter is not provided, locate Java installation:
 
-**Windows:**
-- Check common installation directories:
-  - `C:\Program Files\Java\jdk-*`
-  - `C:\Program Files (x86)\Java\jdk-*`
-- Use PowerShell to find installed Java versions
+**Approach:**
+- Search common installation directories for the operating system
+- Use system-specific tools to detect installed Java versions
+- If multiple versions exist, prefer the latest stable version or ask user to specify
 
-**macOS:**
-- Use `/usr/libexec/java_home` to locate Java installation
-- Check `/Library/Java/JavaVirtualMachines/` directory
+**Platform considerations:**
+- Windows: Check Program Files directories for Java/jdk folders
+- macOS: Use system Java detection utilities
+- Linux: Check standard JVM installation directories
 
-**Linux:**
-- Check `/usr/lib/jvm/` directory
-- Use `update-alternatives --list java` if available
+### Step 2: Validate Java Installation
 
-### Step 2: Set JAVA_HOME Environment Variable
+Before configuring:
+- Verify the detected/provided path exists
+- Confirm it contains Java executables (java, javac if JDK)
+- If validation fails, inform user and request correct path
 
-**Windows (PowerShell):**
-```powershell
-# Set user-level JAVA_HOME
-[Environment]::SetEnvironmentVariable("JAVA_HOME", "{{java_home}}", "User")
+### Step 3: Set JAVA_HOME Environment Variable
 
-# Add to PATH
-$currentPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-if ($currentPath -notlike "*{{java_home}}\bin*") {
-    $newPath = $currentPath + ";{{java_home}}\bin"
-    [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
-}
-```
+**Approach:**
+- Set JAVA_HOME to point to the Java installation directory
+- Use user-level environment variables (not system-level)
+- Check if JAVA_HOME already exists:
+  - If set correctly, skip this step (idempotent)
+  - If set incorrectly, update it
+  - If not set, create it
 
-**macOS/Linux (Shell):**
-```bash
-# Append to shell configuration file (~/.bashrc, ~/.zshrc, etc.)
-export JAVA_HOME="{{java_home}}"
-export PATH="$JAVA_HOME/bin:$PATH"
-```
+**Implementation guidance:**
+- Windows: Use PowerShell/.NET Environment class methods
+- macOS/Linux: Append export statement to shell configuration file
 
-### Step 3: Verify Configuration
+### Step 4: Add Java to PATH
+
+**Approach:**
+- Add Java bin directory to PATH environment variable
+- Ensure the bin subdirectory is included (JAVA_HOME/bin)
+- Avoid duplicate entries in PATH
+- Consider path priority (prepend vs append based on platform conventions)
+
+**Implementation guidance:**
+- Windows: Use semicolon as PATH separator
+- macOS/Linux: Use colon as PATH separator
+
+### Step 5: Verify Configuration
 
 After setting environment variables:
-- Check `JAVA_HOME` is correctly set
-- Verify `java -version` command works
-- Verify `javac -version` command works (if JDK installed)
+- Verify JAVA_HOME is correctly set by reading it back
+- Test that java command is accessible
+- If JDK, test that javac command is accessible
+- Report Java version to confirm successful configuration
 
-### Step 4: Inform User
+### Step 6: Inform User
 
-- Confirm JAVA_HOME has been configured
-- Remind user to restart terminal or run `source ~/.bashrc` (macOS/Linux)
-- Provide verification commands
+- Confirm JAVA_HOME has been configured successfully
+- Remind user that terminal restart may be required for changes to take effect
+- Provide verification commands appropriate for their system
 
 ## Constraints
 
 - Only responsible for environment variable configuration, not Java installation
 - Idempotent: check if JAVA_HOME is already correctly configured, do not rewrite if set properly
-- If multiple Java versions exist, use the one specified or the system default
-- User-level environment variables only (no system-wide changes)
+- If multiple Java versions exist, use the one specified or detected as default
+- User-level environment variables only (no system-wide changes requiring admin privileges)
+- Do not hardcode specific installation paths - detect or use provided parameter
 
 ## Error Handling
 
-- **Java not found**: Inform user to install Java first, suggest download link
-- **Invalid path**: If provided java_home doesn't exist, ask user to verify the path
-- **Permission denied**: Inform user that admin privileges may be required for system variables
+- **Java not found**: Inform user to install Java first, provide guidance on where to download
+- **Invalid path**: If provided or detected java_home doesn't contain Java executables, ask user to verify the installation path
+- **Permission denied**: Inform user that admin privileges may be required for system variables, suggest using user-level instead
+- **Multiple Java versions**: If multiple versions detected, inform user and ask to specify which one to use
 
 ## Related Skills
 
 - `env-configure-maven` - Configure Maven environment (requires Java)
 - `env-configure-gradle` - Configure Gradle environment (requires Java)
+- `env-configure-path` - Generic path configuration for other tools
