@@ -1,7 +1,7 @@
 ---
 name: swc-install-package
 description: >-
-  在 Software Center 安装已审批通过的软件包。
+  Use this skill when the user wants to install approved software packages in Software Center.
 version: 1.0.0
 displayName: Software Center 安装软件
 domain: swc

@@ -15,7 +15,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Split-Path -Parent $ScriptDir
 $SkillsDir = Join-Path $RepoRoot "skills"
 $RegistryLstPath = Join-Path $RepoRoot "registry.lst"
-$LocalSkillHubDir = Join-Path $env:USERPROFILE ".skillhub"
+$HomeDir = if ($IsWindows) { $env:USERPROFILE } else { $env:HOME }
+$LocalSkillHubDir = Join-Path $HomeDir ".skillhub"
 $LocalSkillsDir = Join-Path $LocalSkillHubDir "skills"
 
 function Show-Help {

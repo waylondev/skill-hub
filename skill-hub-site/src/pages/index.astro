@@ -5,6 +5,9 @@ import path from 'path';
 import yaml from 'yaml';
 
 const registryPath = path.resolve('./registry.yaml');
+if (!fs.existsSync(registryPath)) {
+  throw new Error(`Registry file not found at ${registryPath}. Please run 'npm run copy-registry' first.`);
+}
 const registryContent = fs.readFileSync(registryPath, 'utf-8');
 const registry = yaml.parse(registryContent);
 

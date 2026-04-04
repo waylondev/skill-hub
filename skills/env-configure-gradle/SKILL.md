@@ -13,11 +13,11 @@ inputs:
   - name: gradle_version
     type: string
     required: false
-    description: Gradle 版本号（默认 8.5）
+    description: Gradle 版本号（如不指定则使用已安装版本）
   - name: gradle_home
     type: string
     required: false
-    description: Gradle 安装路径（默认自动检测）
+    description: Gradle 安装路径（如不指定则自动检测）
 ---
 # 配置 Gradle
 
@@ -25,24 +25,24 @@ inputs:
 需要配置 Gradle 构建工具时使用。
 
 ## 前置条件
-- Java 11+ 已配置
+- Java 已配置
 - Gradle 已安装
 
 ## 执行步骤
 1. 设置 GRADLE_HOME 和 PATH：
    **Windows：**
    ```powershell
-   [Environment]::SetEnvironmentVariable("GRADLE_HOME", "{{gradle_home | default: C:\Program Files\Gradle\gradle-8.5}}", "User")
+   [Environment]::SetEnvironmentVariable("GRADLE_HOME", "{{gradle_home}}", "User")
    [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";%GRADLE_HOME%\bin", "User")
-   $env:GRADLE_HOME = "{{gradle_home | default: C:\Program Files\Gradle\gradle-8.5}}"
+   $env:GRADLE_HOME = "{{gradle_home}}"
    $env:Path += ";$env:GRADLE_HOME\bin"
    ```
 
    **macOS / Linux (Bash)：**
    ```bash
-   echo 'export GRADLE_HOME={{gradle_home | default: /opt/gradle/gradle-8.5}}' >> ~/.bashrc
+   echo 'export GRADLE_HOME={{gradle_home}}' >> ~/.bashrc
    echo 'export PATH=$GRADLE_HOME/bin:$PATH' >> ~/.bashrc
-   export GRADLE_HOME={{gradle_home | default: /opt/gradle/gradle-8.5}}
+   export GRADLE_HOME={{gradle_home}}
    export PATH=$GRADLE_HOME/bin:$PATH
    ```
 
@@ -71,5 +71,5 @@ inputs:
 
 ## 约束
 - 只负责 Gradle 配置，不负责安装
-- 需要 Java 11 或更高版本
+- 需要兼容的 Java 版本
 - 幂等：已配置则检查是否正确，不重复配置

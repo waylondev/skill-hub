@@ -1,7 +1,7 @@
 ---
 name: sn-request-ad-group
 description: >-
-  在 ServiceNow 申请加入 Active Directory 安全组或分发组。
+  Use this skill when the user wants to request access to Active Directory security groups or distribution groups via ServiceNow.
 version: 1.0.0
 displayName: ServiceNow 申请 AD 组权限
 domain: sn

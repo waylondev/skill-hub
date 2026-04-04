@@ -1,7 +1,7 @@
 ---
 name: sn-request-software
 description: >-
-  在 ServiceNow 申请安装公司提供的软件（Java、IDE、Node.js 等）。
+  Use this skill when the user wants to request software installation (Java, IDE, Node.js, etc.) via ServiceNow.
 version: 1.0.0
 displayName: ServiceNow 申请软件
 domain: sn
