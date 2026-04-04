@@ -17,7 +17,7 @@ inputs:
   - name: local_repo
     type: string
     required: false
-    description: Maven 本地仓库路径（默认 ~/.m2/repository）
+    description: Maven 本地仓库路径（如不指定则使用默认路径）
 ---
 # 配置 Maven 环境变量和 settings.xml
 

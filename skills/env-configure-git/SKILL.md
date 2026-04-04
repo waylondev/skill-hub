@@ -21,7 +21,7 @@ inputs:
   - name: default_branch
     type: string
     required: false
-    description: 默认分支名称（默认 main）
+    description: 默认分支名称（如不指定则使用系统默认）
 ---
 # 配置 Git
 
@@ -40,7 +40,7 @@ Git 已安装完成，需要配置用户名、邮箱等基本设置时使用。
 
 2. 配置默认分支名称（可选）：
    ```bash
-   git config --global init.defaultBranch {{default_branch | default: main}}
+   git config --global init.defaultBranch {{default_branch}}
    ```
 
 3. 配置凭证助手：

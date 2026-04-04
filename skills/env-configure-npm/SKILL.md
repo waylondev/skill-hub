@@ -12,8 +12,8 @@ type: SKILL
 inputs:
   - name: npm_registry_url
     type: string
-    required: false
-    description: Nexus npm 仓库地址（默认 https://nexus.company.com/repository/npm-public/）
+    required: true
+    description: Nexus npm 仓库地址
 ---
 # 配置 npm 内部 Nexus 镜像
 
