@@ -54,11 +54,18 @@ for (const skill of skills) {
     .hero-section p { font-size: 1.2rem; color: #718096; max-width: 600px; margin: 0 auto; line-height: 1.8; }
   </style>
 
-  <section class="quick-start">
-    <h2>Turn Knowledge into AI Execution</h2>
-    <p style="margin-bottom: 1rem; color: #666;">
+  <section class="hero-section">
+    <h1>Turn Knowledge into AI Execution</h1>
+    <p>
       Capture reusable operational knowledge from Confluence, wikis, SOPs, and tribal knowledge. 
       Let AI Agents execute repetitive tasks for you.
+    </p>
+  </section>
+
+  <section class="quick-start">
+    <h2>✨ Quick Start</h2>
+    <p style="margin-bottom: 1rem; opacity: 0.95;">
+      Transform your documentation into AI-executable Skills in seconds
     </p>
     <div class="code-block">
       <span>$ skill install sn-request-software</span>
@@ -75,11 +82,11 @@ for (const skill of skills) {
   </section>
 
   <section class="top-skills">
-    <h2>Top Skills</h2>
+    <h2>🏆 Top Skills</h2>
     <div class="skill-grid">
       {skills.slice(0, 5).map((skill, index) => (
         <div class="skill-card">
-          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index]}</div>
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index]}</div>
           <div class="skill-name">{skill.name}</div>
           <div class="skill-title">{skill.title}</div>
           <div class="skill-tags">
