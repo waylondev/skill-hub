@@ -1,119 +1,97 @@
 ---
 name: env-configure-maven
 description: >-
-  Use this skill when the user wants to configure Maven environment variables, set up MAVEN_HOME, or configure Maven settings.xml.
+  Use this skill when the user wants to configure Maven environment variables (MAVEN_HOME and PATH).
 version: 1.0.0
-displayName: Configure Maven Environment Variables and settings.xml
+displayName: Configure Maven Environment Variables
 domain: env
 action: configure
 object: maven
-tags: [env, maven, java, config, settings]
+tags: [env, maven, java, config]
 type: SKILL
 inputs:
   - name: maven_home
     type: string
     required: false
     description: Maven installation path (auto-detect if not specified)
-  - name: local_repo
-    type: string
-    required: false
-    description: Maven local repository path (use default path if not specified)
-  - name: nexus_url
-    type: string
-    required: false
-    description: Internal Nexus repository URL (optional, use company default if not specified)
 ---
-# Configure Maven Environment Variables and settings.xml
+# Configure Maven Environment Variables
+
+## Purpose
+
+Configure Maven environment variables (MAVEN_HOME and PATH) only. Does not handle settings.xml configuration.
 
 ## Trigger Conditions
 
 Use this Skill when:
-- Maven is installed and needs environment configuration
-- User needs to set up MAVEN_HOME environment variable
-- User needs to configure Maven settings.xml with internal repository
-- User wants to use company's internal Nexus repository
+- Maven is installed and needs MAVEN_HOME environment variable
+- User needs to add Maven to system PATH
+- User wants to verify Maven environment configuration
 
 ## Prerequisites
 
 - Maven is installed on the system
-- Java is installed and environment variables are configured (JAVA_HOME should be set)
+- Java is installed and JAVA_HOME is configured
 
 ## Execution Steps
 
-### Step 1: Detect Maven Installation
+### Step 1: Verify Prerequisites
+
+Before attempting configuration:
+- **Check if Maven is installed**: If Maven command is not found and `maven_home` is not provided, inform user: "Maven is not installed or not in PATH. Please install Maven first or provide the installation path."
+- **Check if JAVA_HOME is set**: If JAVA_HOME is not configured, inform user: "JAVA_HOME is not configured. Please configure Java first using env-configure-java skill."
+- If prerequisites are not met, stop and inform user. Do not attempt configuration.
+
+### Step 2: Detect Maven Installation
 
 If `maven_home` parameter is not provided:
-- Use Maven command to detect installation location
-- Verify Maven is accessible from command line
-- If Maven is not found, inform user
+- Detect Maven installation location
+- If Maven is not found, inform user and stop
 
-### Step 2: Set MAVEN_HOME Environment Variable
+### Step 3: Check Current Configuration (Idempotency)
+
+Before making changes:
+- Check if MAVEN_HOME is already set to the correct path
+- Check if Maven bin directory is already in PATH
+- If both are correctly configured, inform user: "Maven environment variables are already configured correctly. No changes needed." and stop.
+
+### Step 4: Set MAVEN_HOME Environment Variable
 
 Configure the MAVEN_HOME environment variable:
 - Point to the Maven installation directory
 - Use user-level environment variable (not system-level)
-- Check if already correctly configured (idempotent)
 
-### Step 3: Add Maven to PATH
+### Step 5: Add Maven to PATH
 
 Ensure Maven's bin directory is in the system PATH:
 - Add MAVEN_HOME/bin to PATH
 - Avoid duplicate entries
-- Use appropriate path separator for the platform
 
-### Step 4: Configure settings.xml
-
-Create or update Maven settings.xml file:
-
-**Location:**
-- macOS/Linux: `~/.m2/settings.xml`
-- Windows: `%USERPROFILE%\.m2\settings.xml`
-
-**Configuration elements:**
-
-1. **Local Repository** (if `local_repo` is provided):
-   - Set custom local repository path
-   - If not provided, use Maven default (~/.m2/repository)
-
-2. **Mirror Configuration** (if `nexus_url` is provided):
-   - Configure internal Nexus repository as mirror
-   - Set mirrorOf to "*" to use for all artifacts
-   - Use company's Nexus URL
-
-3. **Server Credentials** (if Nexus is configured):
-   - Reference environment variables for credentials (NEXUS_USER, NEXUS_PASS)
-   - Do not hardcode credentials in settings.xml
-
-### Step 5: Verify Configuration
+### Step 6: Verify Configuration
 
 After configuration:
-- Verify Maven is accessible: run Maven version command
-- Confirm MAVEN_HOME is correctly set
-- Confirm settings.xml is valid XML and properly configured
+- Verify MAVEN_HOME is correctly set
+- Verify Maven command is accessible
 
-### Step 6: Inform User
+### Step 7: Inform User
 
-- Confirm Maven has been configured successfully
-- Provide summary of configured settings
+- Confirm Maven environment variables have been configured
 - Remind user that terminal restart may be required
-- Explain how to verify the configuration
 
 ## Constraints
 
-- Only responsible for environment variables and settings.xml configuration, not Maven installation
-- Idempotent: check if correctly configured, do not rewrite if already set properly
-- Do not hardcode credentials - always use environment variable references
-- Use company's default Nexus URL if not specified
-- Local repository path should use platform-appropriate path format
+- **Single Responsibility**: Only configures environment variables (MAVEN_HOME and PATH). Does not configure settings.xml or repositories.
+- **Idempotent**: Check first, configure only if needed. If already configured correctly, do nothing.
+- **Prerequisite Check**: If prerequisites are not met, inform user and stop. Do not attempt partial configuration.
+- User-level environment variables only
 
 ## Error Handling
 
-- **Maven not found**: Inform user to install Maven first or provide the installation path
-- **JAVA_HOME not set**: Inform user that Java must be configured first, suggest using `env-configure-java`
-- **settings.xml write error**: Inform user about file permissions issue
-- **Invalid Nexus URL**: If provided URL is invalid format, warn user but still configure
+- **Maven not installed**: "Maven is not installed or not accessible. Please install Maven first or provide the installation path."
+- **JAVA_HOME not set**: "JAVA_HOME is not configured. Please use env-configure-java skill first."
+- **Already configured**: "Maven environment variables are already configured correctly. No action needed."
 
 ## Related Skills
 
-- `env-configure-java` - Configure Java environment (prerequisite for Maven)
-- `env-configure-path` - Generic path configuration alternative
+- `env-configure-java` - Configure Java environment (prerequisite)
+- `env-configure-path` - Generic path configuration
