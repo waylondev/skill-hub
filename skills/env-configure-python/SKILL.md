@@ -1,7 +1,7 @@
 ---
 name: env-configure-python
 description: >-
-  该 Skill 在用户要求"配置 Python 环境变量"、"设置 Python 环境变量"时使用。
+  Use this skill when the user wants to configure Python environment variables or set up Python environment variables.
 version: 1.0.0
 displayName: 配置 Python 环境变量
 domain: env
@@ -21,8 +21,7 @@ inputs:
 Python 已安装完成，需要配置环境变量时使用。
 
 ## 前置条件
-- Python 已安装（通过 Software Center 或其他方式）
-- 如未安装，先使用 sn-request-software + swc-install-package
+- Python 已安装
 
 ## 执行步骤
 1. 检测 Python 安装路径：
@@ -30,7 +29,6 @@ Python 已安装完成，需要配置环境变量时使用。
    which python3  # macOS / Linux
    where python   # Windows
    ```
-   如指定了 {{python_install_path}} 则直接使用。
 
 2. 配置环境变量：
 

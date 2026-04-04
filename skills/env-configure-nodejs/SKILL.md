@@ -1,7 +1,7 @@
 ---
 name: env-configure-nodejs
 description: >-
-  该 Skill 在用户要求"配置 Node.js 环境变量"、"设置 Node 环境变量"时使用。
+  Use this skill when the user wants to configure Node.js environment variables or set up Node environment variables.
 version: 1.0.0
 displayName: 配置 Node.js 环境变量
 domain: env
@@ -21,8 +21,7 @@ inputs:
 Node.js 已安装完成，需要配置环境变量时使用。
 
 ## 前置条件
-- Node.js 已安装（通过 Software Center 或其他方式）
-- 如未安装，先使用 sn-request-software + swc-install-package
+- Node.js 已安装
 
 ## 执行步骤
 1. 检测 Node.js 安装路径：
@@ -30,7 +29,6 @@ Node.js 已安装完成，需要配置环境变量时使用。
    which node  # macOS / Linux
    where node  # Windows
    ```
-   如指定了 {{node_install_path}} 则直接使用。
 
 2. 配置环境变量：
 
@@ -52,4 +50,3 @@ Node.js 已安装完成，需要配置环境变量时使用。
 - 只负责环境变量配置，不负责安装 Node.js
 - 配置完成后需要重启终端或重新登录生效
 - 幂等：已配置则检查是否正确，不重复写入
-- npm 镜像配置请使用 env-configure-npm Skill

@@ -1,7 +1,7 @@
 ---
 name: env-configure-maven
 description: >-
-  该 Skill 在用户要求"配置 Maven 环境变量"、"配置 MAVEN_HOME"、"设置 Maven settings.xml"时使用。
+  Use this skill when the user wants to configure Maven environment variables, set up MAVEN_HOME, or configure Maven settings.xml.
 version: 1.0.0
 displayName: 配置 Maven 环境变量和 settings.xml
 domain: env
@@ -25,7 +25,7 @@ inputs:
 Maven 已安装完成，需要配置环境变量和 settings.xml 时使用。
 
 ## 前置条件
-- Maven 已安装（通常随 JDK 一起）
+- Maven 已安装
 - Java 已安装并配置好环境变量
 
 ## 执行步骤
@@ -33,7 +33,6 @@ Maven 已安装完成，需要配置环境变量和 settings.xml 时使用。
    ```bash
    mvn --version
    ```
-   如指定了 {{maven_home}} 则直接使用。
 
 2. 配置环境变量：
 
@@ -75,11 +74,8 @@ Maven 已安装完成，需要配置环境变量和 settings.xml 时使用。
 4. 验证：
    ```bash
    mvn --version
-   echo $MAVEN_HOME  # macOS / Linux
-   echo %MAVEN_HOME% # Windows
    ```
 
 ## 约束
 - 只负责环境变量和 settings.xml 配置
-- 需要先配置好 nexus-configure-maven 的 Nexus 镜像
 - 幂等：已配置则检查是否正确，不重复写入
