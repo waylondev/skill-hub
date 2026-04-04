@@ -4,72 +4,78 @@ skills:
   - name: env-configure-gh
     path: skills/env-configure-gh
     version: 1.0.0
-    title: 配置 GitHub CLI
+    title: Configure GitHub CLI
     domain: env
     tags: [env, github, cli, gh, scm]
   - name: env-configure-git
     path: skills/env-configure-git
     version: 1.0.0
-    title: 配置 Git
+    title: Configure Git
     domain: env
     tags: [env, git, scm, config]
   - name: env-configure-gradle
     path: skills/env-configure-gradle
     version: 1.0.0
-    title: 配置 Gradle
+    title: Configure Gradle
     domain: env
     tags: [env, gradle, java, build, config]
   - name: env-configure-java
     path: skills/env-configure-java
     version: 1.0.0
-    title: 配置 Java 环境变量
+    title: Configure Java Environment Variables
     domain: env
     tags: [env, java, jdk, config]
   - name: env-configure-maven
     path: skills/env-configure-maven
     version: 1.0.0
-    title: 配置 Maven 环境变量和 settings.xml
+    title: Configure Maven Environment Variables and settings.xml
     domain: env
     tags: [env, maven, java, config, settings]
   - name: env-configure-nodejs
     path: skills/env-configure-nodejs
     version: 1.0.0
-    title: 配置 Node.js 环境变量
+    title: Configure Node.js Environment Variables
     domain: env
     tags: [env, nodejs, node, npm, config]
   - name: env-configure-npm
     path: skills/env-configure-npm
     version: 1.0.0
-    title: 配置 npm 内部 Nexus 镜像
+    title: Configure npm Internal Nexus Mirror
     domain: env
     tags: [env, npm, nodejs, config, registry]
+  - name: env-configure-path
+    path: skills/env-configure-path
+    version: 1.0.0
+    title: Configure Environment Variable Paths
+    domain: env
+    tags: [env, path, environment, variable, config]
   - name: env-configure-pnpm
     path: skills/env-configure-pnpm
     version: 1.0.0
-    title: 配置 pnpm
+    title: Configure pnpm
     domain: env
     tags: [env, pnpm, package, config]
   - name: env-configure-python
     path: skills/env-configure-python
     version: 1.0.0
-    title: 配置 Python 环境变量
+    title: Configure Python Environment Variables
     domain: env
     tags: [env, python, config]
   - name: sn-request-ad-group
     path: skills/sn-request-ad-group
     version: 1.0.0
-    title: ServiceNow 申请 AD 组权限
+    title: ServiceNow Request AD Group Permission
     domain: sn
     tags: [servicenow, ad, active-directory, permission, group]
   - name: sn-request-software
     path: skills/sn-request-software
     version: 1.0.0
-    title: ServiceNow 申请软件
+    title: ServiceNow Request Software
     domain: sn
     tags: [servicenow, software, apply, install]
   - name: swc-install-package
     path: skills/swc-install-package
     version: 1.0.0
-    title: Software Center 安装软件
+    title: Software Center Install Software
     domain: swc
     tags: [software-center, install, package]
