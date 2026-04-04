@@ -105,19 +105,30 @@ Organize search results:
 - Format in a clear, readable structure
 - Include the search URL for reference
 
-### Step 8: Clean Up
+### Step 8: Open Result in Browser (If User Selects)
 
-After extracting results:
-- Close browser if opened
+If user selects a specific search result to view:
+- **Extract the result URL** from the search results
+- **Use system command to open browser** based on platform:
+  - **Windows**: `start <result_url>`
+  - **macOS**: `open <result_url>`
+  - **Linux**: `xdg-open <result_url>`
+- **Alternative**: If system commands are not available, provide clickable link
+- **Wait for browser to launch** and verify page loads
+
+### Step 9: Clean Up
+
+After completing the task:
+- Close browser if it was opened programmatically (optional, based on user preference)
 - Clean up any temporary resources
 - Ensure no processes left running
 
-### Step 9: Inform User
+### Step 10: Inform User
 
 Present results to user:
 - Display formatted search results
 - Provide summary statistics
-- Offer to open any specific result URL
+- **Confirm if browser was opened successfully**
 - Mention if any errors or limitations encountered
 
 ## Constraints
@@ -141,6 +152,8 @@ Present results to user:
 - **Results extraction failed**: "Failed to extract search results. The page structure may have changed."
 - **Access blocked**: "Access to Baidu.com is blocked or restricted from your network."
 - **Tool execution failed**: "The automation tool encountered an error. Trying alternative approach..."
+- **Browser open failed**: "Unable to open browser automatically. You can manually open the result at: <result_url>"
+- **System command not available**: "System command to open browser is not available on this platform. Please open the link manually."
 
 ## Related Skills
 
@@ -169,6 +182,22 @@ Result: Returns top 10 search results
 User: "I need to research React hooks best practices"
 AI: Uses web-search-baidu with query="React hooks best practices"
 Result: Returns relevant articles and documentation links
+```
+
+**Example 4: Open Search Result**
+```
+User: "Search for AI tutorial and open the first result"
+AI: Uses web-search-baidu to search, then opens browser with first result
+Result: Opens the top search result URL in user's default browser
+```
+
+**Example 5: Interactive Search**
+```
+User: "Search for Python tutorials"
+AI: Shows search results with numbered list
+User: "Open result 2"
+AI: Opens the 2nd search result URL in browser automatically
+Result: Browser launches and displays the selected webpage
 ```
 
 ## Implementation Notes

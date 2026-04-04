@@ -119,19 +119,30 @@ Organize trending videos:
 - Include the trending page URL for reference
 - Optionally include thumbnail images if supported
 
-### Step 7: Clean Up
+### Step 7: Open Video in Browser (If User Selects)
 
-After extracting results:
-- Close browser if opened
+If user selects a specific video to watch:
+- **Extract the video URL** from the trending list
+- **Use system command to open browser** based on platform:
+  - **Windows**: `start <video_url>`
+  - **macOS**: `open <video_url>`
+  - **Linux**: `xdg-open <video_url>`
+- **Alternative**: If system commands are not available, provide clickable link
+- **Wait for browser to launch** and verify page loads
+
+### Step 8: Clean Up
+
+After completing the task:
+- Close browser if it was opened programmatically (optional, based on user preference)
 - Clean up any temporary resources
 - Ensure no processes left running
 
-### Step 8: Inform User
+### Step 9: Inform User
 
 Present results to user:
 - Display formatted trending videos list
 - Provide summary statistics (total views, top category, etc.)
-- Offer to open any specific video URL
+- **Confirm if browser was opened successfully**
 - Mention if any errors or limitations encountered
 - Suggest related categories if user wants to explore more
 
@@ -158,6 +169,8 @@ Present results to user:
 - **Access blocked**: "Access to Bilibili.com is blocked or restricted from your network."
 - **Tool execution failed**: "The automation tool encountered an error. Trying alternative approach..."
 - **Region restriction**: "Bilibili trending may not be available in your region. Consider using a different region setting."
+- **Browser open failed**: "Unable to open browser automatically. You can manually open the video at: <video_url>"
+- **System command not available**: "System command to open browser is not available on this platform. Please open the link manually."
 
 ## Related Skills
 
@@ -193,6 +206,22 @@ Result: Returns top 20 trending videos for the week
 User: "I want to discover new content on Bilibili"
 AI: Uses web-bilibili-trending to show trending videos
 Result: Returns diverse trending content across categories
+```
+
+**Example 5: Open Specific Video**
+```
+User: "Show me trending videos, I want to watch the first one"
+AI: Uses web-bilibili-trending to get trending list, then opens browser
+Result: Opens the #1 trending video URL in user's default browser
+```
+
+**Example 6: Interactive Browsing**
+```
+User: "What's trending on Bilibili?"
+AI: Shows trending list with numbered videos
+User: "Open video 3"
+AI: Opens the 3rd video URL in browser automatically
+Result: Browser launches and plays the selected video
 ```
 
 ## Implementation Notes
