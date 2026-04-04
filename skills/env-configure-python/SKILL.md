@@ -3,7 +3,7 @@ name: env-configure-python
 description: >-
   Use this skill when the user wants to configure Python environment variables or set up Python environment variables.
 version: 1.0.0
-displayName: 配置 Python 环境变量
+displayName: Configure Python Environment Variables
 domain: env
 action: configure
 object: python
@@ -13,26 +13,26 @@ inputs:
   - name: python_install_path
     type: string
     required: false
-    description: Python 安装路径（如不指定则自动检测）
+    description: Python installation path (auto-detect if not specified)
 ---
-# 配置 Python 环境变量
+# Configure Python Environment Variables
 
-## 触发条件
-Python 已安装完成，需要配置环境变量时使用。
+## Trigger Conditions
+Use when Python is installed and environment variables need to be configured.
 
-## 前置条件
-- Python 已安装
+## Prerequisites
+- Python is installed
 
-## 执行步骤
-1. 检测 Python 安装路径：
+## Execution Steps
+1. Detect Python installation path:
    ```bash
    which python3  # macOS / Linux
    where python   # Windows
    ```
 
-2. 配置环境变量：
+2. Configure environment variables:
 
-   **macOS / Linux**（写入 ~/.bashrc 或 ~/.zshrc）：
+   **macOS / Linux** (write to ~/.bashrc or ~/.zshrc):
    ```bash
    export PATH={{python_install_path}}:$PATH
    export PATH={{python_install_path}}/Scripts:$PATH
@@ -40,17 +40,17 @@ Python 已安装完成，需要配置环境变量时使用。
    alias pip=pip3
    ```
 
-   **Windows**（系统环境变量）：
-   - Path 添加 {{python_install_path}}
-   - Path 添加 {{python_install_path}}\Scripts
+   **Windows** (system environment variables):
+   - Add {{python_install_path}} to Path
+   - Add {{python_install_path}}\Scripts to Path
 
-3. 验证：
+3. Verify:
    ```bash
    python --version
    pip --version
    ```
 
-## 约束
-- 只负责环境变量配置，不负责安装 Python
-- 配置完成后需要重启终端生效
-- 幂等：已配置则检查是否正确，不重复写入
+## Constraints
+- Only responsible for environment variable configuration, not Python installation
+- Requires terminal restart to take effect after configuration
+- Idempotent: check if correctly configured if already set, do not rewrite

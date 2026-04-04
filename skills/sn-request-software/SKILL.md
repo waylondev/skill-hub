@@ -3,7 +3,7 @@ name: sn-request-software
 description: >-
   Use this skill when the user wants to request software installation (Java, IDE, Node.js, etc.) via ServiceNow.
 version: 1.0.0
-displayName: ServiceNow 申请软件
+displayName: ServiceNow Request Software
 domain: sn
 action: request
 object: software
@@ -13,36 +13,36 @@ inputs:
   - name: software_name
     type: string
     required: true
-    description: 软件名称
+    description: Software name
   - name: applicant
     type: string
     required: true
-    description: 申请人姓名或工号
+    description: Applicant name or employee ID
   - name: reason
     type: string
     required: true
-    description: 申请理由
+    description: Application reason
   - name: version
     type: string
     required: false
-    description: 指定版本（可选）
+    description: Specified version (optional)
 ---
-# ServiceNow 申请软件
+# ServiceNow Request Software
 
-在 ServiceNow 提交软件安装申请，审批通过后推送到 Software Center。
+Submit software installation application in ServiceNow, which will be pushed to Software Center after approval.
 
-## 前置条件
-- 软件必须是公司 Software Center 提供的
-- 如未提供，先确认软件是否在可用列表中
+## Prerequisites
+- Software must be provided by company Software Center
+- If not provided, confirm whether software is in available list first
 
-## 执行步骤
-1. 确认申请信息：{{software_name}}，申请人 {{applicant}}，版本 {{version}}
-2. 检查是否已申请过，避免重复
-3. 如未申请，在 ServiceNow 提交新申请
-4. 填写申请信息并提交
-5. 告知用户审批流程和时间
+## Execution Steps
+1. Confirm application information: {{software_name}}, applicant {{applicant}}, version {{version}}
+2. Check if already applied to avoid duplication
+3. If not applied, submit new application in ServiceNow
+4. Fill in application information and submit
+5. Inform user of approval process and time
 
-## 约束
-- 只负责 ServiceNow 申请，不负责安装
-- 幂等：已申请则告知状态，不重复提交
-- 审批时间：1-2 个工作日
+## Constraints
+- Only responsible for ServiceNow application, not installation
+- Idempotent: inform status if already applied, do not resubmit
+- Approval time: 1-2 business days

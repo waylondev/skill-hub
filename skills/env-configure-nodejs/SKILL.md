@@ -3,7 +3,7 @@ name: env-configure-nodejs
 description: >-
   Use this skill when the user wants to configure Node.js environment variables or set up Node environment variables.
 version: 1.0.0
-displayName: 配置 Node.js 环境变量
+displayName: Configure Node.js Environment Variables
 domain: env
 action: configure
 object: nodejs
@@ -13,40 +13,40 @@ inputs:
   - name: node_install_path
     type: string
     required: false
-    description: Node.js 安装路径（如不指定则自动检测）
+    description: Node.js installation path (auto-detect if not specified)
 ---
-# 配置 Node.js 环境变量
+# Configure Node.js Environment Variables
 
-## 触发条件
-Node.js 已安装完成，需要配置环境变量时使用。
+## Trigger Conditions
+Use when Node.js is installed and environment variables need to be configured.
 
-## 前置条件
-- Node.js 已安装
+## Prerequisites
+- Node.js is installed
 
-## 执行步骤
-1. 检测 Node.js 安装路径：
+## Execution Steps
+1. Detect Node.js installation path:
    ```bash
    which node  # macOS / Linux
    where node  # Windows
    ```
 
-2. 配置环境变量：
+2. Configure environment variables:
 
-   **macOS / Linux**（写入 ~/.bashrc 或 ~/.zshrc）：
+   **macOS / Linux** (write to ~/.bashrc or ~/.zshrc):
    ```bash
    export PATH={{node_install_path}}/bin:$PATH
    ```
 
-   **Windows**（系统环境变量）：
-   - Path 添加 {{node_install_path}}
+   **Windows** (system environment variables):
+   - Add {{node_install_path}} to Path
 
-3. 验证：
+3. Verify:
    ```bash
    node --version
    npm --version
    ```
 
-## 约束
-- 只负责环境变量配置，不负责安装 Node.js
-- 配置完成后需要重启终端或重新登录生效
-- 幂等：已配置则检查是否正确，不重复写入
+## Constraints
+- Only responsible for environment variable configuration, not Node.js installation
+- Requires terminal restart or re-login to take effect after configuration
+- Idempotent: check if correctly configured if already set, do not rewrite

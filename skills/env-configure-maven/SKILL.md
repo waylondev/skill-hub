@@ -3,7 +3,7 @@ name: env-configure-maven
 description: >-
   Use this skill when the user wants to configure Maven environment variables, set up MAVEN_HOME, or configure Maven settings.xml.
 version: 1.0.0
-displayName: 配置 Maven 环境变量和 settings.xml
+displayName: Configure Maven Environment Variables and settings.xml
 domain: env
 action: configure
 object: maven
@@ -13,42 +13,42 @@ inputs:
   - name: maven_home
     type: string
     required: false
-    description: Maven 安装路径（如不指定则自动检测）
+    description: Maven installation path (auto-detect if not specified)
   - name: local_repo
     type: string
     required: false
-    description: Maven 本地仓库路径（如不指定则使用默认路径）
+    description: Maven local repository path (use default path if not specified)
 ---
-# 配置 Maven 环境变量和 settings.xml
+# Configure Maven Environment Variables and settings.xml
 
-## 触发条件
-Maven 已安装完成，需要配置环境变量和 settings.xml 时使用。
+## Trigger Conditions
+Use when Maven is installed and environment variables and settings.xml need to be configured.
 
-## 前置条件
-- Maven 已安装
-- Java 已安装并配置好环境变量
+## Prerequisites
+- Maven is installed
+- Java is installed and environment variables are configured
 
-## 执行步骤
-1. 检测 Maven 安装路径：
+## Execution Steps
+1. Detect Maven installation path:
    ```bash
    mvn --version
    ```
 
-2. 配置环境变量：
+2. Configure environment variables:
 
-   **macOS / Linux**（写入 ~/.bashrc 或 ~/.zshrc）：
+   **macOS / Linux** (write to ~/.bashrc or ~/.zshrc):
    ```bash
    export MAVEN_HOME={{maven_home}}
    export PATH=$MAVEN_HOME/bin:$PATH
    ```
 
-   **Windows**（系统环境变量）：
+   **Windows** (system environment variables):
    - MAVEN_HOME → {{maven_home}}
-   - Path 添加 %MAVEN_HOME%\bin
+   - Add %MAVEN_HOME%\bin to Path
 
-3. 配置 settings.xml：
+3. Configure settings.xml:
 
-   位置：~/.m2/settings.xml（macOS / Linux）或 %USERPROFILE%\.m2\settings.xml（Windows）
+   Location: ~/.m2/settings.xml (macOS / Linux) or %USERPROFILE%\.m2\settings.xml (Windows)
 
    ```xml
    <settings>
@@ -71,11 +71,11 @@ Maven 已安装完成，需要配置环境变量和 settings.xml 时使用。
    </settings>
    ```
 
-4. 验证：
+4. Verify:
    ```bash
    mvn --version
    ```
 
-## 约束
-- 只负责环境变量和 settings.xml 配置
-- 幂等：已配置则检查是否正确，不重复写入
+## Constraints
+- Only responsible for environment variables and settings.xml configuration
+- Idempotent: check if correctly configured if already set, do not rewrite

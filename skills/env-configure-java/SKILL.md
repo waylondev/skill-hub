@@ -3,7 +3,7 @@ name: env-configure-java
 description: >-
   Use this skill when the user wants to configure Java environment variables, set up JAVA_HOME, or configure JDK environment variables.
 version: 1.0.0
-displayName: 配置 Java 环境变量
+displayName: Configure Java Environment Variables
 domain: env
 action: configure
 object: java
@@ -13,41 +13,41 @@ inputs:
   - name: java_home
     type: string
     required: false
-    description: Java 安装路径（如不指定则自动检测）
+    description: Java installation path (auto-detect if not specified)
 ---
-# 配置 Java 环境变量
+# Configure Java Environment Variables
 
-## 触发条件
-Java 已安装完成，需要配置环境变量时使用。
+## Trigger Conditions
+Use when Java is installed and environment variables need to be configured.
 
-## 前置条件
-- Java 已安装
+## Prerequisites
+- Java is installed
 
-## 执行步骤
-1. 检测 Java 安装路径：
+## Execution Steps
+1. Detect Java installation path:
    ```bash
    /usr/libexec/java_home -V 2>/dev/null   # macOS
    ls /usr/lib/jvm/                           # Linux
    ```
 
-2. 配置环境变量：
+2. Configure environment variables:
 
-   **macOS / Linux**（写入 ~/.bashrc 或 ~/.zshrc）：
+   **macOS / Linux** (write to ~/.bashrc or ~/.zshrc):
    ```bash
    export JAVA_HOME={{java_home}}
    export PATH=$JAVA_HOME/bin:$PATH
    ```
 
-   **Windows**（系统环境变量）：
+   **Windows** (system environment variables):
    - JAVA_HOME → {{java_home}}
-   - Path 添加 %JAVA_HOME%\bin
+   - Add %JAVA_HOME%\bin to Path
 
-3. 验证：
+3. Verify:
    ```bash
    java -version
    echo $JAVA_HOME
    ```
 
-## 约束
-- 只负责环境变量配置，不负责安装 Java
-- 幂等：已配置则检查是否正确，不重复写入
+## Constraints
+- Only responsible for environment variable configuration, not Java installation
+- Idempotent: check if correctly configured if already set, do not rewrite

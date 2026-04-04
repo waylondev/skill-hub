@@ -3,7 +3,7 @@ name: env-configure-gh
 description: >-
   Use this skill when the user wants to configure GitHub CLI, set up gh, or configure GitHub command-line tool.
 version: 1.0.0
-displayName: 配置 GitHub CLI
+displayName: Configure GitHub CLI
 domain: env
 action: configure
 object: gh
@@ -13,39 +13,39 @@ inputs:
   - name: github_host
     type: string
     required: false
-    description: GitHub 服务器地址（企业版使用，默认 github.com）
+    description: GitHub server address (for enterprise edition, default is github.com)
   - name: auth_method
     type: string
     required: false
-    description: 认证方式：browser 或 token
+    description: Authentication method - browser or token
 ---
-# 配置 GitHub CLI
+# Configure GitHub CLI
 
-## 触发条件
-需要配置 GitHub CLI (gh) 用于命令行操作 GitHub 时使用。
+## Trigger Conditions
+Use when configuring GitHub CLI (gh) for command-line GitHub operations.
 
-## 前置条件
-- Git 已配置
-- GitHub CLI 已安装
+## Prerequisites
+- Git is configured
+- GitHub CLI is installed
 
-## 执行步骤
-1. 确认安装状态：
+## Execution Steps
+1. Check installation status:
    ```bash
    gh --version
    ```
 
-2. 认证登录：
+2. Authenticate and login:
    ```bash
    gh auth login
    ```
 
-3. 验证认证状态：
+3. Verify authentication status:
    ```bash
    gh auth status
    ```
 
-## 约束
-- 只负责 GitHub CLI 配置，不负责安装
-- 需要 GitHub 账号
-- 企业版需要使用正确的 GitHub Enterprise URL
-- 幂等：已配置则检查是否正确，不重复配置
+## Constraints
+- Only responsible for GitHub CLI configuration, not installation
+- Requires GitHub account
+- Enterprise edition needs correct GitHub Enterprise URL
+- Idempotent: check if correctly configured if already set, do not reconfigure

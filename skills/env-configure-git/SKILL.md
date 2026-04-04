@@ -3,7 +3,7 @@ name: env-configure-git
 description: >-
   Use this skill when the user wants to configure Git, set up Git username, or configure Git email.
 version: 1.0.0
-displayName: 配置 Git
+displayName: Configure Git
 domain: env
 action: configure
 object: git
@@ -13,58 +13,58 @@ inputs:
   - name: user_name
     type: string
     required: true
-    description: Git 用户名
+    description: Git username
   - name: user_email
     type: string
     required: true
-    description: Git 邮箱
+    description: Git email
   - name: default_branch
     type: string
     required: false
-    description: 默认分支名称（如不指定则使用系统默认）
+    description: Default branch name (use system default if not specified)
 ---
-# 配置 Git
+# Configure Git
 
-## 触发条件
-Git 已安装完成，需要配置用户名、邮箱等基本设置时使用。
+## Trigger Conditions
+Use when Git is installed and needs to be configured with username, email, and other basic settings.
 
-## 前置条件
-- Git 已安装
+## Prerequisites
+- Git is installed
 
-## 执行步骤
-1. 配置用户名和邮箱：
+## Execution Steps
+1. Configure username and email:
    ```bash
    git config --global user.name "{{user_name}}"
    git config --global user.email "{{user_email}}"
    ```
 
-2. 配置默认分支名称（可选）：
+2. Configure default branch name (optional):
    ```bash
    git config --global init.defaultBranch {{default_branch}}
    ```
 
-3. 配置凭证助手：
-   **Windows (PowerShell)：**
+3. Configure credential helper:
+   **Windows (PowerShell):**
    ```powershell
    git config --global credential.helper manager-core
    ```
 
-   **macOS：**
+   **macOS:**
    ```bash
    git config --global credential.helper osxkeychain
    ```
 
-   **Linux：**
+   **Linux:**
    ```bash
    git config --global credential.helper store
    ```
 
-4. 验证配置：
+4. Verify configuration:
    ```bash
    git config --global --list
    ```
 
-## 约束
-- 只负责 Git 配置，不负责安装 Git
-- 邮箱必须是公司邮箱
-- 幂等：已配置则检查是否正确，不重复配置
+## Constraints
+- Only responsible for Git configuration, not installation
+- Email must be company email
+- Idempotent: check if correctly configured if already set, do not reconfigure

@@ -3,7 +3,7 @@ name: env-configure-gradle
 description: >-
   Use this skill when the user wants to configure Gradle, set up GRADLE_HOME, or configure Gradle environment variables.
 version: 1.0.0
-displayName: 配置 Gradle
+displayName: Configure Gradle
 domain: env
 action: configure
 object: gradle
@@ -13,24 +13,24 @@ inputs:
   - name: gradle_version
     type: string
     required: false
-    description: Gradle 版本号（如不指定则使用已安装版本）
+    description: Gradle version (use installed version if not specified)
   - name: gradle_home
     type: string
     required: false
-    description: Gradle 安装路径（如不指定则自动检测）
+    description: Gradle installation path (auto-detect if not specified)
 ---
-# 配置 Gradle
+# Configure Gradle
 
-## 触发条件
-需要配置 Gradle 构建工具时使用。
+## Trigger Conditions
+Use when configuring Gradle build tool.
 
-## 前置条件
-- Java 已配置
-- Gradle 已安装
+## Prerequisites
+- Java is configured
+- Gradle is installed
 
-## 执行步骤
-1. 设置 GRADLE_HOME 和 PATH：
-   **Windows：**
+## Execution Steps
+1. Set GRADLE_HOME and PATH:
+   **Windows:**
    ```powershell
    [Environment]::SetEnvironmentVariable("GRADLE_HOME", "{{gradle_home}}", "User")
    [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";%GRADLE_HOME%\bin", "User")
@@ -38,7 +38,7 @@ inputs:
    $env:Path += ";$env:GRADLE_HOME\bin"
    ```
 
-   **macOS / Linux (Bash)：**
+   **macOS / Linux (Bash):**
    ```bash
    echo 'export GRADLE_HOME={{gradle_home}}' >> ~/.bashrc
    echo 'export PATH=$GRADLE_HOME/bin:$PATH' >> ~/.bashrc
@@ -46,8 +46,8 @@ inputs:
    export PATH=$GRADLE_HOME/bin:$PATH
    ```
 
-2. 配置 Gradle Init 脚本（使用内部 Nexus）：
-   创建 `GRADLE_USER_HOME/init.gradle` 文件（默认 `~/.gradle/init.gradle`）：
+2. Configure Gradle Init script (using internal Nexus):
+   Create `GRADLE_USER_HOME/init.gradle` file (default `~/.gradle/init.gradle`):
    ```groovy
    allprojects {
        repositories {
@@ -64,12 +64,12 @@ inputs:
    }
    ```
 
-3. 验证安装：
+3. Verify installation:
    ```bash
    gradle --version
    ```
 
-## 约束
-- 只负责 Gradle 配置，不负责安装
-- 需要兼容的 Java 版本
-- 幂等：已配置则检查是否正确，不重复配置
+## Constraints
+- Only responsible for Gradle configuration, not installation
+- Requires compatible Java version
+- Idempotent: check if correctly configured if already set, do not reconfigure
