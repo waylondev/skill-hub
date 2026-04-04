@@ -61,6 +61,12 @@ skills:
     title: Configure Python Environment Variables
     domain: env
     tags: [env, python, config]
+  - name: env-configure-confluence-cli
+    path: skills/env-configure-confluence-cli
+    version: 1.0.0
+    title: Configure Confluence CLI
+    domain: env
+    tags: [env, confluence, cli, config, internal]
   - name: sn-request-ad-group
     path: skills/sn-request-ad-group
     version: 1.0.0
