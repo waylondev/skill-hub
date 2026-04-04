@@ -35,7 +35,7 @@ Use this Skill when:
 
 ## Prerequisites
 
-- Confluence CLI is installed (via npm install -g confluence-cli)
+- Confluence CLI is installed
 - User has valid Confluence account and API token
 - User has network access to internal Confluence instance
 

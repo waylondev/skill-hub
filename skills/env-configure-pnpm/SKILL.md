@@ -97,7 +97,7 @@ After configuration:
 
 ## Error Handling
 
-- **pnpm not found**: Inform user to install pnpm first (can install via npm install -g pnpm)
+- **pnpm not found**: Inform user to install pnpm first
 - **Registry unreachable**: If provided registry cannot be accessed, inform user to check network settings
 - **Store directory not writable**: If cannot write to store directory, suggest alternative location
 - **Configuration file locked**: If .npmrc cannot be written, inform user about file permissions
