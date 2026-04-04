@@ -91,5 +91,4 @@ After configuration:
 
 ## Related Skills
 
-- `env-configure-pip` - Configure pip registry (separate responsibility, if needed)
 - `env-configure-path` - Generic path configuration alternative

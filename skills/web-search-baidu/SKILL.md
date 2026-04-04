@@ -147,9 +147,8 @@ Present results to user:
 
 ## Related Skills
 
-- `web-search-google` - Search on Google (if available)
-- `web-search-bing` - Search on Bing (if available)
-- `web-scrape-page` - Scrape content from a specific webpage
+- Other search engine skills (if available) - Search on Google, Bing, etc.
+- Web scraping skills (if available) - Scrape content from specific webpages
 
 ## Example Usage
 

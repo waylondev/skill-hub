@@ -167,8 +167,8 @@ Present results to user:
 ## Related Skills
 
 - `web-search-baidu` - Search for specific content on Baidu
-- `web-browse-page` - Browse any specific webpage
-- `web-scrape-page` - Scrape detailed content from a specific page
+- Other web browsing skills (if available) - Browse specific webpages
+- Web scraping skills (if available) - Scrape detailed content from pages
 
 ## Example Usage
 
