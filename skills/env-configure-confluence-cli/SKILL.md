@@ -65,10 +65,10 @@ Before making changes:
 ### Step 4: Initialize Confluence CLI
 
 Configure Confluence CLI environment:
-- Run Confluence CLI initialization command (e.g., `confluence init` or equivalent)
+- Run Confluence CLI initialization
 - Configure the internal host URL in Confluence CLI configuration
 - Configure the authentication token in Confluence CLI configuration
-- Save configuration to Confluence CLI config file (typically ~/.confluence/config or similar)
+- Save configuration to Confluence CLI config file
 
 ### Step 5: Verify Configuration
 

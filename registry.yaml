@@ -1,4 +1,4 @@
-﻿version: "1.0"
+version: "1.0"
 updated: "2026-04-04"
 skills:
   - name: env-configure-gh
@@ -85,3 +85,9 @@ skills:
     title: Software Center Install Software
     domain: swc
     tags: [software-center, install, package]
+  - name: web-search-baidu
+    path: skills/web-search-baidu
+    version: 1.0.0
+    title: Baidu Web Search with Playwright
+    domain: web
+    tags: [web, search, baidu, playwright, automation]

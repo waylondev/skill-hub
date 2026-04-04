@@ -55,7 +55,7 @@ Before configuration:
 
 If `registry` parameter is provided:
 - Set the npm registry URL for pnpm
-- Update .npmrc file (pnpm uses npm's configuration)
+- Update configuration file (typically shares npm's configuration)
 - If not provided, use npm's default registry
 
 ### Step 3: Configure Store Directory (Optional)
@@ -92,10 +92,10 @@ After configuration:
 ## Constraints
 
 - Only responsible for pnpm configuration, not installation
-- pnpm uses .npmrc file (same as npm) for configuration
+- pnpm typically shares configuration with npm
 - Idempotent: check if correctly configured, do not rewrite if already set properly
 - Do not hardcode specific registry URLs or paths
-- Configuration applies to both pnpm and npm (shared .npmrc)
+- Configuration typically applies to both pnpm and npm (shared configuration)
 
 ## Error Handling
 

@@ -51,7 +51,7 @@ Before configuration:
 ### Step 2: Authenticate with GitHub
 
 Guide the authentication process:
-- Initiate gh auth login command
+- Initiate GitHub CLI authentication
 - Support both GitHub.com and GitHub Enterprise authentication
 - If `github_host` is provided, configure for Enterprise instance
 - If `auth_method` is 'browser', enable interactive browser authentication
@@ -60,9 +60,9 @@ Guide the authentication process:
 ### Step 3: Configure Git Integration
 
 After authentication:
-- Configure gh to work with Git operations
-- Set up credential helper for Git operations with GitHub
-- Ensure seamless integration between gh and git commands
+- Configure GitHub CLI to work with Git operations
+- Set up credential helper for Git operations with GitHub if needed
+- Ensure seamless integration between GitHub CLI and git commands
 
 ### Step 4: Verify Configuration
 

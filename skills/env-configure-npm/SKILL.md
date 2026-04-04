@@ -53,8 +53,8 @@ Before making changes:
 ### Step 4: Configure npm Registry
 
 Set the npm registry:
-- Use npm config set command or update .npmrc file
-- Apply at user level (~/.npmrc)
+- Use appropriate configuration method for the environment
+- Apply at user level (typically ~/.npmrc or equivalent)
 
 ### Step 5: Verify Configuration
 
