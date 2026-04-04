@@ -35,8 +35,7 @@ Use this Skill when:
 
 - Internet connection is available
 - Baidu.com is accessible from the network
-- Browser or web automation tool is available (Playwright, Puppeteer, Selenium, etc.)
-- Or search API access is available
+- Browser automation capability is available (AI will use appropriate tools)
 
 ## Execution Steps
 
@@ -50,16 +49,15 @@ Before executing:
 
 ### Step 2: Choose Appropriate Tool
 
-Based on available tools and environment, select one:
+Based on available tools and environment, select the most appropriate approach:
+- **Browser automation** (preferred for interactive tasks)
+- **API access** (if available)
+- **HTTP client + HTML parsing** (lightweight)
+- **Manual browser** (fallback - provide links)
 
-- **Option A: Browser Automation** (if available) - Playwright, Puppeteer, Selenium, etc.
-- **Option B: Search API** (if API key available) - Direct API calls
-- **Option C: HTTP Client + HTML Parser** (lightweight) - curl/wget + cheerio/jsoup
-- **Option D: Manual Browser** (fallback) - Open browser and guide user
-
-Select the most appropriate tool based on:
-- What's installed and available
-- User's environment and preferences
+Select based on:
+- What's available in the environment
+- User's needs (interactive vs. data-only)
 - Complexity vs. speed trade-off
 
 ### Step 3: Navigate to Baidu
@@ -109,19 +107,16 @@ Organize search results:
 
 If user selects a specific search result to view:
 - **Extract the result URL** from the search results
-- **Use system command to open browser** based on platform:
-  - **Windows**: `start <result_url>`
-  - **macOS**: `open <result_url>`
-  - **Linux**: `xdg-open <result_url>`
-- **Alternative**: If system commands are not available, provide clickable link
-- **Wait for browser to launch** and verify page loads
+- **Open the result in user's browser**
+- **Keep browser open** for user to view the content
+- **Verify page loads successfully**
 
 ### Step 9: Clean Up
 
 After completing the task:
-- Close browser if it was opened programmatically (optional, based on user preference)
-- Clean up any temporary resources
-- Ensure no processes left running
+- **Do not close browser** - Leave it open for user to view content
+- Clean up any temporary resources (if any were created)
+- Ensure no background processes left running
 
 ### Step 10: Inform User
 
@@ -159,7 +154,7 @@ Present results to user:
 
 - `web-search-google` - Search on Google (if available)
 - `web-search-bing` - Search on Bing (if available)
-- `web-scrape-page` - Scrape content from a specific webpage (next step after search)
+- `web-scrape-page` - Scrape content from a specific webpage
 
 ## Example Usage
 
@@ -202,23 +197,21 @@ Result: Browser launches and displays the selected webpage
 
 ## Implementation Notes
 
-**Tool Options** (AI should choose based on availability):
+**Approach**: Use browser automation to perform search on Baidu and extract results.
 
-**Option A: Browser Automation** (Recommended if available)
+**Workflow**:
+1. Navigate to Baidu homepage
+2. Enter search query and submit
+3. Extract search results (title, URL, snippet)
+4. Present results to user in a clear format
+5. If user selects a result, open it in their browser
+6. Keep browser open for user to view
 
-Any browser automation library such as:
-- Playwright (Node.js, Python, .NET, Java)
-- Puppeteer (Node.js)
-- Selenium (Multi-language)
-
-Example workflow:
-```
-1. Launch browser
-2. Navigate to Baidu
-3. Enter search query
-4. Submit and wait for results
-5. Extract and format results
-```
+**Key Points**:
+- Focus on user experience (show browser, don't close automatically)
+- Extract meaningful information (not just URLs)
+- Handle errors gracefully
+- Respect website terms of service
 
 **Option B: Search API** (If available)
 

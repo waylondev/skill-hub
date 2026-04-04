@@ -39,8 +39,7 @@ Use this Skill when:
 
 - Internet connection is available
 - Bilibili.com is accessible from the network
-- Browser or web automation tool is available (Playwright, Puppeteer, Selenium, etc.)
-- Or Bilibili API access is available (optional)
+- Browser automation capability is available (AI will use appropriate tools)
 
 ## Execution Steps
 
@@ -56,16 +55,15 @@ Before executing:
 
 ### Step 2: Choose Appropriate Tool
 
-Based on available tools and environment, select one:
+Based on available tools and environment, select the most appropriate approach:
+- **Browser automation** (preferred for interactive tasks)
+- **API access** (if available)
+- **HTTP client + HTML parsing** (lightweight)
+- **Manual browser** (fallback - provide links)
 
-- **Option A: Browser Automation** (if available) - Playwright, Puppeteer, Selenium, etc.
-- **Option B: Bilibili API** (if available) - Direct API calls to Bilibili open platform
-- **Option C: HTTP Client + HTML Parser** (lightweight) - curl/wget + cheerio/jsoup
-- **Option D: Manual Browser** (fallback) - Open browser and guide user
-
-Select the most appropriate tool based on:
-- What's installed and available
-- User's environment and preferences
+Select based on:
+- What's available in the environment
+- User's needs (interactive vs. data-only)
 - Complexity vs. speed trade-off
 
 ### Step 3: Navigate to Bilibili Trending Page
@@ -123,19 +121,16 @@ Organize trending videos:
 
 If user selects a specific video to watch:
 - **Extract the video URL** from the trending list
-- **Use system command to open browser** based on platform:
-  - **Windows**: `start <video_url>`
-  - **macOS**: `open <video_url>`
-  - **Linux**: `xdg-open <video_url>`
-- **Alternative**: If system commands are not available, provide clickable link
-- **Wait for browser to launch** and verify page loads
+- **Open the video in user's browser**
+- **Keep browser open** for user to watch the video
+- **Verify page loads successfully**
 
 ### Step 8: Clean Up
 
 After completing the task:
-- Close browser if it was opened programmatically (optional, based on user preference)
-- Clean up any temporary resources
-- Ensure no processes left running
+- **Do not close browser** - Leave it open for user to watch video
+- Clean up any temporary resources (if any were created)
+- Ensure no background processes left running
 
 ### Step 9: Inform User
 
@@ -175,8 +170,8 @@ Present results to user:
 ## Related Skills
 
 - `web-search-baidu` - Search for specific content on Baidu
-- `web-browse-page` - Browse any specific webpage (if user has a specific URL)
-- `web-scrape-page` - Scrape detailed content from a specific video page
+- `web-browse-page` - Browse any specific webpage
+- `web-scrape-page` - Scrape detailed content from a specific page
 
 ## Example Usage
 
@@ -226,24 +221,20 @@ Result: Browser launches and plays the selected video
 
 ## Implementation Notes
 
-**Tool Options** (AI should choose based on availability):
+**Approach**: Use browser automation to interact with Bilibili and extract trending videos.
 
-**Option A: Browser Automation** (Recommended if available)
+**Workflow**:
+1. Navigate to Bilibili trending page
+2. Extract video information (title, URL, views, uploader)
+3. Present results to user in a clear format
+4. If user selects a video, open it in their browser
+5. Keep browser open for user to watch
 
-Any browser automation library such as:
-- Playwright (Node.js, Python, .NET, Java)
-- Puppeteer (Node.js)
-- Selenium (Multi-language)
-
-Example workflow:
-```
-1. Launch browser
-2. Navigate to Bilibili trending page
-3. Apply category/time filters if specified
-4. Wait for content to load
-5. Extract video information
-6. Format and return results
-```
+**Key Points**:
+- Focus on user experience (show browser, don't close automatically)
+- Extract meaningful information (not just URLs)
+- Handle errors gracefully
+- Respect website terms of service
 
 **Option B: Bilibili API** (If available)
 
