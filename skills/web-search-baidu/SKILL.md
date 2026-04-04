@@ -65,7 +65,7 @@ Select the most appropriate tool based on:
 ### Step 3: Navigate to Baidu
 
 Using the chosen tool:
-- Open Baidu homepage: `https://www.baidu.com`
+- Open Baidu homepage
 - Wait for page to load completely
 - Verify page is accessible
 
@@ -203,10 +203,8 @@ Direct API calls if you have access to a search API:
 **Option C: HTTP Client + HTML Parser** (Lightweight)
 
 Using command-line tools or libraries:
-```bash
-# Example with curl and a parser
-curl -s "https://www.baidu.com/s?wd=keyword" | parse-html
-```
+- Use HTTP client to fetch the search results page with the query parameter
+- Parse the HTML response to extract search results
 
 **Option D: Manual Browser** (Fallback)
 
@@ -218,18 +216,10 @@ When no automation is available:
 4. Help analyze results
 ```
 
-**CSS Selectors for Baidu** (common selectors, may vary):
-- Search box: `#kw` or `input[name="wd"]`
-- Search button: `#su` or `input[type="submit"]`
-- Results container: `#content_left`
-- Individual result: `.c-container` or `.result`
-- Result title: `h3.t a` or `.c-title`
-- Result URL: `h3.t a[href]`
-- Result snippet: `.c-abstract` or `.content`
-
 **Important**: 
-- Do not hardcode exact selectors - describe intent
-- AI should adapt to page structure changes
+- AI should choose appropriate selectors based on the actual page structure
+- Focus on locating the search input field, submitting the query, and extracting search results
+- Adapt to page structure changes dynamically
 - Focus on readable, user-friendly output
 - Respect robots.txt and terms of service
 - Choose tool based on what's available in the environment

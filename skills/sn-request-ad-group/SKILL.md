@@ -72,8 +72,8 @@ Before submitting new request:
 
 - Open the company ServiceNow portal in browser
 - Navigate to the AD group request catalog item
-  - This is typically a specific URL or link like: `https://servicenow.company.com/?id=ad_group_request`
-  - Or navigate through: Service Catalog → Access Requests → AD Group Access
+  - This is typically found in the Service Catalog under Access Requests or similar category
+  - Or navigate through the portal's catalog navigation to find the AD Group Access request form
 - Ensure user is authenticated with company credentials
 
 ### Step 4: Fill in the Request Form

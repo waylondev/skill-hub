@@ -88,6 +88,12 @@ skills:
   - name: web-search-baidu
     path: skills/web-search-baidu
     version: 1.0.0
-    title: Baidu Web Search with Playwright
+    title: Baidu Web Search
     domain: web
-    tags: [web, search, baidu, playwright, automation]
+    tags: [web, search, baidu, automation, browser]
+  - name: web-bilibili-trending
+    path: skills/web-bilibili-trending
+    version: 1.0.0
+    title: Bilibili Trending Videos
+    domain: web
+    tags: [web, bilibili, trending, videos, automation, browser]
