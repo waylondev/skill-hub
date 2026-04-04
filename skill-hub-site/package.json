@@ -1,0 +1,19 @@
+{
+  "name": "skill-hub-site",
+  "type": "module",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npm run copy-registry && astro dev",
+    "start": "npm run copy-registry && astro dev",
+    "build": "npm run copy-registry && astro build",
+    "preview": "astro preview",
+    "copy-registry": "node -e \"const fs = require('fs'); const path = require('path'); const src = path.resolve(__dirname, '../registry.yaml'); const dst = path.resolve(__dirname, 'registry.yaml'); fs.copyFileSync(src, dst); console.log('Copied registry.yaml to site directory');\""
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.5.0",
+    "astro": "^4.5.0",
+    "typescript": "^5.3.0",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {}
+}

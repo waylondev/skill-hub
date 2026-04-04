@@ -1,0 +1,12 @@
+﻿env-configure-gh|skills/env-configure-gh|1.0.0|配置 GitHub CLI|env|env,github,cli,gh,scm
+env-configure-git|skills/env-configure-git|1.0.0|配置 Git|env|env,git,scm,config
+env-configure-gradle|skills/env-configure-gradle|1.0.0|配置 Gradle|env|env,gradle,java,build,config
+env-configure-java|skills/env-configure-java|1.0.0|配置 Java 环境变量|env|env,java,jdk,config
+env-configure-maven|skills/env-configure-maven|1.0.0|配置 Maven 环境变量和 settings.xml|env|env,maven,java,config,settings
+env-configure-nodejs|skills/env-configure-nodejs|1.0.0|配置 Node.js 环境变量|env|env,nodejs,node,npm,config
+env-configure-npm|skills/env-configure-npm|1.0.0|配置 npm 内部 Nexus 镜像|env|env,npm,nodejs,config,registry
+env-configure-pnpm|skills/env-configure-pnpm|1.0.0|配置 pnpm|env|env,pnpm,package,config
+env-configure-python|skills/env-configure-python|1.0.0|配置 Python 环境变量|env|env,python,config
+sn-request-ad-group|skills/sn-request-ad-group|1.0.0|ServiceNow 申请 AD 组权限|sn|servicenow,ad,active-directory,permission,group
+sn-request-software|skills/sn-request-software|1.0.0|ServiceNow 申请软件|sn|servicenow,software,apply,install
+swc-install-package|skills/swc-install-package|1.0.0|Software Center 安装软件|swc|software-center,install,package

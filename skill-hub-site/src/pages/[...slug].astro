@@ -1,0 +1,78 @@
+---
+import Layout from '../layouts/Layout.astro';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'yaml';
+
+export function getStaticPaths() {
+  const registryPath = path.resolve('./registry.yaml');
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+  const registry = yaml.parse(registryContent);
+  
+  return registry.skills.map((skill: any) => {
+    const skillMdPath = path.resolve('../../' + skill.path, 'SKILL.md');
+    let skillMdContent = '';
+    if (fs.existsSync(skillMdPath)) {
+      skillMdContent = fs.readFileSync(skillMdPath, 'utf-8');
+    }
+    
+    return {
+      params: { slug: ['skill', skill.name] },
+      props: { skill, skillMdContent },
+    };
+  });
+}
+
+interface Props {
+  skill: any;
+  skillMdContent: string;
+}
+
+const { skill, skillMdContent } = Astro.props;
+---
+
+<Layout title={skill.title}>
+  <style>
+    .skill-detail { max-width: 800px; }
+    .skill-header { margin-bottom: 2rem; }
+    .skill-header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .skill-meta { color: #666; margin-bottom: 1rem; }
+    .skill-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .tag { background: #e0e7ff; color: #4338ca; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    .install-section { background: #f0f4ff; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; }
+    .code-block { background: #1a1a2e; color: #e0e0e0; padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; }
+    .copy-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    .skill-content { background: #f9f9f9; padding: 1.5rem; border-radius: 8px; }
+    .skill-content pre { background: #1a1a2e; color: #e0e0e0; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+    .back-link { display: inline-block; margin-bottom: 2rem; color: #667eea; text-decoration: none; }
+  </style>
+
+  <a href="/" class="back-link">← 返回首页</a>
+
+  <div class="skill-detail">
+    <div class="skill-header">
+      <h1>{skill.name}</h1>
+      <p class="skill-meta">{skill.title} · v{skill.version} · {skill.domain.toUpperCase()}</p>
+      <div class="skill-tags">
+        {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
+      </div>
+    </div>
+
+    <div class="install-section">
+      <h3>安装 & 运行</h3>
+      <div class="code-block">
+        <span>$ skill install {skill.name}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">复制</button>
+      </div>
+      <div class="code-block">
+        <span>$ skill run {skill.name}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run {skill.name}')">复制</button>
+      </div>
+    </div>
+
+    <div class="skill-content">
+      <h3>Skill 内容</h3>
+      <pre>{skillMdContent}</pre>
+    </div>
+  </div>
+</Layout>

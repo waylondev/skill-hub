@@ -1,0 +1,107 @@
+---
+import Layout from '../layouts/Layout.astro';
+import fs from 'fs';
+import path from 'path';
+import yaml from 'yaml';
+
+const registryPath = path.resolve('./registry.yaml');
+const registryContent = fs.readFileSync(registryPath, 'utf-8');
+const registry = yaml.parse(registryContent);
+
+const skills = registry.skills;
+
+// Group by domain
+const skillsByDomain: Record<string, any[]> = {};
+for (const skill of skills) {
+  if (!skillsByDomain[skill.domain]) {
+    skillsByDomain[skill.domain] = [];
+  }
+  skillsByDomain[skill.domain].push(skill);
+}
+---
+
+<Layout title="首页">
+  <style>
+    .search-section { margin-bottom: 3rem; }
+    .search-input { width: 100%; padding: 1rem; font-size: 1.1rem; border: 2px solid #e0e0e0; border-radius: 8px; }
+    .quick-start { background: #f0f4ff; padding: 2rem; border-radius: 12px; margin-bottom: 3rem; }
+    .quick-start h2 { margin-bottom: 1rem; color: #667eea; }
+    .code-block { background: #1a1a2e; color: #e0e0e0; padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; }
+    .copy-btn { background: #667eea; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    .domain-section { margin-bottom: 2rem; }
+    .domain-title { font-size: 1.3rem; margin-bottom: 1rem; color: #764ba2; }
+    .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .skill-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.5rem; transition: box-shadow 0.2s; }
+    .skill-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .skill-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .skill-title { color: #666; margin-bottom: 0.5rem; }
+    .skill-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .tag { background: #e0e7ff; color: #4338ca; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    .top-skills { margin-bottom: 3rem; }
+    .top-skills h2 { margin-bottom: 1rem; }
+  </style>
+
+  <section class="quick-start">
+    <h2>快速开始</h2>
+    <div class="code-block">
+      <span>$ skill install sn-request-software</span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install sn-request-software')">复制</button>
+    </div>
+    <div class="code-block">
+      <span>$ skill run sn-request-software</span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run sn-request-software')">复制</button>
+    </div>
+  </section>
+
+  <section class="search-section">
+    <input type="text" class="search-input" id="searchInput" placeholder="搜索 Skill..." />
+  </section>
+
+  <section class="top-skills">
+    <h2>精选榜单</h2>
+    <div class="skill-grid">
+      {skills.slice(0, 5).map((skill, index) => (
+        <div class="skill-card">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index]}</div>
+          <div class="skill-name">{skill.name}</div>
+          <div class="skill-title">{skill.title}</div>
+          <div class="skill-tags">
+            {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  {Object.entries(skillsByDomain).map(([domain, domainSkills]) => (
+    <section class="domain-section">
+      <h2 class="domain-title">{domain.toUpperCase()} ({domainSkills.length})</h2>
+      <div class="skill-grid">
+        {domainSkills.map((skill) => (
+          <a href={`/skill/${skill.name}`} style="text-decoration: none; color: inherit;">
+            <div class="skill-card">
+              <div class="skill-name">{skill.name}</div>
+              <div class="skill-title">{skill.title}</div>
+              <div class="skill-tags">
+                {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
+              </div>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <script>
+    const searchInput = document.getElementById('searchInput');
+    const cards = document.querySelectorAll('.skill-card');
+    
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? 'block' : 'none';
+      });
+    });
+  </script>
+</Layout>
