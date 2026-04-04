@@ -49,73 +49,89 @@ Use this Skill when:
 
 ### Step 1: Gather Request Information
 
-Collect required information:
-- AD group name (exact name of the group)
-- Applicant information (who needs access)
-- Business reason (why access is needed)
-- Additional justification (if sensitive group)
+Collect required information from user:
+- **AD group name** (required): Exact name of the AD group to request access to
+- **Applicant** (required): User's name or employee ID who needs access
+- **Business reason** (required): Why the access is needed
+- **Additional justification** (optional): Extra justification for sensitive groups (prod-*, admin-*, etc.)
 
-### Step 2: Validate AD Group
+### Step 2: Check Existing Membership and Requests
 
-Before submitting request:
-- Verify the AD group exists in the directory
-- Check if the group is a security group or distribution group
-- Identify if the group is sensitive (requires additional approval)
-- If group doesn't exist, inform user and suggest verifying the group name
+Before submitting new request:
+- Check if user is already a member of the AD group
+  - If already member, inform user: "You are already a member of this AD group. No request needed."
+  - Stop and do not proceed
+- Check if there's a pending request for the same group by the same applicant
+  - If pending request exists, inform user of the status and ticket number
+  - Stop and do not proceed
+- Check if there's an approved request that hasn't been activated yet
+  - If approved request exists, inform user to wait for access activation (typically 15 minutes)
+  - Stop and do not proceed
 
-### Step 3: Check Existing Membership
+### Step 3: Navigate to ServiceNow AD Group Request Page
 
-- Check if the user is already a member of the AD group
-- If already a member, inform user and skip request submission
-- Check if there's a pending request for the same group
-- If pending request exists, inform user of the status
+- Open the company ServiceNow portal in browser
+- Navigate to the AD group request catalog item
+  - This is typically a specific URL or link like: `https://servicenow.company.com/?id=ad_group_request`
+  - Or navigate through: Service Catalog → Access Requests → AD Group Access
+- Ensure user is authenticated with company credentials
 
-### Step 4: Navigate to AD Group Request Portal
+### Step 4: Fill in the Request Form
 
-- Access the company ServiceNow portal
-- Navigate to the AD group request form/catalog item
-- Ensure user is authenticated with proper credentials
+Complete the form fields with collected information:
+- **Group Name/Selector**: Enter or select the AD group name provided by user
+  - Some forms may have a search/lookup field to find the group
+  - User must provide the exact group name
+- **Applicant**: Enter the applicant's name or employee ID
+- **Business Reason**: Enter the business justification in the text field
+- **Additional Justification**: If sensitive group, enter additional details
+- Review all fields for accuracy
 
-### Step 5: Fill in Request Form
+### Step 5: Submit the Request
 
-Complete all required fields:
-- Enter the AD group name
-- Provide applicant information
-- Specify business reason for access
-- Add additional justification if required (especially for sensitive groups)
-- Fill in any additional required fields based on the form
+- Click the **Submit** or **Request** button
+- Wait for confirmation that request was submitted successfully
+- Note the request/ticket number displayed (e.g., REQ0012345 or RITM0012345)
+- Optionally take a screenshot or save the confirmation page
 
-### Step 6: Submit Request
+### Step 6: Inform User
 
-- Review all entered information for accuracy
-- Submit the request
-- Record the request/ticket number for tracking
-
-### Step 7: Inform User
-
-After submission:
-- Provide the request/ticket number
-- Explain the approval workflow (Department Manager → IT Security Team)
-- Give estimated approval timeline
-- Inform user that access will be effective within 15 minutes after approval
-- Mention that email notification will be sent upon approval
+After successful submission:
+- Confirm the request was submitted successfully
+- Provide the request/ticket number for tracking
+- Explain the approval workflow:
+  - Standard groups: Department Manager approval
+  - Sensitive groups (prod-*, admin-*): Additional IT Security Team approval required
+- Give estimated approval timeline:
+  - Standard: 1-2 business days
+  - Sensitive: 3-5 business days
+- Inform user that:
+  - Email notification will be sent upon approval
+  - Access will be effective within 15 minutes after approval
+  - They can check request status using the ticket number
 
 ## Constraints
 
-- Only responsible for ServiceNow request submission, not direct AD group modification
-- Idempotent: if user is already in the group, inform status instead of submitting duplicate request
-- Do not guarantee approval - approval depends on group sensitivity and approvers
-- Sensitive groups (prod-*, admin-*, etc.) require additional business justification and higher-level approval
-- Respect user's privacy - do not share applicant information unnecessarily
-- Access effective time: typically within 15 minutes after approval
+- **Single Responsibility**: Only responsible for ServiceNow web form submission, not direct AD group modification
+- **Web-Based Operation**: Requires browser interaction with ServiceNow portal
+- **User-Provided Group Name**: AD group name must be provided by user - skill does not auto-select or guess
+- **Idempotent**: If user is already member or has pending/approved request, inform status instead of submitting duplicate
+- **No Approval Guarantee**: Approval depends on company policies, group sensitivity, and approvers
+- **Sensitive Groups**: Groups with patterns like prod-*, admin-*, security-* require additional justification and higher-level approval
+- **Privacy**: Do not share applicant information unnecessarily
+- **Access Activation Time**: Typically 15 minutes after approval (automated provisioning)
 
 ## Error Handling
 
-- **AD group not found**: Inform user that the specified group doesn't exist, suggest verifying the group name or checking the AD group catalog
-- **Insufficient permissions**: If user cannot access the request form, inform them about permission requirements
-- **Request rejected**: If previous request was rejected, inform user of the rejection reason if available, suggest addressing the issue before resubmitting
-- **Duplicate request detected**: Inform user about existing pending request, provide ticket number and status
-- **Already member**: If user is already in the group, inform them and provide guidance on how to verify their membership
+- **AD Group Not Found**: "The AD group '{{group_name}}' was not found in the directory. Please verify the group name or check the AD group catalog."
+- **User Already Member**: "You are already a member of the AD group '{{group_name}}'. No request needed."
+- **Pending Request Exists**: "A pending request already exists for this AD group (Ticket: {{ticket_number}}). Status: {{status}}. Please wait for approval."
+- **Approved Request Not Activated**: "Your request was approved (Ticket: {{ticket_number}}). Access will be activated within 15 minutes."
+- **Insufficient Permissions**: "You don't have permission to access the AD group request form. Please contact your IT admin or manager for access."
+- **Request Rejected**: "Your previous request was rejected. Reason: {{rejection_reason}}. Please address the issue before resubmitting."
+- **ServiceNow Unavailable**: "Cannot access ServiceNow portal. Please check your network connection and try again."
+- **Form Submission Failed**: "Failed to submit the request. Please verify all required fields are filled correctly and try again."
+- **Missing Required Information**: "Missing required information: {{field_name}}. Please provide {{field_name}} to proceed."
 
 ## Related Skills
 
