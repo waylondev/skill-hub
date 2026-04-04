@@ -296,7 +296,7 @@ Configure Maven environment variables (MAVEN_HOME and PATH) only.
 | `skill search <keyword>` | Search Skills | `skill search java` |
 | `skill install <name>` | Install locally | `skill install sn-request-software` |
 | `skill uninstall <name>` | Uninstall | `skill uninstall sn-request-software` |
-| `skill run <name>` | Execute | `skill run sn-request-software` |
+| `skill read <name>` | Read skill content for AI | `skill read sn-request-software` |
 | `skill push <path>` | Publish | `skill push ./skills/xxx` |
 
 ### 5.2 Implementation
