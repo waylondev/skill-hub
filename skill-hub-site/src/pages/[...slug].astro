@@ -50,7 +50,7 @@ const { skill, skillMdContent } = Astro.props;
     .back-link { display: inline-block; margin-bottom: 2rem; color: #667eea; text-decoration: none; }
   </style>
 
-  <a href="/" class="back-link">← 返回首页</a>
+  <a href="/" class="back-link">← Back to Home</a>
 
   <div class="skill-detail">
     <div class="skill-header">
@@ -62,19 +62,19 @@ const { skill, skillMdContent } = Astro.props;
     </div>
 
     <div class="install-section">
-      <h3>安装 & 运行</h3>
+      <h3>Install & Run</h3>
       <div class="code-block">
         <span>$ skill install {skill.name}</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">复制</button>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">Copy</button>
       </div>
       <div class="code-block">
         <span>$ skill run {skill.name}</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run {skill.name}')">复制</button>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run {skill.name}')">Copy</button>
       </div>
     </div>
 
     <div class="skill-content">
-      <h3>Skill 内容</h3>
+      <h3>Skill Content</h3>
       <pre>{skillMdContent}</pre>
     </div>
   </div>

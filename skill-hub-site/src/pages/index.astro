@@ -23,7 +23,7 @@ for (const skill of skills) {
 }
 ---
 
-<Layout title="首页">
+<Layout title="Home">
   <style>
     .search-section { margin-bottom: 3rem; }
     .search-input { width: 100%; padding: 1rem; font-size: 1.1rem; border: 2px solid #e0e0e0; border-radius: 8px; }
@@ -45,23 +45,23 @@ for (const skill of skills) {
   </style>
 
   <section class="quick-start">
-    <h2>快速开始</h2>
+    <h2>Quick Start</h2>
     <div class="code-block">
       <span>$ skill install sn-request-software</span>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install sn-request-software')">复制</button>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install sn-request-software')">Copy</button>
     </div>
     <div class="code-block">
       <span>$ skill run sn-request-software</span>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run sn-request-software')">复制</button>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill run sn-request-software')">Copy</button>
     </div>
   </section>
 
   <section class="search-section">
-    <input type="text" class="search-input" id="searchInput" placeholder="搜索 Skill..." />
+    <input type="text" class="search-input" id="searchInput" placeholder="Search Skills..." />
   </section>
 
   <section class="top-skills">
-    <h2>精选榜单</h2>
+    <h2>Top Skills</h2>
     <div class="skill-grid">
       {skills.slice(0, 5).map((skill, index) => (
         <div class="skill-card">
