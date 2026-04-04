@@ -1,8 +1,8 @@
-# Agent Skills 最佳实践
+# Agent Skills Best Practices
 
-> 基于 [Agent Skills 官方文档](https://agentskills.io) 的行业标准
+> Based on [Agent Skills Official Documentation](https://agentskills.io) industry standards
 >
-> **参考文档**：
+> **Reference Documents**:
 > - https://agentskills.io/home
 > - https://agentskills.io/what-are-skills
 > - https://agentskills.io/skill-creation/best-practices
@@ -10,112 +10,112 @@
 
 ---
 
-## 1. Skill 描述优化原则
+## 1. Skill Description Optimization Principles
 
-### 1.1 使用命令式表述
+### 1.1 Use Imperative Phrasing
 
-**✅ 推荐**：
+**✅ Recommended**:
 ```yaml
 description: >-
   Use this skill when the user wants to configure Git, set up Git username, or configure Git email.
 ```
 
-**❌ 避免**：
+**❌ Avoid**:
 ```yaml
 description: >-
-  该 Skill 在用户要求"配置 Git"、"设置 Git 用户名"时使用。
+  This skill is used when the user requests "configure Git", "set Git username".
 ```
 
-### 1.2 聚焦用户意图，而非实现细节
+### 1.2 Focus on User Intent, Not Implementation Details
 
-描述应该关注**用户想要达成什么**，而不是 Skill 内部如何工作。
+Descriptions should focus on **what the user wants to achieve**, not how the Skill works internally.
 
-**✅ 推荐**：
+**✅ Recommended**:
 - "Use this skill when the user wants to configure npm mirror"
 - "Use this skill when the user wants to request software installation"
 
-**❌ 避免**：
-- "该 Skill 会调用 ServiceNow API 提交申请"
-- "这个 Skill 会修改 .npmrc 文件"
+**❌ Avoid**:
+- "This skill calls ServiceNow API to submit applications"
+- "This skill modifies .npmrc file"
 
-### 1.3 明确列出适用场景
+### 1.3 Explicitly List Applicable Scenarios
 
-主动列出 Skill 适用的上下文，即使用户没有明确提到相关关键词。
+Actively list contexts where the Skill applies, even if users don't explicitly mention relevant keywords.
 
-**示例**：
+**Example**:
 ```yaml
 description: >-
   Use this skill when the user wants to configure npm mirror, set up .npmrc,
   or configure internal Nexus npm registry, even if they don't explicitly mention "npm" or "registry".
 ```
 
-### 1.4 保持简洁
+### 1.4 Keep It Concise
 
-- 长度：几句话到一个短段落
-- 足够覆盖 Skill 范围
-- 足够简短，不会在多个 Skill 上下文中膨胀
-- 官方建议：≤ 1024 字符
+- Length: A few sentences to a short paragraph
+- Enough to cover Skill scope
+- Short enough not to bloat context across multiple Skills
+- Official recommendation: ≤ 1024 characters
 
 ---
 
-## 2. Skill 设计核心原则
+## 2. Skill Design Core Principles
 
-### 2.1 原子能力 (Atomic)
+### 2.1 Atomic Capabilities
 
-一个 Skill 只做**一件事**，只操作**一个系统**。
+One Skill only does **one thing**, only operates **one system**.
 
-**✅ 好的 Skill**：
-- `sn-request-software` - 只在 ServiceNow 申请软件
-- `env-configure-java` - 只配置 Java 环境变量
-- `swc-install-package` - 只在 Software Center 安装
+**✅ Good Skills**:
+- `sn-request-software` - Only request software in ServiceNow
+- `env-configure-java` - Only configure Java environment variables
+- `swc-install-package` - Only install in Software Center
 
-**❌ 坏的 Skill**：
-- `install-and-configure-java` - 既申请又安装又配置（跨 3 个系统）
+**❌ Bad Skills**:
+- `install-and-configure-java` - Requests, installs, and configures (crosses 3 systems)
 
-### 2.2 不做编排 (No Orchestration)
+### 2.2 No Orchestration
 
-**编排是 AI Agent 的职责**，Skill 绝对不做编排。
+**Orchestration is AI Agent's responsibility**, Skills absolutely do not orchestrate.
 
-**为什么？**
-- AI 能理解上下文、判断前置条件、处理异常
-- 预定义的编排逻辑无法适应不同场景
-- 原子 Skill 可以被 AI 自由组合，复用度更高
+**Why?**
+- AI understands context, judges preconditions, handles exceptions
+- Predefined orchestration logic can't adapt to different scenarios
+- Atomic Skills can be freely combined by AI, higher reusability
 
-**示例**：用户说"我要装 Java"
-- ❌ Skill 内部写死：申请 → 安装 → 配置
-- ✅ AI 自主编排：`sn-request-software` → `swc-install-package` → `env-configure-java`
+**Example**: User says "I want to install Java"
+- ❌ Skill internally hardcodes: Request → Install → Configure
+- ✅ AI autonomously orchestrates: `sn-request-software` → `swc-install-package` → `env-configure-java`
 
-### 2.3 单一职责 (Single Responsibility)
+### 2.3 Single Responsibility
 
-遵循 SOLID 的单一职责原则，一个 Skill 只负责一个系统的一个操作。
+Follow SOLID single responsibility principle, one Skill only responsible for one operation in one system.
 
-### 2.4 幂等性 (Idempotent)
+### 2.4 Idempotency
 
-相同输入多次执行，结果一致。
+Same input executed multiple times, consistent results.
 
-**在约束中明确说明**：
+**Explicitly state in constraints**:
 ```markdown
-## 约束
-- 幂等：已配置则检查是否正确，不重复配置
+## Constraints
+- Idempotent: check if correctly configured if already set, do not reconfigure
 ```
 
-### 2.5 不包装工具 (No Tool Wrapping)
+### 2.5 No Tool Wrapping
 
-Skill 聚焦**内部流程知识**，不教 Agent 怎么用 CLI。
+Skills focus on **internal process knowledge**, don't teach Agent how to use CLI.
 
-**✅ Skill 应该包含**：
-- 内部门户地址
-- 审批链
-- 指定版本
-- 公司特有配置
+**✅ Skills should contain**:
+- Internal portal addresses
+- Approval chains
+- Specified versions
+- Company-specific configurations
 
-**❌ Skill 不应该包含**：
-- "教你怎么用 git config"
-- "教你怎么用 npm install"
+**❌ Skills should NOT contain**:
+- "Teach you how to use git config"
+- "Teach you how to use npm install"
 
 ---
 
-## 3. SKILL.md 结构
+## 3. SKILL.md Structure
 
 ### 3.1 Frontmatter
 
@@ -126,7 +126,7 @@ description: >-
   Use this skill when the user wants to configure Git, set up Git username,
   or configure Git email.
 version: 1.0.0
-displayName: 配置 Git
+displayName: Configure Git
 domain: env
 action: configure
 object: git
@@ -136,103 +136,103 @@ inputs:
   - name: user_name
     type: string
     required: true
-    description: Git 用户名
+    description: Git username
   - name: user_email
     type: string
     required: true
-    description: Git 邮箱
+    description: Git email
 ---
 ```
 
-### 3.2 Body 推荐结构
+### 3.2 Body Recommended Structure
 
-| 章节 | 用途 | 必需 |
-|------|------|------|
-| `## 触发条件` | 何时使用 | ✅ |
-| `## 前置条件` | 依赖的系统状态 | ✅ |
-| `## 执行步骤` | 具体操作（含内部地址等） | ✅ |
-| `## 约束` | 边界 + 幂等性保障 | ✅ |
+| Section | Purpose | Required |
+|---------|---------|----------|
+| `## Trigger Conditions` | When to use | ✅ |
+| `## Prerequisites` | Dependent system state | ✅ |
+| `## Execution Steps` | Specific operations | ✅ |
+| `## Constraints` | Boundaries + idempotency | ✅ |
 
-**不推荐包含**：
-- 相关 Skill 列表（AI 会自主发现）
-- 过多可选配置示例
-- 冗长的背景说明
+**Not recommended to include**:
+- Related Skill lists (AI will discover autonomously)
+- Too many optional configuration examples
+- Lengthy background explanations
 
 ---
 
-## 4. 命名规范
+## 4. Naming Conventions
 
-格式：`{domain}-{action}-{object}`
+Format: `{domain}-{action}-{object}`
 
-**域编码**：
+**Domain Codes**:
 - `sn` - ServiceNow
 - `swc` - Software Center
-- `env` - 环境变量
-- `nexus` - Nexus 制品仓库
+- `env` - Environment Variables
+- `nexus` - Nexus Artifact Repository
 - `vpn` - VPN
-- `hr` - 人力资源系统
-- `doc` - 文档系统
+- `hr` - HR System
+- `doc` - Document System
 
-**示例**：
-- `sn-request-software` - ServiceNow 申请软件
-- `swc-install-package` - Software Center 安装包
-- `env-configure-java` - 环境配置 Java
+**Examples**:
+- `sn-request-software` - ServiceNow request software
+- `swc-install-package` - Software Center install package
+- `env-configure-java` - Environment configure Java
 
 ---
 
-## 5. Skill 触发评估
+## 5. Skill Trigger Evaluation
 
-### 5.1 Should-Trigger 查询
+### 5.1 Should-Trigger Queries
 
-测试 Skill 应该触发的场景：
-- 正式和非正式的表述
-- 有拼写错误或缩写
-- 直接提到 Skill 领域或间接描述需求
-- 简洁提示和详细上下文混合
-- 单步和多步工作流
+Test scenarios where Skill should trigger:
+- Formal and informal phrasing
+- Typos or abbreviations
+- Directly mention Skill domain or indirectly describe needs
+- Mix of concise prompts and detailed context
+- Single-step and multi-step workflows
 
-**示例**：
+**Examples**:
 - "Configure Git for me"
 - "Set up my Git username and email"
 - "I need to configure Git before I commit"
 
-### 5.2 Should-Not-Trigger 查询
+### 5.2 Should-Not-Trigger Queries
 
-测试 Skill 不应该触发的场景：
-- 明显不相关的（用于测试边界）
-- 共享概念但需要不同操作的
-- 涉及关键词但任务不同的
+Test scenarios where Skill should NOT trigger:
+- Obviously irrelevant (for testing boundaries)
+- Share concepts but need different operations
+- Involve keywords but different tasks
 
-**示例**：
-- "Install Git"（安装 vs 配置）
-- "Commit my code"（使用 Git vs 配置 Git）
-
----
-
-## 6. 优化循环
-
-1. 在训练集和验证集上评估当前描述
-2. 识别训练集中的失败案例
-3. 修订描述：
-   - 如果应该触发的查询失败：拓宽范围
-   - 如果不应该触发的查询误触发：增加特异性
-4. 检查描述保持在 1024 字符限制内
-5. 重复直到训练集全部通过或无明显改进
-6. 选择验证集通过率最高的版本
+**Examples**:
+- "Install Git" (install vs configure)
+- "Commit my code" (use Git vs configure Git)
 
 ---
 
-## 7. 快速检查表
+## 6. Optimization Loop
 
-创建新 Skill 前，请确认：
+1. Evaluate current description on train and validation sets
+2. Identify failures in train set
+3. Revise description:
+   - If should-trigger queries fail: broaden scope
+   - If should-not-trigger queries misfire: add specificity
+4. Check description stays within 1024 character limit
+5. Repeat until train set passes or no meaningful improvement
+6. Select version with highest validation pass rate
 
-- [ ] 描述使用命令式 "Use this skill when..."
-- [ ] 描述聚焦用户意图，而非实现细节
-- [ ] 描述简洁（≤ 1024 字符）
-- [ ] Skill 只做一件事（原子能力）
-- [ ] Skill 不做编排
-- [ ] Skill 只操作一个系统
-- [ ] 约束中明确说明幂等性
-- [ ] 命名符合 `{domain}-{action}-{object}` 格式
-- [ ] 包含内部特有知识（地址、审批链等）
-- [ ] 不包装通用 CLI 工具
+---
+
+## 7. Quick Checklist
+
+Before creating a new Skill, confirm:
+
+- [ ] Description uses imperative "Use this skill when..."
+- [ ] Description focuses on user intent, not implementation details
+- [ ] Description is concise (≤ 1024 characters)
+- [ ] Skill only does one thing (atomic capability)
+- [ ] Skill does not orchestrate
+- [ ] Skill only operates one system
+- [ ] Constraints explicitly state idempotency
+- [ ] Naming follows `{domain}-{action}-{object}` format
+- [ ] Contains internal-specific knowledge (addresses, approval chains, etc.)
+- [ ] Does not wrap general CLI tools

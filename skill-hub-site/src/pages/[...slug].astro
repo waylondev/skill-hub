@@ -20,7 +20,7 @@ export function getStaticPaths() {
     }
     
     return {
-      params: { slug: ['skill', skill.name] },
+      params: { slug: `skill/${skill.name}` },
       props: { skill, skillMdContent },
     };
   });
