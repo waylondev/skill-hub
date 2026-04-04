@@ -44,8 +44,8 @@ Use this Skill when:
 ### Step 1: Verify Prerequisites
 
 Before attempting configuration:
-- **Check if Confluence CLI is installed**: Run `confluence --version` or equivalent version command
-- If not found, inform user: "Confluence CLI is not installed. Please install it first using: npm install -g confluence-cli"
+- Check if Confluence CLI is installed
+- If not found, inform user that Confluence CLI needs to be installed first
 - Stop and do not proceed if prerequisites are not met
 
 ### Step 2: Validate Input Parameters
@@ -97,13 +97,13 @@ After configuration:
 
 ## Error Handling
 
-- **CLI not installed**: "Confluence CLI is not installed. Please install it first using: npm install -g confluence-cli"
-- **Invalid host URL**: "The provided host URL format is invalid. Please provide a valid URL (e.g., https://confluence.company.com)"
-- **Host unreachable**: "Cannot connect to Confluence host at {{host}}. Please verify the internal network connection and host URL."
-- **Invalid token**: "The provided token is invalid or expired. Please check your Confluence account settings and generate a new API token."
-- **Authentication failed**: "Authentication failed. Please verify your token has appropriate permissions to access Confluence."
+- **CLI not installed**: "Confluence CLI is not installed. Please install it first."
+- **Invalid host URL**: "The provided host URL format is invalid. Please provide a valid URL."
+- **Host unreachable**: "Cannot connect to Confluence host. Please verify the network connection and host URL."
+- **Invalid token**: "The provided token is invalid or expired. Please check your Confluence account settings."
+- **Authentication failed**: "Authentication failed. Please verify your token has appropriate permissions."
 - **Already configured**: "Confluence CLI is already configured correctly with this host. No action needed."
-- **Network/firewall issue**: "Cannot reach Confluence instance. Please check your network connection and firewall settings."
+- **Network/firewall issue**: "Cannot reach Confluence instance. Please check network and firewall settings."
 
 ## Related Skills
 

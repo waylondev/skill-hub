@@ -52,15 +52,11 @@ Use this Skill when:
 - If `variable_name` and `variable_value` are provided, validate the variable name format (alphanumeric and underscore only)
 - If validation fails, inform the user with specific error message
 
-### Step 2: Determine Current Shell Configuration
+### Step 2: Determine Current Environment
 
-**Windows:**
-- Use PowerShell environment variable cmdlets
-- Operate at User level (not Machine/System level)
-
-**macOS/Linux:**
-- Detect user's shell (bash, zsh, etc.)
-- Identify the appropriate shell configuration file (~/.bashrc, ~/.zshrc, etc.)
+- Detect the operating system and shell environment
+- Identify the appropriate configuration method for the platform
+- Use user-level environment variables (not system-level)
 
 ### Step 3: Set Environment Variable (if requested)
 
@@ -71,10 +67,7 @@ If `variable_name` and `variable_value` are provided:
 - If exists with different value, update it
 - If doesn't exist, create it
 - Avoid duplicate entries
-
-**Implementation guidance:**
-- Windows: Use .NET Environment class methods for user-level variables
-- macOS/Linux: Append export statement to shell configuration file
+- Use platform-appropriate method to set user-level environment variable
 
 ### Step 4: Add Path to PATH (if requested)
 
@@ -83,13 +76,8 @@ If `path` is provided:
 **Approach:**
 - Read current PATH environment variable
 - Check if the path already exists in PATH (avoid duplicates)
-- If not present, append the path to PATH
-- Windows: Use semicolon separator
-- macOS/Linux: Use colon separator, typically prepend for priority
-
-**Implementation guidance:**
-- Windows: Use .NET Environment class methods for user-level PATH
-- macOS/Linux: Modify shell configuration file with export PATH statement
+- If not present, add the path to PATH
+- Use platform-appropriate path separator and method
 
 ### Step 5: Verify and Inform User
 
