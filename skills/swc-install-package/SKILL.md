@@ -87,10 +87,10 @@ After installation completes:
 ## Constraints
 
 - **Single Responsibility**: Only responsible for Software Center installation operation, not software request/approval
-- **No Environment Configuration**: Not responsible for environment variable configuration after installation (use `env-configure-*` Skills)
+- **No Environment Configuration**: Not responsible for environment variable configuration after installation
 - **Idempotent**: If software is already installed, inform user instead of reinstalling
 - **Approved Software Only**: Only install software that has been approved and is available in Software Center
-- **Software Center Only**: Do not install software from other sources (this Skill is specifically for Software Center)
+- **Software Center Only**: Do not install software from other sources
 
 ## Error Handling
 

@@ -122,7 +122,7 @@ After successful submission:
 - **Idempotent**: If user is already member or has pending/approved request, inform status instead of submitting duplicate
 - **No Approval Guarantee**: Approval depends on company policies, group sensitivity, and approvers
 - **Sensitive Groups**: Groups with patterns like prod-*, admin-*, security-* require additional justification and higher-level approval
-- **Privacy**: Do not share applicant information unnecessarily
+- **Privacy Protection**: Do not share applicant information unnecessarily
 - **Access Activation Time**: Typically 15 minutes after approval (automated provisioning)
 
 ## Error Handling

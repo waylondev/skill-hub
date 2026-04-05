@@ -98,11 +98,11 @@ After submission:
 
 ## Constraints
 
-- Only responsible for ServiceNow request submission, not software installation
-- Idempotent: if existing approved request found, inform status instead of resubmitting
-- Do not guarantee approval - approval depends on company policies and approvers
-- Only request software that is available in the company's approved list
-- Respect user's privacy - do not share applicant information unnecessarily
+- **Single Responsibility**: Only responsible for ServiceNow request submission, not software installation
+- **Idempotent**: If existing approved request found, inform status instead of resubmitting
+- **No Approval Guarantee**: Approval depends on company policies and approvers
+- **Approved List Only**: Only request software available in company's approved list
+- **Privacy Protection**: Do not share applicant information unnecessarily
 
 ## Error Handling
 
