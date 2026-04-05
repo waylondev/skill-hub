@@ -77,12 +77,12 @@ After configuration:
 
 ## Error Handling
 
-- **npm not installed**: "npm is not installed. Please install Node.js and npm first."
-- **Invalid URL**: "The provided registry URL is not valid. Please provide a valid URL."
-- **Already configured**: "npm registry is already set to {{registry_url}}. No action needed."
-- **Registry unreachable**: "The registry at {{registry_url}} is not accessible. Please check your network connection or firewall settings."
+- **npm not installed**: Inform user npm is not installed, need to install Node.js and npm first
+- **Invalid URL**: Inform user provided registry URL is not valid
+- **Already configured**: Inform user npm registry is already set correctly
+- **Registry unreachable**: Inform user registry is not accessible, check network or firewall
 
 ## Related Skills
 
 - `env-configure-nodejs` - Configure Node.js environment (prerequisite)
-- `env-configure-pnpm` - Configure pnpm (uses same .npmrc file)
+- `env-configure-pnpm` - Configure pnpm (shares configuration)

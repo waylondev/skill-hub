@@ -152,17 +152,17 @@ Present results to user:
 
 ## Error Handling
 
-- **No automation tool available**: "No web automation tool found. You can install a browser automation tool, or I can guide you to browse manually in browser."
-- **Network error**: "Cannot connect to Bilibili.com. Please check your internet connection and firewall settings."
-- **Page load timeout**: "Bilibili page failed to load. The website may be temporarily unavailable or blocked."
-- **Invalid category**: "The category '{{category}}' is not valid. Available categories: animation, music, dance, game, technology, life, fashion, entertainment, etc."
-- **No trending videos found**: "No trending videos found. The page structure may have changed or Bilibili may be experiencing issues."
-- **Results extraction failed**: "Failed to extract trending videos. The page structure may have changed."
-- **Access blocked**: "Access to Bilibili.com is blocked or restricted from your network."
-- **Tool execution failed**: "The automation tool encountered an error. Trying alternative approach..."
-- **Region restriction**: "Bilibili trending may not be available in your region. Consider using a different region setting."
-- **Browser open failed**: "Unable to open browser automatically. You can manually open the video at: <video_url>"
-- **System command not available**: "System command to open browser is not available on this platform. Please open the link manually."
+- **No automation tool available**: Inform user no web automation tool found, offer manual browsing guidance
+- **Network error**: Inform user to check internet connection and firewall settings
+- **Page load timeout**: Inform user page failed to load, website may be unavailable
+- **Invalid category**: Inform user category is not valid
+- **No trending videos found**: Inform user no trending videos found, page structure may have changed
+- **Results extraction failed**: Inform user failed to extract results, page structure may have changed
+- **Access blocked**: Inform user access is blocked or restricted from network
+- **Tool execution failed**: Inform user automation tool encountered error, try alternative approach
+- **Region restriction**: Inform user content may not be available in region
+- **Browser open failed**: Inform user unable to open browser automatically, provide link for manual opening
+- **System command not available**: Inform user system command not available on platform
 
 ## Related Skills
 

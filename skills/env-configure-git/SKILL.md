@@ -80,10 +80,10 @@ After configuration:
 
 ## Error Handling
 
-- **Git not installed**: "Git is not installed. Please install Git first."
-- **Invalid email format**: "The provided email format appears invalid. Please verify the email address."
-- **Already configured**: "Git username and email are already configured correctly. No action needed."
-- **Configuration file locked**: "Cannot write to .gitconfig file. Please check file permissions."
+- **Git not installed**: Inform user Git is not installed
+- **Invalid email format**: Inform user provided email format appears invalid
+- **Already configured**: Inform user Git username and email are already configured correctly
+- **Configuration file locked**: Inform user cannot write to git config file, check permissions
 
 ## Related Skills
 

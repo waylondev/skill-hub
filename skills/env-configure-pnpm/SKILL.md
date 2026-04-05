@@ -42,7 +42,7 @@ Use this Skill when:
 ## Prerequisites
 
 - Node.js and npm are installed on the system
-- pnpm is installed (or will be installed via npm)
+- pnpm is installed
 
 ## Execution Steps
 
@@ -51,7 +51,7 @@ Use this Skill when:
 Before configuration:
 - Check if pnpm is installed and accessible
 - Verify pnpm version for compatibility
-- If not installed, inform user pnpm can be installed via npm
+- If not installed, inform user to install pnpm
 
 ### Step 2: Configure Registry (Optional)
 
@@ -100,7 +100,7 @@ After configuration:
 - **pnpm not found**: Inform user to install pnpm first
 - **Registry unreachable**: If provided registry cannot be accessed, inform user to check network settings
 - **Store directory not writable**: If cannot write to store directory, suggest alternative location
-- **Configuration file locked**: If .npmrc cannot be written, inform user about file permissions
+- **Configuration file locked**: Inform user about file permissions
 
 ## Related Skills
 

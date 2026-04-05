@@ -70,7 +70,7 @@ Before attempting installation:
 ### Step 6: Verify Installation
 
 After installation completes:
-- Confirm the software shows as "Installed" in Software Center
+- Confirm the software shows as installed in Software Center
 - Optionally, verify the software can be launched
 - Check that the software is functional
 

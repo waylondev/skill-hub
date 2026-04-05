@@ -85,9 +85,9 @@ After configuration:
 
 ## Error Handling
 
-- **Python not installed**: "Python is not installed or not accessible. Please install Python first or provide the installation path."
-- **Invalid installation path**: "The provided path does not contain python executable. Please verify the installation path."
-- **Already configured**: "Python environment variables are already configured correctly. No action needed."
+- **Python not installed**: Inform user Python is not installed or not accessible
+- **Invalid installation path**: Inform user provided path does not contain python executable
+- **Already configured**: Inform user Python environment variables are already configured correctly
 
 ## Related Skills
 

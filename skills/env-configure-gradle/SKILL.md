@@ -88,9 +88,9 @@ After configuration:
 
 ## Error Handling
 
-- **JAVA_HOME not set**: "JAVA_HOME is not configured. Please use env-configure-java skill first."
-- **Gradle not installed**: "Gradle is not installed or not accessible. Please install Gradle first or provide the installation path."
-- **Already configured**: "Gradle environment variables are already configured correctly. No action needed."
+- **JAVA_HOME not set**: Inform user JAVA_HOME is not configured, need to configure Java first
+- **Gradle not installed**: Inform user Gradle is not installed or not accessible
+- **Already configured**: Inform user Gradle environment variables are already configured correctly
 
 ## Related Skills
 

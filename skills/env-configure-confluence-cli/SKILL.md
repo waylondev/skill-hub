@@ -60,7 +60,7 @@ Before making changes:
 Before making changes:
 - Check if Confluence CLI is already configured
 - Get current host configuration from Confluence CLI config file
-- If already configured with the same host, inform user: "Confluence CLI is already configured with this host. No changes needed." and stop
+- If already configured with the same host, inform user no changes needed and stop
 
 ### Step 4: Initialize Confluence CLI
 
@@ -97,13 +97,13 @@ After configuration:
 
 ## Error Handling
 
-- **CLI not installed**: "Confluence CLI is not installed. Please install it first."
-- **Invalid host URL**: "The provided host URL format is invalid. Please provide a valid URL."
-- **Host unreachable**: "Cannot connect to Confluence host. Please verify the network connection and host URL."
-- **Invalid token**: "The provided token is invalid or expired. Please check your Confluence account settings."
-- **Authentication failed**: "Authentication failed. Please verify your token has appropriate permissions."
-- **Already configured**: "Confluence CLI is already configured correctly with this host. No action needed."
-- **Network/firewall issue**: "Cannot reach Confluence instance. Please check network and firewall settings."
+- **CLI not installed**: Inform user Confluence CLI is not installed
+- **Invalid host URL**: Inform user provided host URL format is invalid
+- **Host unreachable**: Inform user cannot connect to Confluence host, verify network and URL
+- **Invalid token**: Inform user token is invalid or expired
+- **Authentication failed**: Inform user authentication failed, verify token permissions
+- **Already configured**: Inform user Confluence CLI is already configured correctly
+- **Network/firewall issue**: Inform user cannot reach Confluence instance, check network and firewall
 
 ## Related Skills
 

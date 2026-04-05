@@ -134,16 +134,16 @@ Present results to user:
 
 ## Error Handling
 
-- **No automation tool available**: "No web automation tool found. You can install a browser automation tool, or I can guide you to search manually in browser."
-- **Network error**: "Cannot connect to Baidu.com. Please check your internet connection and firewall settings."
-- **Page load timeout**: "Baidu page failed to load. The website may be temporarily unavailable or blocked."
-- **Search query empty**: "Please provide a search query to search for."
-- **No results found**: "No search results found for '{{query}}'. Please try different keywords."
-- **Results extraction failed**: "Failed to extract search results. The page structure may have changed."
-- **Access blocked**: "Access to Baidu.com is blocked or restricted from your network."
-- **Tool execution failed**: "The automation tool encountered an error. Trying alternative approach..."
-- **Browser open failed**: "Unable to open browser automatically. You can manually open the result at: <result_url>"
-- **System command not available**: "System command to open browser is not available on this platform. Please open the link manually."
+- **No automation tool available**: Inform user no web automation tool found, offer manual searching guidance
+- **Network error**: Inform user to check internet connection and firewall settings
+- **Page load timeout**: Inform user page failed to load, website may be unavailable
+- **Search query empty**: Inform user to provide search query
+- **No results found**: Inform user no search results found, suggest different keywords
+- **Results extraction failed**: Inform user failed to extract results, page structure may have changed
+- **Access blocked**: Inform user access is blocked or restricted from network
+- **Tool execution failed**: Inform user automation tool encountered error, try alternative approach
+- **Browser open failed**: Inform user unable to open browser automatically, provide link for manual opening
+- **System command not available**: Inform user system command not available on platform
 
 ## Related Skills
 

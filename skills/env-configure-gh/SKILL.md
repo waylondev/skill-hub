@@ -3,7 +3,7 @@ name: env-configure-gh
 description: >-
   Configure GitHub CLI (gh) for command-line GitHub operations.
   Invoke when user needs to authenticate with GitHub for CLI operations.
-  Supports both GitHub.com and GitHub Enterprise.
+  Supports GitHub Enterprise authentication.
 version: 1.0.0
 displayName: Configure GitHub CLI
 domain: env
@@ -15,7 +15,7 @@ inputs:
   - name: github_host
     type: string
     required: false
-    description: GitHub Enterprise server hostname (optional, uses github.com if not specified)
+    description: GitHub Enterprise server hostname (optional)
   - name: auth_method
     type: string
     required: false
@@ -54,7 +54,7 @@ Before configuration:
 
 Guide the authentication process:
 - Initiate GitHub CLI authentication
-- Support both GitHub.com and GitHub Enterprise authentication
+- Support GitHub Enterprise authentication
 - If `github_host` is provided, configure for Enterprise instance
 - If `auth_method` is 'browser', enable interactive browser authentication
 - If `auth_method` is 'token', guide manual token entry

@@ -84,9 +84,9 @@ After configuration:
 
 ## Error Handling
 
-- **Node.js not installed**: "Node.js is not installed or not accessible. Please install Node.js first or provide the installation path."
-- **Invalid installation path**: "The provided path does not contain node executable. Please verify the installation path."
-- **Already configured**: "Node.js environment variables are already configured correctly. No action needed."
+- **Node.js not installed**: Inform user Node.js is not installed or not accessible
+- **Invalid installation path**: Inform user provided path does not contain node executable
+- **Already configured**: Inform user Node.js environment variables are already configured correctly
 
 ## Related Skills
 

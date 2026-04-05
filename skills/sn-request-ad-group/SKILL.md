@@ -59,7 +59,7 @@ Collect required information from user:
 
 Before submitting new request:
 - Check if user is already a member of the AD group
-  - If already member, inform user: "You are already a member of this AD group. No request needed."
+  - If already member, inform user already a member of this AD group, no request needed
   - Stop and do not proceed
 - Check if there's a pending request for the same group by the same applicant
   - If pending request exists, inform user of the status and ticket number
@@ -123,15 +123,15 @@ After successful submission:
 
 ## Error Handling
 
-- **AD Group Not Found**: "The AD group '{{group_name}}' was not found in the directory. Please verify the group name or check the AD group catalog."
-- **User Already Member**: "You are already a member of the AD group '{{group_name}}'. No request needed."
-- **Pending Request Exists**: "A pending request already exists for this AD group (Ticket: {{ticket_number}}). Status: {{status}}. Please wait for approval."
-- **Approved Request Not Activated**: "Your request was approved (Ticket: {{ticket_number}}). Access will be activated within 15 minutes."
-- **Insufficient Permissions**: "You don't have permission to access the AD group request form. Please contact your IT admin or manager for access."
-- **Request Rejected**: "Your previous request was rejected. Reason: {{rejection_reason}}. Please address the issue before resubmitting."
-- **ServiceNow Unavailable**: "Cannot access ServiceNow portal. Please check your network connection and try again."
-- **Form Submission Failed**: "Failed to submit the request. Please verify all required fields are filled correctly and try again."
-- **Missing Required Information**: "Missing required information: {{field_name}}. Please provide {{field_name}} to proceed."
+- **AD Group Not Found**: Inform user AD group was not found, verify group name or check catalog
+- **User Already Member**: Inform user already a member of the AD group, no request needed
+- **Pending Request Exists**: Inform user pending request already exists, provide ticket number and status, ask to wait for approval
+- **Approved Request Not Activated**: Inform user request was approved, access will be activated within 15 minutes
+- **Insufficient Permissions**: Inform user doesn't have permission to access request form, contact IT admin or manager
+- **Request Rejected**: Inform user previous request was rejected, provide reason, ask to address issue before resubmitting
+- **ServiceNow Unavailable**: Inform user cannot access ServiceNow portal, check network connection
+- **Form Submission Failed**: Inform user failed to submit request, verify required fields and try again
+- **Missing Required Information**: Inform user missing required information, provide field name
 
 ## Related Skills
 
