@@ -1,8 +1,8 @@
 ---
 name: env-configure-java
 description: >-
-  Configure Java environment variables (JAVA_HOME and PATH).
-  Invoke when user needs to set up Java environment for development tools.
+  Use this skill when the user wants to configure Java environment variables,
+  set up JAVA_HOME and PATH, or add Java to the system PATH for command-line access.
   Auto-detects Java installation if path not specified.
 version: 1.0.0
 displayName: Configure Java Environment Variables
@@ -18,6 +18,10 @@ inputs:
     description: Java installation path (auto-detect if not specified)
 ---
 # Configure Java Environment Variables
+
+## Purpose
+
+Configure Java environment variables (JAVA_HOME and PATH) only. Does not handle Java installation or JDK configuration.
 
 ## Trigger Conditions
 
@@ -71,11 +75,11 @@ After setting environment variables:
 
 ## Constraints
 
-- Only responsible for environment variable configuration, not Java installation
-- Idempotent: check if JAVA_HOME is already correctly configured
-- If multiple Java versions exist, use the one specified or detected as default
-- User-level environment variables only (no system-wide changes requiring admin privileges)
-- Do not hardcode specific installation paths - detect or use provided parameter
+- **Single Responsibility**: Only responsible for environment variable configuration, not Java installation
+- **Idempotent**: Check if JAVA_HOME is already correctly configured
+- **Multiple Versions**: If multiple Java versions exist, use the one specified or detected as default
+- **User-level Only**: User-level environment variables only (no system-wide changes requiring admin privileges)
+- **No Hardcoding**: Do not hardcode specific installation paths - detect or use provided parameter
 
 ## Error Handling
 

@@ -1,7 +1,8 @@
 ---
 name: swc-install-package
 description: >-
-  Use this skill when the user wants to install approved software packages through Software Center.
+  Use this skill when the user wants to install approved software packages
+  from Software Center, verify software installation, or check software availability.
 version: 1.0.0
 displayName: Software Center Install Software
 domain: swc
@@ -83,11 +84,11 @@ After installation completes:
 
 ## Constraints
 
-- Only responsible for Software Center installation operation, not software request/approval
-- Not responsible for environment variable configuration after installation (use `env-configure-*` Skills)
-- Idempotent: if software is already installed, inform user instead of reinstalling
-- Only install software that has been approved and is available in Software Center
-- Do not install software from other sources (this Skill is specifically for Software Center)
+- **Single Responsibility**: Only responsible for Software Center installation operation, not software request/approval
+- **No Environment Configuration**: Not responsible for environment variable configuration after installation (use `env-configure-*` Skills)
+- **Idempotent**: If software is already installed, inform user instead of reinstalling
+- **Approved Software Only**: Only install software that has been approved and is available in Software Center
+- **Software Center Only**: Do not install software from other sources (this Skill is specifically for Software Center)
 
 ## Error Handling
 

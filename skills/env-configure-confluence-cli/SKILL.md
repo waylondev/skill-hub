@@ -1,7 +1,8 @@
 ---
 name: env-configure-confluence-cli
 description: >-
-  Use this skill when the user wants to configure Confluence CLI with internal network host and authentication token.
+  Use this skill when the user wants to configure Confluence CLI,
+  set up internal Confluence host URL, or authenticate with Confluence API.
 version: 1.0.0
 displayName: Configure Confluence CLI
 domain: env
@@ -91,9 +92,9 @@ After configuration:
 - **Single Responsibility**: Only configures Confluence CLI environment. Does not install Confluence CLI or manage Confluence content.
 - **Idempotent**: Check first, configure only if needed. If already configured correctly, do nothing.
 - **Prerequisite Check**: If Confluence CLI is not installed, inform user and stop. Do not attempt installation.
-- Token should be stored securely by Confluence CLI, do not log or display tokens in plain text
-- User-level configuration only (not system-wide)
-- Does not handle Confluence Cloud vs Server differences - user must provide appropriate host
+- **Secure Token Storage**: Token should be stored securely by Confluence CLI, do not log or display tokens in plain text
+- **User-level Only**: User-level configuration only (not system-wide)
+- **Cloud/Server Agnostic**: Does not handle Confluence Cloud vs Server differences - user must provide appropriate host
 
 ## Error Handling
 

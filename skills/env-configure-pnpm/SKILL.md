@@ -1,8 +1,8 @@
 ---
 name: env-configure-pnpm
 description: >-
-  Configure pnpm package manager settings and registry.
-  Invoke when user needs to configure pnpm for efficient package management.
+  Use this skill when the user wants to configure pnpm package manager,
+  set up custom registry, or optimize pnpm store directory.
   Supports custom registry, store directory, and peer dependencies settings.
 version: 1.0.0
 displayName: Configure pnpm
@@ -89,11 +89,11 @@ After configuration:
 
 ## Constraints
 
-- Only responsible for pnpm configuration, not installation
-- pnpm typically shares configuration with npm
-- Idempotent: check if correctly configured, do not rewrite if already set properly
-- Do not hardcode specific registry URLs or paths
-- Configuration typically applies to both pnpm and npm (shared configuration)
+- **Single Responsibility**: Only responsible for pnpm configuration, not installation
+- **Shared Configuration**: pnpm typically shares configuration with npm
+- **Idempotent**: Check if correctly configured, do not rewrite if already set properly
+- **No Hardcoding**: Do not hardcode specific registry URLs or paths
+- **Shared Configuration**: Configuration typically applies to both pnpm and npm (shared configuration)
 
 ## Error Handling
 

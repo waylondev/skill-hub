@@ -1,8 +1,8 @@
 ---
 name: env-configure-npm
 description: >-
-  Configure npm registry URL.
-  Invoke when user needs to switch npm registry (e.g., to internal Nexus/Artifactory).
+  Use this skill when the user wants to configure npm registry URL,
+  switch to a different registry, or set up internal Nexus/Artifactory.
   Idempotent configuration (checks before applying).
 version: 1.0.0
 displayName: Configure npm Registry
@@ -73,7 +73,7 @@ After configuration:
 - **Single Responsibility**: Only configures registry URL, not authentication, tokens, or scoped registries
 - **Idempotent**: Check first, configure only if different
 - **Prerequisite Check**: If npm is not installed, inform user and stop
-- User-level configuration only
+- **User-level Only**: User-level configuration only
 
 ## Error Handling
 
