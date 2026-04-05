@@ -1,5 +1,5 @@
 version: "1.0"
-updated: "2026-04-04"
+updated: "2026-04-05"
 skills:
   - name: env-configure-gh
     path: skills/env-configure-gh
@@ -97,3 +97,21 @@ skills:
     title: Bilibili Trending Videos
     domain: web
     tags: [web, bilibili, trending, videos, automation, browser]
+  - name: dev-generate-code-from-oas
+    path: skills/dev-generate-code-from-oas
+    version: 1.0.0
+    title: Generate Code from OAS
+    domain: dev
+    tags: [dev, oas, openapi, codegen, generator]
+  - name: dev-create-remote-repo
+    path: skills/dev-create-remote-repo
+    version: 1.0.0
+    title: Create Remote Git Repository
+    domain: dev
+    tags: [dev, git, repository, github, gitlab, repo]
+  - name: dev-create-jenkins-pipeline
+    path: skills/dev-create-jenkins-pipeline
+    version: 1.0.0
+    title: Create Jenkins Pipeline
+    domain: dev
+    tags: [dev, jenkins, pipeline, ci, cd, job]
