@@ -31,6 +31,10 @@ inputs:
     type: string
     required: true
     description: GitHub token for authentication
+  - name: generatorJarPath
+    type: string
+    required: false
+    description: Path to OAS code generator JAR (defaults to bin/oas-codegen.jar)
   - name: mavenHome
     type: string
     required: false
@@ -57,20 +61,26 @@ Use this Skill when:
 ## Prerequisites
 
 - Java is installed and available in PATH
-- OAS code generator JAR exists
+- OAS code generator JAR exists (at `bin/oas-codegen.jar` or user-specified location)
 - OAS file exists at the specified location
 
 ## Execution Steps
 
-### Step 1: Verify Prerequisites
+### Step 1: Determine Generator JAR Path
+
+Determine the path to the OAS code generator JAR:
+- If `{{generatorJarPath}}` is provided, use that path
+- If not provided, use the default path: `bin/oas-codegen.jar`
+
+### Step 2: Verify Prerequisites
 
 Before proceeding:
 - Check if Java is installed and available
-- Check if OAS code generator JAR exists
+- Check if OAS code generator JAR exists at the determined path
 - Check if OAS file exists at {{oasFileLocation}}
 - If any prerequisite fails, inform user and stop
 
-### Step 2: Validate Input Parameters
+### Step 3: Validate Input Parameters
 
 Before generating:
 - Validate {{oasFileLocation}} exists and is a valid OAS file
@@ -80,16 +90,16 @@ Before generating:
 - If {{mavenHome}} is provided, validate it is a valid Maven installation directory
 - If any validation fails, inform user and stop
 
-### Step 3: Check if Output Already Exists
+### Step 4: Check if Output Already Exists
 
 Before generating:
 - Check if {{outputLocation}} directory already exists
 - If it exists and is not empty, inform user and stop (avoid overwriting existing code)
 
-### Step 4: Generate Code from OAS
+### Step 5: Generate Code from OAS
 
 Run the OAS code generator:
-- Use the OAS code generator JAR
+- Use the OAS code generator JAR at the determined path
 - Pass all provided parameters:
   - `--oasFile={{oasFileLocation}}`
   - `--output={{outputLocation}}`
@@ -101,7 +111,7 @@ Run the OAS code generator:
 - Capture generation output and display progress
 - Check for successful completion (exit code 0)
 
-### Step 5: Verify Generated Code
+### Step 6: Verify Generated Code
 
 After generation:
 - Verify code was generated at {{outputLocation}}
@@ -119,7 +129,7 @@ After generation:
 ## Error Handling
 
 - **Java not installed**: Inform user Java is not installed
-- **Generator JAR not found**: Inform user OAS code generator JAR not found
+- **Generator JAR not found**: Inform user OAS code generator JAR not found at {{generatorJarPath}} (or bin/oas-codegen.jar if not specified)
 - **OAS file not found**: Inform user OAS file not found at {{oasFileLocation}}
 - **GitHub token is empty**: Inform user GitHub token cannot be empty
 - **Invalid Maven home**: Inform user provided Maven home is invalid
