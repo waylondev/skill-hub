@@ -5,7 +5,7 @@ import path from 'path';
 import yaml from 'yaml';
 
 export function getStaticPaths() {
-  const registryPath = path.resolve('./registry.yaml');
+  const registryPath = path.resolve('../registry.yaml');
   if (!fs.existsSync(registryPath)) {
     throw new Error(`Registry file not found at ${registryPath}. This may happen if the file was manually deleted or if copy-registry failed. Try running 'npm run copy-registry' manually.`);
   }
@@ -13,10 +13,12 @@ export function getStaticPaths() {
   const registry = yaml.parse(registryContent);
   
   return registry.skills.map((skill: any) => {
-    const skillMdPath = path.resolve('../../' + skill.path, 'SKILL.md');
+    const skillMdPath = path.resolve('../' + skill.path, 'SKILL.md');
     let skillMdContent = '';
     if (fs.existsSync(skillMdPath)) {
       skillMdContent = fs.readFileSync(skillMdPath, 'utf-8');
+    } else {
+      console.warn(`SKILL.md not found at ${skillMdPath}`);
     }
     
     return {
@@ -48,8 +50,15 @@ const { skill, skillMdContent } = Astro.props;
       --border: #334155;
     }
 
+    .page-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
     .skill-detail {
       max-width: 900px;
+      margin: 0 auto;
     }
 
     .back-link {
@@ -196,6 +205,8 @@ const { skill, skillMdContent } = Astro.props;
       font-size: 14px;
       line-height: 1.8;
       border: 1px solid var(--border);
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
     .skill-content code {
@@ -204,6 +215,10 @@ const { skill, skillMdContent } = Astro.props;
 
     /* Responsive */
     @media (max-width: 768px) {
+      .page-wrapper {
+        padding: 40px 16px;
+      }
+
       .skill-header h1 {
         font-size: 28px;
       }
@@ -218,47 +233,49 @@ const { skill, skillMdContent } = Astro.props;
     }
   </style>
 
-  <a href="/" class="back-link">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M19 12H5M12 19l-7-7 7-7"/>
-    </svg>
-    Back to Home
-  </a>
+  <div class="page-wrapper">
+    <a href="../" class="back-link">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to Home
+    </a>
 
-  <div class="skill-detail">
-    <div class="skill-header">
-      <h1>{skill.name}</h1>
-      <p class="skill-meta">{skill.title} · v{skill.version} · {skill.domain.toUpperCase()}</p>
-      <div class="skill-tags">
-        {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
-      </div>
-    </div>
-
-    <div class="install-section">
-      <h3>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary);">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-        </svg>
-        Install & Read
-      </h3>
-      <p>
-        Skills are for AI Agents to read and execute, not for direct human execution.
-      </p>
-      <div class="code-blocks">
-        <div class="code-block">
-          <span class="code-text">$ skill install {skill.name}</span>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">Copy</button>
-        </div>
-        <div class="code-block">
-          <span class="code-text">$ skill read {skill.name}</span>
-          <button class="copy-btn" onclick="navigator.clipboard.writeText('skill read {skill.name}')">Copy</button>
+    <div class="skill-detail">
+      <div class="skill-header">
+        <h1>{skill.name}</h1>
+        <p class="skill-meta">{skill.title} · v{skill.version} · {skill.domain.toUpperCase()}</p>
+        <div class="skill-tags">
+          {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
         </div>
       </div>
-    </div>
 
-    <div class="skill-content">
-      <h3>Skill Content</h3>
-      <pre>{skillMdContent}</pre>
+      <div class="install-section">
+        <h3>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary);">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          Install & Read
+        </h3>
+        <p>
+          Skills are for AI Agents to read and execute, not for direct human execution.
+        </p>
+        <div class="code-blocks">
+          <div class="code-block">
+            <span class="code-text">$ skill install {skill.name}</span>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install {skill.name}')">Copy</button>
+          </div>
+          <div class="code-block">
+            <span class="code-text">$ skill read {skill.name}</span>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('skill read {skill.name}')">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="skill-content">
+        <h3>Skill Content</h3>
+        <pre>{skillMdContent}</pre>
+      </div>
     </div>
   </div>
 </Layout>
