@@ -18,7 +18,9 @@ inputs:
 ---
 # Software Center Install Software
 
-Install approved software packages through the company Software Center application.
+## Purpose
+
+Install approved software via Software Center only. Does not handle software requests or environment configuration.
 
 ## Trigger Conditions
 

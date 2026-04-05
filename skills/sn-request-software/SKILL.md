@@ -29,6 +29,10 @@ inputs:
 ---
 # ServiceNow Request Software
 
+## Purpose
+
+Request software installation via ServiceNow only. Does not handle software installation or approval.
+
 Submit software installation request through ServiceNow portal. After approval, software will be available in Software Center.
 
 ## Trigger Conditions

@@ -27,7 +27,9 @@ inputs:
 ---
 # Bilibili Trending Videos
 
-Browse Bilibili trending videos page and retrieve popular video information using appropriate automation tools.
+## Purpose
+
+Browse Bilibili trending videos and show popular content only. Does not handle video playback or detailed content analysis.
 
 ## Trigger Conditions
 

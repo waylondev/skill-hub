@@ -29,6 +29,10 @@ inputs:
 ---
 # ServiceNow Request AD Group Permission
 
+## Purpose
+
+Request Active Directory group access via ServiceNow only. Does not handle AD group management or approval.
+
 Submit Active Directory group access request through ServiceNow portal. After approval, user will be added to the specified AD group.
 
 ## Trigger Conditions

@@ -26,7 +26,9 @@ inputs:
 ---
 # Baidu Web Search
 
-Perform web searches on Baidu and return readable search results using appropriate automation tools.
+## Purpose
+
+Search on Baidu and retrieve search results only. Does not handle content scraping or detailed analysis.
 
 ## Trigger Conditions
 
