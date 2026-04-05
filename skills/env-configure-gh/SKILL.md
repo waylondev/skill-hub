@@ -93,8 +93,3 @@ After setup:
 - **Authentication failed**: Guide user through troubleshooting - check network, credentials, or token validity
 - **GitHub Enterprise unreachable**: Verify the enterprise hostname is correct and accessible from user's network
 - **Git not configured**: Inform user that Git must be configured first for full functionality
-
-## Related Skills
-
-- `env-configure-git` - Configure Git (prerequisite for GitHub CLI)
-- `env-configure-path` - Configure PATH if gh commands are not accessible

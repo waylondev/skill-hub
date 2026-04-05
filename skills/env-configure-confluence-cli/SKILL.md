@@ -104,8 +104,3 @@ After configuration:
 - **Authentication failed**: Inform user authentication failed, verify token permissions
 - **Already configured**: Inform user Confluence CLI is already configured correctly
 - **Network/firewall issue**: Inform user cannot reach Confluence instance, check network and firewall
-
-## Related Skills
-
-- `env-configure-npm` - Configure npm (for installing Confluence CLI)
-- `env-configure-path` - Configure PATH if confluence command is not accessible

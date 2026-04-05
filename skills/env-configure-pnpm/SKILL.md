@@ -101,9 +101,3 @@ After configuration:
 - **Registry unreachable**: If provided registry cannot be accessed, inform user to check network settings
 - **Store directory not writable**: If cannot write to store directory, suggest alternative location
 - **Configuration file locked**: Inform user about file permissions
-
-## Related Skills
-
-- `env-configure-nodejs` - Configure Node.js environment (prerequisite)
-- `env-configure-npm` - Configure npm registry (shares configuration)
-- `env-configure-path` - Generic path configuration if pnpm commands not accessible

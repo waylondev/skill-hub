@@ -91,8 +91,3 @@ After configuration:
 - **JAVA_HOME not set**: Inform user JAVA_HOME is not configured, need to configure Java first
 - **Gradle not installed**: Inform user Gradle is not installed or not accessible
 - **Already configured**: Inform user Gradle environment variables are already configured correctly
-
-## Related Skills
-
-- `env-configure-java` - Configure Java environment (prerequisite)
-- `env-configure-path` - Generic path configuration

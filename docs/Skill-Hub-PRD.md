@@ -217,8 +217,7 @@ What this Skill is NOT responsible for
 ## Error Handling
 Common errors and how to handle them
 
-## Related Skills
-Links to prerequisite or complementary Skills
+**Note**: Do NOT include "Related Skills" section - AI will discover related skills autonomously.
 ```
 
 ### 3.2 Design Principles
@@ -298,9 +297,6 @@ Configure Maven environment variables (MAVEN_HOME and PATH) only.
 - Maven not installed: "Maven is not installed. Please install first."
 - JAVA_HOME not set: "Use env-configure-java skill first."
 - Already configured: "Already configured correctly. No action needed."
-
-## Related Skills
-- `env-configure-java` - Prerequisite
 ```
 
 ---

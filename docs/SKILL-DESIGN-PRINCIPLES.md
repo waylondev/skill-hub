@@ -136,10 +136,9 @@ What this Skill is NOT responsible for
 
 ## Error Handling
 Common errors and how to handle them
-
-## Related Skills
-Links to prerequisite or complementary Skills
 ```
+
+**Note**: Do NOT include "Related Skills" section - AI will discover related skills autonomously.
 
 ## 8. User Communication Principle
 

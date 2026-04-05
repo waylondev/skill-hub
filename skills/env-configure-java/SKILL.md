@@ -83,9 +83,3 @@ After setting environment variables:
 - **Invalid path**: If provided or detected java_home doesn't contain Java executables, ask user to verify the installation path
 - **Permission denied**: Inform user that admin privileges may be required for system variables, suggest using user-level instead
 - **Multiple Java versions**: If multiple versions detected, inform user and ask to specify which one to use
-
-## Related Skills
-
-- `env-configure-maven` - Configure Maven environment (requires Java)
-- `env-configure-gradle` - Configure Gradle environment (requires Java)
-- `env-configure-path` - Generic path configuration for other tools

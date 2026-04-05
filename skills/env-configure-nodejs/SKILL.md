@@ -87,9 +87,3 @@ After configuration:
 - **Node.js not installed**: Inform user Node.js is not installed or not accessible
 - **Invalid installation path**: Inform user provided path does not contain node executable
 - **Already configured**: Inform user Node.js environment variables are already configured correctly
-
-## Related Skills
-
-- `env-configure-npm` - Configure npm registry (separate responsibility)
-- `env-configure-pnpm` - Configure pnpm package manager
-- `env-configure-path` - Generic path configuration alternative

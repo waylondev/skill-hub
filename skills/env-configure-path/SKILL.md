@@ -101,9 +101,3 @@ After configuration:
 - **Permission denied**: Inform user that admin privileges may be required for system-level variables, suggest using user-level instead
 - **Invalid variable name**: Validate environment variable name format before attempting to set
 - **Shell config file not found**: Inform user and suggest creating appropriate file for their shell
-
-## Related Skills
-
-- `env-configure-java` - Specifically for Java environment configuration
-- `env-configure-nodejs` - Specifically for Node.js environment configuration
-- `env-configure-python` - Specifically for Python environment configuration

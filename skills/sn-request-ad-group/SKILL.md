@@ -132,8 +132,3 @@ After successful submission:
 - **ServiceNow Unavailable**: Inform user cannot access ServiceNow portal, check network connection
 - **Form Submission Failed**: Inform user failed to submit request, verify required fields and try again
 - **Missing Required Information**: Inform user missing required information, provide field name
-
-## Related Skills
-
-- `sn-request-software` - Request software installation in ServiceNow
-- `env-configure-path` - Configure environment variables (may be needed after gaining access to certain resources)

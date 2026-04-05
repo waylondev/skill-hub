@@ -81,8 +81,3 @@ After configuration:
 - **Invalid URL**: Inform user provided registry URL is not valid
 - **Already configured**: Inform user npm registry is already set correctly
 - **Registry unreachable**: Inform user registry is not accessible, check network or firewall
-
-## Related Skills
-
-- `env-configure-nodejs` - Configure Node.js environment (prerequisite)
-- `env-configure-pnpm` - Configure pnpm (shares configuration)

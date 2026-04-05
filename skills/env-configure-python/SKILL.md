@@ -88,7 +88,3 @@ After configuration:
 - **Python not installed**: Inform user Python is not installed or not accessible
 - **Invalid installation path**: Inform user provided path does not contain python executable
 - **Already configured**: Inform user Python environment variables are already configured correctly
-
-## Related Skills
-
-- `env-configure-path` - Generic path configuration alternative

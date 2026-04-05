@@ -84,8 +84,3 @@ After configuration:
 - **Invalid email format**: Inform user provided email format appears invalid
 - **Already configured**: Inform user Git username and email are already configured correctly
 - **Configuration file locked**: Inform user cannot write to git config file, check permissions
-
-## Related Skills
-
-- `env-configure-path` - Configure PATH if Git commands are not accessible
-- `env-configure-gh` - Configure GitHub CLI (requires Git to be configured first)

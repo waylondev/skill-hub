@@ -38,8 +38,6 @@ AI: [Uses env-configure-java skill]
 Result: "Java environment configured successfully. JAVA_HOME set to C:\Program Files\Java\jdk-17"
 ```
 
-**Related Skills**: `env-configure-maven`, `env-configure-gradle`
-
 ---
 
 ### env-configure-maven
@@ -66,8 +64,6 @@ Result: "Maven configured successfully. You can now run 'mvn --version'"
 
 **Prerequisites**: `env-configure-java` must be configured first
 
-**Related Skills**: `env-configure-java`, `env-configure-nexus`
-
 ---
 
 ### env-configure-nodejs
@@ -89,8 +85,6 @@ AI: [Uses env-configure-nodejs skill]
       3. Verifies node --version and npm --version
 Result: "Node.js environment configured. Node v18.17.0 and npm 9.6.7 are now available"
 ```
-
-**Related Skills**: `env-configure-npm`, `env-configure-pnpm`
 
 ---
 
@@ -114,8 +108,6 @@ AI: [Uses env-configure-python skill]
 Result: "Python environment configured. Python 3.11.4 is now available"
 ```
 
-**Related Skills**: `env-configure-pip`
-
 ---
 
 ### env-configure-git
@@ -138,8 +130,6 @@ AI: [Uses env-configure-git skill]
 Result: "Git configured with your name and email. You can now commit without specifying credentials"
 ```
 
-**Related Skills**: `env-configure-gh`
-
 ---
 
 ### env-configure-npm
@@ -161,8 +151,6 @@ AI: [Uses env-configure-npm skill]
 Result: "npm registry configured to use internal Nexus mirror. Installation speed improved"
 ```
 
-**Related Skills**: `env-configure-nodejs`, `env-configure-pnpm`
-
 ---
 
 ### env-configure-pnpm
@@ -183,8 +171,6 @@ AI: [Uses env-configure-pnpm skill]
       2. Verifies configuration
 Result: "pnpm registry configured to use internal Nexus mirror"
 ```
-
-**Related Skills**: `env-configure-nodejs`, `env-configure-npm`
 
 ---
 
@@ -212,8 +198,6 @@ Result: "Gradle environment configured successfully"
 
 **Prerequisites**: `env-configure-java` must be configured first
 
-**Related Skills**: `env-configure-java`, `env-configure-maven`
-
 ---
 
 ### env-configure-gh
@@ -239,8 +223,6 @@ Result: "GitHub CLI configured. You can now use 'gh' commands"
 
 **Prerequisites**: `env-configure-git` should be configured first
 
-**Related Skills**: `env-configure-git`
-
 ---
 
 ### env-configure-path
@@ -262,8 +244,6 @@ AI: [Uses env-configure-path skill]
       3. Verifies configuration
 Result: "Path configured. You can now run MyCLI commands from any directory"
 ```
-
-**Related Skills**: Any `env-configure-*` skill for specific tools
 
 ---
 
@@ -294,8 +274,6 @@ Result: "Software request submitted. Ticket #REQ0012345. Approval takes 1-2 busi
 
 **Next Step**: After approval, use `swc-install-package` to install
 
-**Related Skills**: `swc-install-package`, `sn-request-ad-group`
-
 ---
 
 ### sn-request-ad-group
@@ -319,8 +297,6 @@ AI: [Uses sn-request-ad-group skill]
       5. Provides ticket number
 Result: "AD group request submitted. Ticket #REQ0012346. Approval takes 2-3 business days"
 ```
-
-**Related Skills**: `sn-request-software`
 
 ---
 
@@ -352,8 +328,6 @@ Result: "Java installed successfully. Would you like me to configure the environ
 ```
 
 **Prerequisites**: Software request must be approved via `sn-request-software`
-
-**Related Skills**: `sn-request-software`, `env-configure-java`
 
 ---
 

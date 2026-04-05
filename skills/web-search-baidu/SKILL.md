@@ -145,11 +145,6 @@ Present results to user:
 - **Browser open failed**: Inform user unable to open browser automatically, provide link for manual opening
 - **System command not available**: Inform user system command not available on platform
 
-## Related Skills
-
-- Other search engine skills (if available) - Search on Google, Bing, etc.
-- Web scraping skills (if available) - Scrape content from specific webpages
-
 ## Example Usage
 
 **Example 1: Basic Search**

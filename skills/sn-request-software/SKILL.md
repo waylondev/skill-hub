@@ -106,8 +106,3 @@ After submission:
 - **Insufficient permissions**: If user cannot access the request form, inform them about permission requirements
 - **Request rejected**: If previous request was rejected, inform user of the rejection reason if available, suggest addressing the issue before resubmitting
 - **Duplicate request detected**: Inform user about existing request, provide ticket number and status
-
-## Related Skills
-
-- `swc-install-package` - Install software after approval in Software Center
-- `sn-request-ad-group` - Request AD group permissions (different from software)

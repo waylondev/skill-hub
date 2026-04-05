@@ -91,8 +91,3 @@ After configuration:
 - **Maven not installed**: Inform user Maven is not installed or not accessible
 - **JAVA_HOME not set**: Inform user JAVA_HOME is not configured, need to configure Java first
 - **Already configured**: Inform user Maven environment variables are already configured correctly
-
-## Related Skills
-
-- `env-configure-java` - Configure Java environment (prerequisite)
-- `env-configure-path` - Generic path configuration

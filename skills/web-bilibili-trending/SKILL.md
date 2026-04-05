@@ -164,12 +164,6 @@ Present results to user:
 - **Browser open failed**: Inform user unable to open browser automatically, provide link for manual opening
 - **System command not available**: Inform user system command not available on platform
 
-## Related Skills
-
-- `web-search-baidu` - Search for specific content on Baidu
-- Other web browsing skills (if available) - Browse specific webpages
-- Web scraping skills (if available) - Scrape detailed content from pages
-
 ## Example Usage
 
 **Example 1: Basic Trending**
