@@ -352,6 +352,7 @@ Only these domain codes are allowed:
 - `sn` - ServiceNow
 - `swc` - Software Center
 - `env` - Environment Variables
+- `dev` - Development Tools
 - `nexus` - Nexus Artifact Repository
 - `vpn` - VPN
 - `hr` - HR System
