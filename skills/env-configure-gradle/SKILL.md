@@ -1,8 +1,8 @@
 ---
 name: env-configure-gradle
 description: >-
-  Configure Gradle environment variables (GRADLE_HOME and PATH).
-  Invoke when user needs to set up Gradle for Java project builds.
+  Use this skill when the user wants to configure Gradle environment variables,
+  set up GRADLE_HOME and PATH, or add Gradle to the system PATH for Java builds.
   Requires Java to be configured first.
 version: 1.0.0
 displayName: Configure Gradle Environment Variables

@@ -1,11 +1,11 @@
 ---
 name: env-configure-git
 description: >-
-  Configure Git username and email for commits.
-  Invoke when user needs to set up Git identity or verify Git configuration.
+  Use this skill when the user wants to configure Git username and email,
+  set up Git identity for commits, or verify Git configuration.
   Supports idempotent configuration (checks before applying).
 version: 1.0.0
-displayName: Configure Git
+displayName: Configure Git Identity
 domain: env
 action: configure
 object: git
@@ -15,11 +15,11 @@ inputs:
   - name: user_name
     type: string
     required: true
-    description: Git username to display in commits
+    description: Git username for commits
   - name: user_email
     type: string
     required: true
-    description: Git email address for commits
+    description: Git email for commits
 ---
 # Configure Git
 

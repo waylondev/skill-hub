@@ -1,33 +1,29 @@
 ---
 name: web-bilibili-trending
 description: >-
-  Browse Bilibili trending videos and show popular content.
-  Invoke when user asks "what's trending on Bilibili" or wants to discover popular videos.
+  Use this skill when the user wants to browse Bilibili trending videos,
+  discover popular content, or check what's trending on Bilibili.
   Supports category filtering and time range selection.
-  Can open videos in browser for watching.
 version: 1.0.0
-displayName: Bilibili Trending Videos
+displayName: Browse Bilibili Trending
 domain: web
 action: browse
-object: bilibili
-tags: [web, bilibili, trending, videos, browse, open-browser, interactive]
+object: bilibili-trending
+tags: [web, bilibili, trending, videos, browser]
 type: SKILL
 inputs:
   - name: category
     type: string
     required: false
-    description: >-
-      Filter videos by category. Common categories: animation, music, dance, game, 
-      technology, life, fashion, entertainment, food, automotive, sports.
-      If not specified, show all categories.
+    description: Bilibili category to filter trending videos (default: all categories)
   - name: time_range
     type: string
     required: false
-    description: Time range for trending videos - 'today', '3days', 'week' (default: 'today')
-  - name: num_results
-    type: number
+    description: Time range for trending videos (today, this_week, this_month)
+  - name: open_browser
+    type: boolean
     required: false
-    description: Number of trending videos to retrieve (default: 10, range: 1-50)
+    description: Whether to open browser with trending page (default: true)
 ---
 # Bilibili Trending Videos
 

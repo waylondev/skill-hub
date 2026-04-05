@@ -1,26 +1,28 @@
 ---
 name: web-search-baidu
 description: >-
-  Search on Baidu and retrieve search results.
-  Invoke when user asks to "search on Baidu" or needs information from Baidu.
-  Supports customizable result count.
-  Can open search results in browser for viewing.
+  Use this skill when the user wants to search on Baidu, retrieve search results,
+  or find information from Baidu search engine. Supports customizable result count.
 version: 1.0.0
 displayName: Baidu Search
 domain: web
 action: search
 object: baidu
-tags: [web, baidu, search, browse, open-browser, interactive]
+tags: [web, search, baidu, browser]
 type: SKILL
 inputs:
   - name: query
     type: string
     required: true
-    description: Search query - the keywords or phrase to search for on Baidu
+    description: Search query string
   - name: num_results
-    type: number
+    type: integer
     required: false
-    description: Number of search results to retrieve (default: 5, range: 1-20)
+    description: Number of search results to return (default: 10)
+  - name: open_browser
+    type: boolean
+    required: false
+    description: Whether to open browser with search results (default: true)
 ---
 # Baidu Web Search
 
