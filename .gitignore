@@ -20,8 +20,13 @@ skill-hub-site/registry.yaml
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
 .trae/
 .playwright-cli/
+
+# VS Code - ignore personal settings but keep project snippets
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
 

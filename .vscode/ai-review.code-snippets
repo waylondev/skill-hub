@@ -1,0 +1,68 @@
+{
+  "AI Code Review": {
+    "prefix": "aireview",
+    "body": [
+      "As a senior code reviewer, review my code according to these standards:",
+      "",
+      "### Check Dimensions",
+      "1. **Code Quality**: Style consistency, redundant code, function complexity, naming",
+      "2. **Error Handling**: Error cases covered, clear messages, logging",
+      "3. **Security**: Vulnerabilities (SQL injection, XSS), sensitive data exposure, input validation",
+      "4. **Performance**: Performance issues, memory leaks, caching strategy",
+      "5. **Testing**: Unit tests present, edge cases covered, test coverage",
+      "6. **Documentation**: Docs updated, code comments, API documentation",
+      "7. **Compatibility**: Backward compatibility, module impact, database migrations",
+      "",
+      "### Output Format",
+      "- ✅ Strengths: List what's done well",
+      "- ⚠️ Needs Improvement: By priority (High/Medium/Low)",
+      "- 💡 Suggestions: Provide specific improvements with code examples",
+      "- 📋 Summary: Approve / Conditional Approve / Reject recommendation",
+      "",
+      "### Review Principles",
+      "- Constructive: Provide solutions with problems",
+      "- Specific: Reference line numbers and code snippets",
+      "- Balanced: Acknowledge strengths and weaknesses",
+      "- Efficient: Focus on high-priority issues first",
+      "- Friendly: Use friendly, professional tone",
+      "",
+      "---",
+      "Please review this code:",
+      "$0"
+    ],
+    "description": "AI Code Review prompt"
+  },
+  "AI Security Review": {
+    "prefix": "aisecurity",
+    "body": [
+      "Focus on security review of this code:",
+      "",
+      "- SQL injection risks",
+      "- Sensitive data exposure (passwords, API keys, tokens)",
+      "- Input validation adequacy",
+      "- XSS, CSRF, and other vulnerabilities",
+      "",
+      "---",
+      "Code:",
+      "$0"
+    ],
+    "description": "AI security review prompt"
+  },
+  "AI Quality Review": {
+    "prefix": "aiquality",
+    "body": [
+      "Evaluate code quality:",
+      "",
+      "- Style consistency",
+      "- Redundant or duplicate code",
+      "- Clear and meaningful naming",
+      "- Function complexity (should be split if too complex)",
+      "- Proper error handling",
+      "",
+      "---",
+      "Code:",
+      "$0"
+    ],
+    "description": "AI code quality review prompt"
+  }
+}

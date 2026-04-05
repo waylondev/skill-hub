@@ -87,7 +87,7 @@ From the search results page:
   - Extract snippet/description
   - Store as structured data
 - Handle special cases:
-  - Sponsored results (marked as "广告")
+  - Sponsored results (marked as "sponsored" or "ad")
   - Rich results (videos, images)
 
 ### Step 7: Format and Return Results

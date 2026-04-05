@@ -1,105 +1,103 @@
-# SKILL File Review 规则
+# SKILL File Review Rules
 
-## 使用说明
+## Purpose
 
-这是专门用于 review Skill-Hub 项目中 SKILL.md 文件的规则。确保所有 Skill 文件符合官方规范。
+Review SKILL.md files to ensure compliance with Skill-Hub design principles and official specifications.
 
 ---
 
-## 📋 Review 检查清单
+## Review Checklist
 
-### 1. Frontmatter 检查 ✅
+### 1. Frontmatter Validation
 
-**必须包含的字段**：
-- [ ] `name`: 技能名称（必填）
-- [ ] `description`: 技能描述（必填）
-- [ ] `version`: 版本号（必填）
-- [ ] `displayName`: 显示名称（建议）
-- [ ] `domain`: 领域代码（必填）
-- [ ] `action`: 动作（必填）
-- [ ] `object`: 对象（必填）
-- [ ] `type`: 类型（必填，值为 SKILL）
+**Required Fields**:
+- [ ] `name`: Skill name (required)
+- [ ] `description`: Skill description (required)
+- [ ] `version`: Version number (required)
+- [ ] `displayName`: Display name (recommended)
+- [ ] `domain`: Domain code (required)
+- [ ] `action`: Action (required)
+- [ ] `object`: Object (required)
+- [ ] `type`: Type (required, value: SKILL)
 
-**命名规范检查**：
-- [ ] `name` 是否遵循 `{domain}-{action}-{object}` 格式
-- [ ] `domain` 是否是有效的领域代码（sn, swc, env, nexus, vpn, hr, doc）
-- [ ] 名称是否全部小写，使用连字符分隔
+**Naming Convention**:
+- [ ] `name` follows `{domain}-{action}-{object}` format
+- [ ] `domain` is valid (sn, swc, env, nexus, vpn, hr, doc)
+- [ ] All lowercase with hyphens
 
-**Description 质量检查**：
-- [ ] 是否使用祈使句 "Use this skill when..."
-- [ ] 是否聚焦用户意图，而非实现细节
-- [ ] 是否明确列出适用场景
-- [ ] 是否简洁（≤ 1024 字符）
-- [ ] 是否包含触发场景示例
+**Description Quality**:
+- [ ] Uses imperative "Use this skill when..."
+- [ ] Focuses on user intent, not implementation details
+- [ ] Lists applicable scenarios
+- [ ] Concise (≤ 1024 characters)
+- [ ] Includes trigger examples
 
-**示例**：
+**Example**:
 ```yaml
-# ✅ Good
+# Good
 description: >-
   Use this skill when the user wants to configure Git, set up Git username,
   or configure Git email.
 
-# ❌ Bad
+# Bad
 description: >-
-  This skill is used to configure git...  # 不是祈使句
+  This skill is used to configure git...  # Not imperative
 ```
 
 ---
 
-### 2. SKILL.md 结构检查 📐
+### 2. Structure Validation
 
-**必须包含的章节**：
-- [ ] `## Trigger Conditions` - 何时使用此技能
-- [ ] `## Prerequisites` - 前置条件
-- [ ] `## Execution Steps` - 执行步骤
-- [ ] `## Constraints` - 约束和边界
+**Required Sections**:
+- [ ] `## Trigger Conditions` - When to use
+- [ ] `## Prerequisites` - Required state
+- [ ] `## Execution Steps` - Operations
+- [ ] `## Constraints` - Boundaries + idempotency
 
-**推荐内容**：
-- [ ] `## Purpose` - 简要说明（1-2 句话）
-- [ ] `## Error Handling` - 错误处理
+**Recommended**:
+- [ ] `## Purpose` - Brief description (1-2 sentences)
+- [ ] `## Error Handling` - Common errors
 
-**不应包含**：
-- [ ] Related Skills 列表（AI 会自主发现）
-- [ ] 过多的可选配置示例
-- [ ] 冗长的背景解释
+**Do NOT Include**:
+- [ ] Related Skills list (AI discovers autonomously)
+- [ ] Excessive optional examples
+- [ ] Lengthy background explanations
 
 ---
 
-### 3. 单一职责原则检查 🎯
+### 3. Single Responsibility Principle
 
-**检查项**：
-- [ ] 是否只做一件事（One Skill = One Action）
-- [ ] 是否只操作一个系统
-- [ ] 是否没有硬编码具体命令
-- [ ] 是否没有编排逻辑（orchestration）
+**Check**:
+- [ ] Does only ONE thing (One Skill = One Action)
+- [ ] Operates on ONE system only
+- [ ] No hardcoded commands
+- [ ] No orchestration logic
 
-**示例**：
+**Example**:
 ```markdown
-# ✅ Good: 只配置环境变量
-env-configure-maven - 只配置 MAVEN_HOME 和 PATH
+Good: env-configure-maven - Only configures MAVEN_HOME and PATH
 
-# ❌ Bad: 做了太多事
-install-and-configure-java - 请求、安装、配置（跨越 3 个系统）
+Bad: install-and-configure-java - Requests, installs, and configures (3 systems)
 ```
 
 ---
 
-### 4. 幂等性检查 🔄
+### 4. Idempotency
 
-**必须包含的检查逻辑**：
-- [ ] 是否在修改前检查当前状态
-- [ ] 如果已正确配置，是否告知用户并停止
-- [ ] 是否只在需要时才执行配置
+**Required**:
+- [ ] Checks current state before modification
+- [ ] If already configured, informs user and stops
+- [ ] Only configures if needed
 
-**错误消息规范**：
+**Error Messages**:
 - [ ] "XXX is not installed. Please install XXX first."
 - [ ] "XXX is not configured. Please use XXX skill first."
 - [ ] "XXX is already set to {{value}}. No action needed."
 
-**示例流程**：
+**Example Flow**:
 ```markdown
-Step 1: Verify prerequisites → Not met? Inform user and stop
-Step 2: Check current state → Already correct? Inform user and stop
+Step 1: Verify prerequisites → Not met? Inform and stop
+Step 2: Check current state → Already correct? Inform and stop
 Step 3: Apply configuration → Only if needed
 Step 4: Verify result
 Step 5: Inform user
@@ -107,15 +105,15 @@ Step 5: Inform user
 
 ---
 
-### 5. 前置条件检查检查 ⚠️
+### 5. Prerequisite Check
 
-**检查项**：
-- [ ] 是否明确列出所有前置条件
-- [ ] 如果前置条件不满足，是否告知用户
-- [ ] 是否建议用户先使用哪个 Skill
-- [ ] 是否停止执行（不做部分配置）
+**Check**:
+- [ ] Lists all prerequisites clearly
+- [ ] If not met, informs user
+- [ ] Suggests which Skill to use first
+- [ ] Stops execution (no partial configuration)
 
-**示例**：
+**Example**:
 ```markdown
 ### Step 1: Verify Prerequisites
 
@@ -126,20 +124,20 @@ Step 5: Inform user
 
 ---
 
-### 6. 无硬编码原则检查 🚫
+### 6. No Hardcoding Principle
 
-**检查项**：
-- [ ] 是否描述意图而非具体命令
-- [ ] 是否没有硬编码具体命令（如 `git config --global user.name`）
-- [ ] 是否让 AI 可以适应不同平台
-- [ ] 是否使用意图描述而非指令
+**Check**:
+- [ ] Describes intent, not specific commands
+- [ ] No hardcoded commands (e.g., `git config --global user.name`)
+- [ ] Allows AI to adapt to different platforms
+- [ ] Uses intent descriptions
 
-**示例**：
+**Example**:
 ```markdown
-# ❌ Bad (Hardcoded)
+Bad (Hardcoded):
 Run: git config --global user.name "John Doe"
 
-# ✅ Good (Intent-based)
+Good (Intent-based):
 Set the global username that will appear in commits:
 - Use the `user.name` configuration key
 - Apply at global level
@@ -148,15 +146,15 @@ Set the global username that will appear in commits:
 
 ---
 
-### 7. 约束和边界检查 📏
+### 7. Constraints and Boundaries
 
-**必须明确说明**：
-- [ ] 此 Skill **不**负责什么
-- [ ] 操作级别（用户级 vs 系统级）
-- [ ] 是否幂等
-- [ ] 是否检查前置条件
+**Must Specify**:
+- [ ] What this Skill is NOT responsible for
+- [ ] Operation level (user vs system)
+- [ ] Idempotency statement
+- [ ] Prerequisite check statement
 
-**示例**：
+**Example**:
 ```markdown
 ## Constraints
 
@@ -168,104 +166,189 @@ Set the global username that will appear in commits:
 
 ---
 
-### 8. 用户沟通检查 💬
+### 8. User Communication
 
-**检查项**：
-- [ ] 是否有成功确认消息
-- [ ] 是否有下一步建议
-- [ ] 是否有验证指导
-- [ ] 错误消息是否具体、可操作
+**Check**:
+- [ ] Success confirmation message
+- [ ] Next steps guidance
+- [ ] Verification instructions
+- [ ] Clear, actionable error messages
 
-**示例消息**：
+**Example Messages**:
 ```markdown
-- ✅ "Maven environment variables have been configured successfully"
-- ℹ️ "You may need to restart your terminal for changes to take effect"
-- 🔍 "Run `mvn --version` to verify the installation"
-- ❌ "Maven is not installed. Please install Maven first."
+- "Maven environment variables have been configured successfully"
+- "You may need to restart your terminal for changes to take effect"
+- "Run `mvn --version` to verify the installation"
+- "Maven is not installed. Please install Maven first."
 ```
 
 ---
 
-### 9. 语言检查 🌐
+### 9. Language Check
 
-**检查项**：
-- [ ] 是否全部使用英文（Pure English）
-- [ ] 是否没有中文内容
-- [ ] 语法是否正确
-- [ ] 用词是否清晰、专业
-
----
-
-### 10. AI 赋能检查 🤖
-
-**检查项**：
-- [ ] 是否将编排留给 AI
-- [ ] 是否让 AI 处理上下文推理
-- [ ] 是否让 AI 处理异常
-- [ ] 是否提供原子能力而非完整流程
+**Check**:
+- [ ] All content in English (Pure English)
+- [ ] No Chinese or other languages
+- [ ] Grammar is correct
+- [ ] Clear, professional language
 
 ---
 
-## 📊 Review 输出格式
+### 10. AI Empowerment
 
-### ✅ 优点
-列出 SKILL 文件中做得好的地方
-
-### ⚠️ 需要改进
-
-#### 高优先级（必须修复）
-1. **缺少必需章节**：例如缺少 Prerequisites 章节
-2. **违反单一职责**：例如做了多件事
-3. **没有幂等性检查**：例如没有检查当前状态
-4. **硬编码命令**：例如包含具体命令
-
-#### 中优先级（建议修复）
-1. **Description 不够清晰**：例如没有使用祈使句
-2. **错误消息不完整**：例如缺少前置条件不满足的提示
-3. **约束定义不明确**：例如没有说明不负责什么
-
-#### 低优先级（可选优化）
-1. **格式小问题**：例如标点符号不一致
-2. **可以更简洁**：例如某些描述可以精简
-
-### 💡 建议
-提供具体的修改建议和代码示例
-
-### 📋 总结
-- ✅ **批准**：符合所有规范，可以合并
-- ⚠️ **条件批准**：需要修复中/低优先级问题
-- ❌ **拒绝**：存在高优先级问题，需要重新设计
+**Check**:
+- [ ] Orchestration left to AI
+- [ ] AI handles context reasoning
+- [ ] AI handles exceptions
+- [ ] Provides atomic capabilities, not complete workflows
 
 ---
 
-## 🚀 快速 Review 提示词
+## Review Output Format
 
-使用以下提示词快速 review SKILL 文件：
+### Strengths
+List what the SKILL file does well
 
+### Needs Improvement
+
+#### High Priority (Must Fix)
+1. **Missing required sections**: e.g., no Prerequisites section
+2. **Violates single responsibility**: e.g., does multiple things
+3. **No idempotency check**: e.g., no state checking
+4. **Hardcoded commands**: e.g., specific git commands
+
+#### Medium Priority (Recommended)
+1. **Unclear description**: e.g., not using imperative
+2. **Incomplete error messages**: e.g., missing prerequisite failure messages
+3. **Unclear constraints**: e.g., doesn't state what it's not responsible for
+
+#### Low Priority (Optional)
+1. **Minor formatting issues**: e.g., inconsistent punctuation
+2. **Could be more concise**: e.g., verbose descriptions
+
+### Suggestions
+Provide specific improvement suggestions with code examples
+
+### Summary
+- **Approve**: Complies with all standards, ready to merge
+- **Conditional Approval**: Needs medium/low priority fixes
+- **Reject**: Has high priority issues, needs redesign
+
+---
+
+## Quick Review Prompts
+
+Use these prompts for quick SKILL file review:
+
+### Full Review
 ```
-请作为 Skill-Hub 专家，review 这个 SKILL.md 文件是否符合规范：
+As a Skill-Hub expert, review this SKILL.md file for compliance:
 
-1. Frontmatter 是否完整（name, description, version, domain, action, object, type）
-2. 是否包含必需章节（Trigger Conditions, Prerequisites, Execution Steps, Constraints）
-3. 是否遵循单一职责原则
-4. 是否有幂等性检查
-5. 是否检查前置条件
-6. 是否没有硬编码命令
-7. 约束是否明确
-8. 是否全部使用英文
+1. Frontmatter complete and correct (name, description, version, domain, action, object, type)
+2. Required sections present (Trigger Conditions, Prerequisites, Execution Steps, Constraints)
+3. Single responsibility principle followed
+4. Idempotency implemented
+5. Prerequisite checks present
+6. No hardcoded commands
+7. Constraints clearly defined
+8. All in English
 
-请指出问题并提供修改建议。
+Identify issues and provide fix suggestions.
 
-SKILL 文件内容：
-[粘贴 SKILL.md 内容]
+SKILL file content:
+[paste SKILL.md content]
+```
+
+### Quick Check
+```
+Quick check for obvious issues in this SKILL.md:
+- Missing required sections
+- Violates single responsibility
+- Hardcoded commands
+- No idempotency
+- Not all in English
+
+SKILL file:
+[paste content]
+```
+
+### Specific Checks
+
+**Frontmatter**:
+```
+Check Frontmatter compliance:
+- name follows {domain}-{action}-{object}
+- domain is valid (sn, swc, env, nexus, vpn, hr, doc)
+- description uses "Use this skill when..."
+- description focuses on user intent
+- all required fields present
+
+Frontmatter:
+[paste frontmatter]
+```
+
+**Idempotency**:
+```
+Check idempotency implementation:
+- Checks current state before modification
+- If already configured, informs and stops
+- Only configures if needed
+- Error messages follow pattern
+
+Execution Steps:
+[paste steps]
+```
+
+**Prerequisites**:
+```
+Check prerequisite handling:
+- Lists all prerequisites
+- Informs user if not met
+- Suggests which Skill to use first
+- Stops execution
+
+Prerequisites section:
+[paste section]
+```
+
+**Hardcoding**:
+```
+Check for hardcoded commands:
+- Look for specific commands (git config, npm install, etc.)
+- Look for specific paths
+- Should use intent descriptions instead
+
+Execution Steps:
+[paste steps]
+```
+
+**Constraints**:
+```
+Check Constraints section:
+- States what Skill is NOT responsible for
+- Idempotency statement
+- Prerequisite check statement
+- Operation level
+
+Constraints:
+[paste section]
 ```
 
 ---
 
-## 📌 Skill-Hub 特定规则
+## Review Principles
 
-### Domain 代码白名单
-只允许以下 domain 代码：
+- **Constructive**: Provide solutions with problems
+- **Specific**: Reference specific sections and line numbers
+- **Balanced**: Acknowledge strengths and weaknesses
+- **Efficient**: Focus on high-priority issues first
+- **Friendly**: Use friendly, professional tone
+
+---
+
+## Domain Code Whitelist
+
+Only these domain codes are allowed:
 - `sn` - ServiceNow
 - `swc` - Software Center
 - `env` - Environment Variables
@@ -274,45 +357,23 @@ SKILL 文件内容：
 - `hr` - HR System
 - `doc` - Document System
 
-### 命名格式
-必须是 `{domain}-{action}-{object}` 格式，例如：
-- ✅ `sn-request-software`
-- ✅ `env-configure-java`
-- ❌ `request-software` (缺少 domain)
-- ❌ `configureJava` (格式错误)
+---
 
-### 参考文档
-Review 时应参考：
+## Reference Documents
+
 - [Skill Design Principles](../docs/SKILL-DESIGN-PRINCIPLES.md)
 - [Agent Skills Best Practices](../Agent-Skills-Best-Practices.md)
 - [README](../README.md)
+- Official docs: https://agentskills.io
 
 ---
 
-## 💡 Review 技巧
+## Design Principles Applied
 
-1. **先检查 Frontmatter**：确保所有必需字段存在且格式正确
-2. **检查必需章节**：确保 4 个必需章节都存在
-3. **验证单一职责**：问自己"这个 Skill 是否只做一件事？"
-4. **查找硬编码**：搜索具体命令（如 `git config`, `npm install`）
-5. **验证幂等性**：检查是否有"如果已配置则跳过"的逻辑
-6. **检查前置条件**：确保有验证前置条件的步骤
-7. **阅读 Constraints**：确保明确说明了不负责什么
+This review guide follows:
 
----
-
-## 🎯 Review 原则
-
-- **建设性**：指出问题的同时提供解决方案
-- **具体**：引用具体的章节和行号
-- **平衡**：既指出问题，也肯定优点
-- **高效**：优先关注高优先级问题
-- **友好**：使用友好的语气
-
----
-
-## 📖 参考资源
-
-- 官方文档：https://agentskills.io
-- Skill 创建最佳实践：https://agentskills.io/skill-creation/best-practices
-- 优化描述：https://agentskills.io/skill-creation/optimizing-descriptions
+- **SOLID**: Single responsibility, clear boundaries
+- **KISS**: Keep it simple, focus on essentials
+- **DRY**: Don't repeat, reference official docs
+- **Atomic**: Each check is independent
+- **Intent-based**: Describe what to check, not how
