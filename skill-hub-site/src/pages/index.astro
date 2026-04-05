@@ -25,101 +25,509 @@ for (const skill of skills) {
 
 <Layout title="Home">
   <style>
-    .search-section { margin-bottom: 3rem; }
-    .search-input { width: 100%; padding: 1rem; font-size: 1.1rem; border: 2px solid #e0e0e0; border-radius: 8px; transition: all 0.3s; }
-    .search-input:focus { border-color: #667eea; outline: none; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-    .quick-start { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2.5rem; border-radius: 12px; margin-bottom: 3rem; color: white; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); }
-    .quick-start h2 { margin-bottom: 1rem; color: white; font-weight: 600; }
-    .quick-start p { opacity: 0.95; line-height: 1.6; }
-    .code-block { background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); color: white; padding: 1rem; border-radius: 8px; font-family: 'Courier New', monospace; margin: 0.5rem 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255, 255, 255, 0.2); }
-    .copy-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
-    .copy-btn:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-1px); }
-    .domain-section { margin-bottom: 2.5rem; }
-    .domain-title { font-size: 1.4rem; margin-bottom: 1rem; color: #764ba2; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
-    .domain-title::before { content: ''; display: inline-block; width: 4px; height: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 2px; }
-    .skill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem; }
-    .skill-card { border: 1px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; transition: all 0.3s; background: white; position: relative; overflow: hidden; }
-    .skill-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); transform: scaleX(0); transition: transform 0.3s; }
-    .skill-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: translateY(-2px); }
-    .skill-card:hover::before { transform: scaleX(1); }
-    .skill-name { font-weight: 600; font-size: 1.1rem; margin-bottom: 0.5rem; color: #2d3748; font-family: 'Courier New', monospace; }
-    .skill-title { color: #718096; margin-bottom: 0.75rem; line-height: 1.5; }
-    .skill-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-    .tag { background: linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%); color: #4338ca; padding: 0.35rem 0.75rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; border: 1px solid rgba(67, 56, 202, 0.1); transition: all 0.2s; }
-    .tag:hover { background: #e0e7ff; transform: translateY(-1px); }
-    .top-skills { margin-bottom: 3rem; }
-    .top-skills h2 { margin-bottom: 1.5rem; font-weight: 600; color: #2d3748; }
-    .hero-section { text-align: center; padding: 3rem 0; margin-bottom: 2rem; }
-    .hero-section h1 { font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 700; }
-    .hero-section p { font-size: 1.2rem; color: #718096; max-width: 600px; margin: 0 auto; line-height: 1.8; }
+    :root {
+      --primary: #00d4ff;
+      --secondary: #7c3aed;
+      --accent: #10b981;
+      --dark: #0f172a;
+      --darker: #020617;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 100px 0 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      animation: pulse 8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--primary);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .hero h1 {
+      font-size: 72px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 24px;
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    .hero-subtitle {
+      font-size: 24px;
+      color: var(--text);
+      max-width: 800px;
+      margin: 0 auto 48px;
+      font-weight: 500;
+    }
+
+    /* Value Props */
+    .value-props {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto 80px;
+    }
+
+    .value-prop {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: left;
+      transition: all 0.3s;
+    }
+
+    .value-prop:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .value-prop-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    .value-prop-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .value-prop-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 80px;
+      margin-bottom: 80px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 64px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 16px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-top: 8px;
+      font-weight: 600;
+    }
+
+    /* Quick Start */
+    .quick-start {
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 16px;
+      padding: 40px;
+      margin-bottom: 60px;
+      backdrop-filter: blur(10px);
+    }
+
+    .quick-start-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .quick-start-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .code-blocks {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .code-block {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 15px;
+    }
+
+    .code-text {
+      color: var(--primary);
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Search */
+    .search-section {
+      margin-bottom: 60px;
+    }
+
+    .search-wrapper {
+      position: relative;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 20px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 20px 24px 20px 64px;
+      font-size: 18px;
+      background: rgba(30, 41, 59, 0.8);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      color: var(--text);
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 6px rgba(0, 212, 255, 0.1);
+    }
+
+    .search-input::placeholder {
+      color: var(--muted);
+    }
+
+    /* Domain Sections */
+    .domain-section {
+      margin-bottom: 56px;
+    }
+
+    .domain-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .domain-indicator {
+      width: 5px;
+      height: 28px;
+      background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 3px;
+    }
+
+    .domain-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .domain-count {
+      background: rgba(0, 212, 255, 0.15);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    /* Skill Grid */
+    .skill-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+    }
+
+    .skill-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .skill-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .skill-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+    }
+
+    .skill-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .skill-name {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .skill-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .skill-tags {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      background: rgba(0, 212, 255, 0.12);
+      color: var(--primary);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .value-props {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 48px;
+      }
+
+      .hero-subtitle {
+        font-size: 18px;
+      }
+
+      .stats {
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .stat-number {
+        font-size: 48px;
+      }
+
+      .skill-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 
-  <section class="hero-section">
-    <h1>Turn Knowledge into AI Execution</h1>
-    <p>
-      Capture reusable operational knowledge from Confluence, wikis, SOPs, and tribal knowledge. 
-      Let AI Agents execute repetitive tasks for you.
-    </p>
-  </section>
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <div class="logo">SKILL-HUB</div>
+        <h1>Turn Knowledge into AI Execution</h1>
+        <p class="hero-subtitle">
+          Capture reusable operational knowledge from Confluence, wikis, SOPs, and tribal knowledge.
+          Let AI Agents execute repetitive tasks for you.
+        </p>
 
-  <section class="quick-start">
-    <h2>✨ Quick Start</h2>
-    <p style="margin-bottom: 1rem; opacity: 0.95;">
-      Transform your documentation into AI-executable Skills in seconds
-    </p>
-    <div class="code-block">
-      <span>$ skill install sn-request-software</span>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install sn-request-software')">Copy</button>
-    </div>
-    <div class="code-block">
-        <span>$ skill read sn-request-software</span>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('skill read sn-request-software')">Copy</button>
-      </div>
-  </section>
-
-  <section class="search-section">
-    <input type="text" class="search-input" id="searchInput" placeholder="Search Skills..." />
-  </section>
-
-  <section class="top-skills">
-    <h2>🏆 Top Skills</h2>
-    <div class="skill-grid">
-      {skills.slice(0, 5).map((skill, index) => (
-        <div class="skill-card">
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">{['🥇', '🥈', '🥉', '4️⃣', '5️⃣'][index]}</div>
-          <div class="skill-name">{skill.name}</div>
-          <div class="skill-title">{skill.title}</div>
-          <div class="skill-tags">
-            {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
+        <div class="value-props">
+          <div class="value-prop">
+            <div class="value-prop-icon">📚</div>
+            <h3 class="value-prop-title">Capture Knowledge</h3>
+            <p class="value-prop-desc">Transform documentation, SOPs, and tribal knowledge into AI-executable Skills</p>
+          </div>
+          <div class="value-prop">
+            <div class="value-prop-icon">🤖</div>
+            <h3 class="value-prop-title">AI Execution</h3>
+            <p class="value-prop-desc">Let AI Agents understand and execute your operational workflows automatically</p>
+          </div>
+          <div class="value-prop">
+            <div class="value-prop-icon">⚡</div>
+            <h3 class="value-prop-title">Reusable Skills</h3>
+            <p class="value-prop-desc">Build a library of Skills that can be shared and reused across your organization</p>
           </div>
         </div>
-      ))}
+
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-number">{skills.length}</span>
+            <span class="stat-label">Skills Available</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">{Object.keys(skillsByDomain).length}</span>
+            <span class="stat-label">Domains Covered</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">∞</span>
+            <span class="stat-label">Possibilities</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  {Object.entries(skillsByDomain).map(([domain, domainSkills]) => (
-    <section class="domain-section">
-      <h2 class="domain-title">{domain.toUpperCase()} ({domainSkills.length})</h2>
-      <div class="skill-grid">
-        {domainSkills.map((skill) => (
-          <a href={`/skill/${skill.name}`} style="text-decoration: none; color: inherit;">
-            <div class="skill-card">
-              <div class="skill-name">{skill.name}</div>
-              <div class="skill-title">{skill.title}</div>
-              <div class="skill-tags">
-                {skill.tags.map((tag: string) => <span class="tag">{tag}</span>)}
-              </div>
-            </div>
-          </a>
-        ))}
+  <div class="container">
+    <section class="quick-start">
+      <div class="quick-start-header">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary);">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <h2 class="quick-start-title">Get Started in Seconds</h2>
+      </div>
+      <div class="code-blocks">
+        <div class="code-block">
+          <span class="code-text">$ skill install sn-request-software</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('skill install sn-request-software')">Copy</button>
+        </div>
+        <div class="code-block">
+          <span class="code-text">$ skill read sn-request-software</span>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('skill read sn-request-software')">Copy</button>
+        </div>
       </div>
     </section>
-  ))}
+
+    <section class="search-section">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Search Skills by name, description, or tags..." />
+      </div>
+    </section>
+
+    {Object.entries(skillsByDomain).map(([domain, domainSkills]) => (
+      <section class="domain-section">
+        <div class="domain-header">
+          <div class="domain-indicator"></div>
+          <h2 class="domain-title">{domain}</h2>
+          <span class="domain-count">{domainSkills.length} Skills</span>
+        </div>
+        <div class="skill-grid">
+          {domainSkills.map((skill) => (
+            <a href={`/skill/${skill.name}`} style="text-decoration: none; color: inherit;">
+              <div class="skill-card">
+                <div class="skill-name">{skill.name}</div>
+                <div class="skill-desc">{skill.title}</div>
+                <div class="skill-tags">
+                  {skill.tags.slice(0, 3).map((tag: string) => <span class="tag">{tag}</span>)}
+                </div>
+              </div>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
 
   <script>
     const searchInput = document.getElementById('searchInput');
     const cards = document.querySelectorAll('.skill-card');
-    
+
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.toLowerCase();
       cards.forEach(card => {
