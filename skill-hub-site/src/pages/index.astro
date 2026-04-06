@@ -21,6 +21,15 @@ for (const skill of skills) {
   }
   skillsByDomain[skill.domain].push(skill);
 }
+
+// Domain colors for visual distinction
+const domainColors: Record<string, { primary: string; gradient: string }> = {
+  env: { primary: '#00d4ff', gradient: 'linear-gradient(135deg, #00d4ff, #0099cc)' },
+  sn: { primary: '#10b981', gradient: 'linear-gradient(135deg, #10b981, #059669)' },
+  swc: { primary: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  web: { primary: '#ec4899', gradient: 'linear-gradient(135deg, #ec4899, #db2777)' },
+  dev: { primary: '#8b5cf6', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }
+};
 ---
 
 <Layout title="Home">
@@ -49,6 +58,7 @@ for (const skill of skills) {
       color: var(--text);
       line-height: 1.6;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
     .container {
@@ -57,10 +67,9 @@ for (const skill of skills) {
       padding: 0 24px;
     }
 
-    /* Hero Section */
     .hero {
       text-align: center;
-      padding: 100px 0 60px;
+      padding: 120px 0 80px;
       position: relative;
       overflow: hidden;
     }
@@ -72,13 +81,23 @@ for (const skill of skills) {
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 60%);
       animation: pulse 8s ease-in-out infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.05); opacity: 0.8; }
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
     }
 
     .hero-content {
@@ -87,82 +106,110 @@ for (const skill of skills) {
     }
 
     .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--primary);
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       text-transform: uppercase;
       margin-bottom: 32px;
+      padding: 10px 24px;
+      background: rgba(0, 212, 255, 0.08);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+      border-radius: 100px;
+      backdrop-filter: blur(10px);
     }
 
     .hero h1 {
-      font-size: 72px;
+      font-size: clamp(40px, 8vw, 72px);
       font-weight: 800;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      background: linear-gradient(135deg, #ffffff 0%, var(--primary) 50%, var(--secondary) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
       line-height: 1.1;
-      letter-spacing: -1px;
+      letter-spacing: -2px;
     }
 
     .hero-subtitle {
-      font-size: 24px;
+      font-size: clamp(18px, 2.5vw, 24px);
       color: var(--text);
-      max-width: 800px;
-      margin: 0 auto 48px;
-      font-weight: 500;
+      max-width: 900px;
+      margin: 0 auto 56px;
+      font-weight: 400;
+      opacity: 0.85;
+      line-height: 1.7;
     }
 
-    /* Value Props */
     .value-props {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 32px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
       max-width: 1200px;
-      margin: 0 auto 80px;
+      margin: 0 auto 96px;
     }
 
     .value-prop {
-      background: rgba(30, 41, 59, 0.6);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.6) 100%);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
+      border-radius: 20px;
+      padding: 36px;
       text-align: left;
-      transition: all 0.3s;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .value-prop::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
     .value-prop:hover {
-      border-color: var(--primary);
-      transform: translateY(-4px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: rgba(0, 212, 255, 0.4);
+      transform: translateY(-8px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 212, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .value-prop:hover::before {
+      opacity: 1;
     }
 
     .value-prop-icon {
-      font-size: 40px;
-      margin-bottom: 16px;
+      font-size: 44px;
+      margin-bottom: 20px;
     }
 
     .value-prop-title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 12px;
+      color: var(--text);
+      margin-bottom: 14px;
+      letter-spacing: -0.5px;
     }
 
     .value-prop-desc {
       font-size: 15px;
       color: var(--muted);
-      line-height: 1.6;
+      line-height: 1.7;
     }
 
-    /* Stats */
     .stats {
       display: flex;
       justify-content: center;
-      gap: 80px;
-      margin-bottom: 80px;
+      gap: 96px;
+      margin-bottom: 96px;
+      flex-wrap: wrap;
     }
 
     .stat {
@@ -170,45 +217,58 @@ for (const skill of skills) {
     }
 
     .stat-number {
-      font-size: 64px;
+      font-size: clamp(48px, 6vw, 64px);
       font-weight: 800;
       background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       display: block;
+      letter-spacing: -2px;
     }
 
     .stat-label {
-      font-size: 16px;
+      font-size: 13px;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 2px;
-      margin-top: 8px;
+      letter-spacing: 3px;
+      margin-top: 12px;
       font-weight: 600;
     }
 
-    /* Quick Start */
     .quick-start {
-      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-      border: 1px solid rgba(0, 212, 255, 0.2);
-      border-radius: 16px;
-      padding: 40px;
-      margin-bottom: 60px;
-      backdrop-filter: blur(10px);
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.06) 0%, rgba(124, 58, 237, 0.06) 100%);
+      border: 1px solid rgba(0, 212, 255, 0.15);
+      border-radius: 20px;
+      padding: 48px;
+      margin-bottom: 56px;
+      backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quick-start::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.5), transparent);
     }
 
     .quick-start-header {
       display: flex;
       align-items: center;
       gap: 16px;
-      margin-bottom: 28px;
+      margin-bottom: 32px;
     }
 
     .quick-start-title {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 700;
       color: var(--text);
+      letter-spacing: -0.5px;
     }
 
     .code-blocks {
@@ -218,41 +278,50 @@ for (const skill of skills) {
     }
 
     .code-block {
-      background: rgba(15, 23, 42, 0.8);
+      background: rgba(15, 23, 42, 0.9);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 20px 24px;
+      border-radius: 12px;
+      padding: 24px 28px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 15px;
+      font-size: 16px;
+      transition: all 0.3s;
+    }
+
+    .code-block:hover {
+      border-color: rgba(0, 212, 255, 0.3);
+      background: rgba(15, 23, 42, 1);
     }
 
     .code-text {
       color: var(--primary);
+      font-weight: 500;
     }
 
     .copy-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--muted);
-      padding: 8px 16px;
-      border-radius: 6px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      color: var(--primary);
+      padding: 10px 20px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 13px;
       font-weight: 600;
-      transition: all 0.2s;
+      transition: all 0.3s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     .copy-btn:hover {
+      background: rgba(0, 212, 255, 0.2);
       border-color: var(--primary);
-      color: var(--primary);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
     }
 
-    /* Search */
     .search-section {
-      margin-bottom: 60px;
+      margin-bottom: 64px;
     }
 
     .search-wrapper {
@@ -261,83 +330,86 @@ for (const skill of skills) {
 
     .search-icon {
       position: absolute;
-      left: 24px;
+      left: 28px;
       top: 50%;
       transform: translateY(-50%);
       color: var(--muted);
-      font-size: 20px;
+      font-size: 22px;
+      pointer-events: none;
     }
 
     .search-input {
       width: 100%;
-      padding: 20px 24px 20px 64px;
+      padding: 24px 24px 24px 72px;
       font-size: 18px;
-      background: rgba(30, 41, 59, 0.8);
+      background: rgba(30, 41, 59, 0.6);
       border: 2px solid var(--border);
       border-radius: 16px;
       color: var(--text);
       transition: all 0.3s;
+      font-weight: 400;
     }
 
     .search-input:focus {
       outline: none;
       border-color: var(--primary);
-      box-shadow: 0 0 0 6px rgba(0, 212, 255, 0.1);
+      box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.3);
+      background: rgba(30, 41, 59, 0.9);
     }
 
     .search-input::placeholder {
       color: var(--muted);
     }
 
-    /* Domain Sections */
     .domain-section {
-      margin-bottom: 56px;
+      margin-bottom: 64px;
     }
 
     .domain-header {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 28px;
+      gap: 20px;
+      margin-bottom: 32px;
     }
 
     .domain-indicator {
-      width: 5px;
-      height: 28px;
-      background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+      width: 6px;
+      height: 32px;
       border-radius: 3px;
+      box-shadow: 0 0 20px currentColor;
     }
 
     .domain-title {
-      font-size: 22px;
-      font-weight: 700;
+      font-size: 26px;
+      font-weight: 800;
       color: var(--text);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 2px;
+      flex: 1;
     }
 
     .domain-count {
-      background: rgba(0, 212, 255, 0.15);
+      background: rgba(0, 212, 255, 0.12);
       color: var(--primary);
-      padding: 6px 14px;
-      border-radius: 16px;
+      padding: 8px 18px;
+      border-radius: 100px;
       font-size: 13px;
       font-weight: 700;
+      letter-spacing: 0.5px;
     }
 
-    /* Skill Grid */
     .skill-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 28px;
     }
 
     .skill-card {
-      background: rgba(30, 41, 59, 0.6);
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 28px;
-      transition: all 0.3s;
+      border-radius: 18px;
+      padding: 32px;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
       position: relative;
       overflow: hidden;
@@ -350,34 +422,54 @@ for (const skill of skills) {
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      background: var(--card-gradient, linear-gradient(90deg, var(--primary), var(--secondary)));
       transform: scaleX(0);
-      transition: transform 0.3s;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-origin: left;
+    }
+
+    .skill-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(0, 212, 255, 0.08) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
     .skill-card:hover {
-      border-color: var(--primary);
-      transform: translateY(-5px);
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+      border-color: rgba(0, 212, 255, 0.35);
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 28px 56px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 212, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
 
     .skill-card:hover::before {
       transform: scaleX(1);
     }
 
+    .skill-card:hover::after {
+      opacity: 1;
+    }
+
+    .skill-content {
+      position: relative;
+      z-index: 1;
+    }
+
     .skill-name {
       font-family: 'SF Mono', 'Fira Code', monospace;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      letter-spacing: -0.3px;
     }
 
     .skill-desc {
       font-size: 15px;
       color: var(--muted);
-      line-height: 1.6;
-      margin-bottom: 18px;
+      line-height: 1.65;
+      margin-bottom: 20px;
     }
 
     .skill-tags {
@@ -387,50 +479,80 @@ for (const skill of skills) {
     }
 
     .tag {
-      background: rgba(0, 212, 255, 0.12);
-      color: var(--primary);
-      padding: 5px 12px;
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--tag-color, var(--primary));
+      padding: 6px 14px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
-      border: 1px solid rgba(0, 212, 255, 0.2);
+      border: 1px solid rgba(0, 212, 255, 0.15);
+      letter-spacing: 0.3px;
     }
 
-    /* Responsive */
     @media (max-width: 1024px) {
       .value-props {
         grid-template-columns: 1fr;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      
+      .stats {
+        gap: 48px;
       }
     }
 
     @media (max-width: 768px) {
+      .hero {
+        padding: 80px 0 60px;
+      }
+      
       .hero h1 {
-        font-size: 48px;
+        letter-spacing: -1px;
       }
-
+      
       .hero-subtitle {
-        font-size: 18px;
+        font-size: 17px;
+        margin-bottom: 40px;
       }
-
+      
       .stats {
         flex-direction: column;
         gap: 32px;
+        margin-bottom: 64px;
       }
-
+      
       .stat-number {
         font-size: 48px;
       }
-
+      
       .skill-grid {
         grid-template-columns: 1fr;
       }
+      
+      .quick-start {
+        padding: 32px 24px;
+      }
+      
+      .domain-header {
+        flex-wrap: wrap;
+      }
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    ::selection {
+      background: rgba(0, 212, 255, 0.3);
+      color: white;
     }
   </style>
 
   <section class="hero">
     <div class="container">
       <div class="hero-content">
-        <div class="logo">SKILL-HUB</div>
+        <div class="logo">✦ SKILL-HUB</div>
         <h1>Turn Knowledge into AI Execution</h1>
         <p class="hero-subtitle">
           Capture reusable operational knowledge from Confluence, wikis, SOPs, and tribal knowledge.
@@ -503,18 +625,20 @@ for (const skill of skills) {
     {Object.entries(skillsByDomain).map(([domain, domainSkills]) => (
       <section class="domain-section">
         <div class="domain-header">
-          <div class="domain-indicator"></div>
+          <div class="domain-indicator" style={`background: ${domainColors[domain]?.gradient || 'var(--primary)'}; color: ${domainColors[domain]?.primary || 'var(--primary)'};`}></div>
           <h2 class="domain-title">{domain}</h2>
           <span class="domain-count">{domainSkills.length} Skills</span>
         </div>
         <div class="skill-grid">
           {domainSkills.map((skill) => (
             <a href={`skill/${skill.name}`} style="text-decoration: none; color: inherit;">
-              <div class="skill-card">
-                <div class="skill-name">{skill.name}</div>
-                <div class="skill-desc">{skill.title}</div>
-                <div class="skill-tags">
-                  {skill.tags.slice(0, 3).map((tag: string) => <span class="tag">{tag}</span>)}
+              <div class="skill-card" style={`--card-gradient: ${domainColors[domain]?.gradient || 'var(--primary)'};`}>
+                <div class="skill-content">
+                  <div class="skill-name">{skill.name}</div>
+                  <div class="skill-desc">{skill.title}</div>
+                  <div class="skill-tags">
+                    {skill.tags.slice(0, 3).map((tag: string) => <span class="tag" style={`--tag-color: ${domainColors[domain]?.primary || 'var(--primary)'};`}>{tag}</span>)}
+                  </div>
                 </div>
               </div>
             </a>
@@ -527,12 +651,38 @@ for (const skill of skills) {
   <script>
     const searchInput = document.getElementById('searchInput');
     const cards = document.querySelectorAll('.skill-card');
+    const sections = document.querySelectorAll('.domain-section');
 
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase();
+    searchInput?.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      
       cards.forEach(card => {
         const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(query) ? 'block' : 'none';
+        const shouldShow = !query || text.includes(query);
+        
+        if (!shouldShow && card.style.display !== 'none') {
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            card.style.display = 'none';
+          }, 150);
+        } else if (shouldShow && card.style.display === 'none') {
+          card.style.display = '';
+          setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'scale(1)';
+          }, 10);
+        } else {
+          card.style.display = shouldShow ? '' : 'none';
+          card.style.opacity = shouldShow ? '1' : '0';
+          card.style.transform = shouldShow ? 'scale(1)' : 'scale(0.95)';
+        }
+      });
+
+      sections.forEach(section => {
+        const visibleCards = section.querySelectorAll('.skill-card[style*="display: none"]');
+        const totalCards = section.querySelectorAll('.skill-card');
+        section.style.display = visibleCards.length === totalCards.length && query ? 'none' : '';
       });
     });
   </script>
