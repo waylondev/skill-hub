@@ -50,122 +50,18 @@ Use this Skill when:
 
 - Internet connection is available
 - Target form page is accessible from the network
-- Python environment is installed and available
-- Browser automation capability is available (AI will use appropriate tools)
+- `browser-use` CLI installed (AI will check and suggest installation if needed)
 
 ## Execution Steps
 
-### Step 1: Validate Input Parameters
+AI will use browser-use CLI commands to:
+1. Open the form page
+2. View available elements and their indices
+3. Fill in form fields using element indices
+4. Submit the form (if requested)
+5. Report the result
 
-Before executing:
-- Verify `form_url` parameter or use default demo URL
-- If `full_name` is not provided, default to "John Doe"
-- If `email` is not provided, default to "john.doe@example.com"
-- If `country` is not provided, default to "United States"
-- If `headed_mode` is not provided, default to true (visible browser)
-- Validate email format if provided
-- If validation fails, inform user with specific error message
-
-### Step 2: Initialize Browser Automation
-
-Set up browser-use with appropriate configuration:
-- Use headed mode if `headed_mode` is true (shows browser window)
-- Use headless mode if `headed_mode` is false (background execution)
-- Ensure browser is properly initialized
-- Verify browser automation is ready
-
-### Step 3: Navigate to Sample Form Page
-
-Using browser automation:
-- Open the target form URL in browser
-- Wait for page to load completely
-- Verify form page is accessible and shows form elements
-- Handle any popups or cookie consent dialogs if they appear
-- If page fails to load, inform user and stop
-
-### Step 4: Locate Form Container
-
-On the form page:
-- Find the main form element (typically `<form>` tag)
-- Identify form container or section
-- Verify form is visible and interactive
-- Ensure all form fields are accessible
-
-### Step 5: Fill in Full Name Field
-
-Locate and fill the name field:
-- Find the full name input field (look for labels like "Name", "Full Name", "Your Name")
-- Clear any existing text in the field
-- Enter the `full_name` parameter value
-- Ensure text is fully entered and visible
-- Verify the field contains the correct value
-
-### Step 6: Fill in Email Field
-
-Locate and fill the email field:
-- Find the email input field (look for labels like "Email", "E-mail", "Email Address")
-- Clear any existing text in the field
-- Enter the `email` parameter value
-- Ensure text is fully entered and visible
-- Verify the field contains the correct value
-
-### Step 7: Select Country from Dropdown
-
-If country dropdown exists:
-- Find the country selection dropdown (look for labels like "Country", "Select Country")
-- Click to open the dropdown menu
-- Find and select the `country` option
-- Verify the correct country is selected
-- If country not found, select the first available option
-
-### Step 8: Fill Additional Fields (If Present)
-
-If the form has additional common fields:
-- **Phone**: Fill with sample phone number "+1-555-0123"
-- **Message/Comments**: Fill with sample text "This is a test message"
-- **Subject**: Fill with "Test Subject"
-- **Checkboxes**: Check the first available checkbox if appropriate
-- **Radio Buttons**: Select the first option if appropriate
-- Only fill fields that are clearly visible and safe to modify
-
-### Step 9: Review Filled Form
-
-Before submission (but do not submit):
-- Verify all filled fields contain correct values
-- Check that name field contains the full name
-- Check that email field contains the email address
-- Check that country dropdown shows the selected country
-- Ensure no error messages are displayed
-- Confirm form looks complete and valid
-
-### Step 10: Do NOT Submit Form
-
-Important:
-- **Do not click submit button** - This is a demo/practice form
-- **Do not send real data** - Sample data should not be submitted
-- **Keep form filled** - Leave the form filled for user to review
-- **Inform user** - Tell user form is filled but not submitted
-
-### Step 11: Keep Browser Open for User
-
-After successful form filling:
-- **Do not close browser** - Leave it open for user to review
-- **Keep form visible** - Allow user to see filled data
-- Inform user that browser is ready for viewing
-- Provide summary of filled fields
-
-### Step 12: Inform User
-
-Present results to user:
-- Confirm form is filled successfully
-- Display filled information:
-  - Full name filled
-  - Email filled
-  - Country selected
-  - Any additional fields filled
-- Mention that form was NOT submitted (demo only)
-- Mention that browser is in headed mode (visible)
-- Offer to fill other forms or submit if user confirms
+Note: AI can use `browser-use --help` to discover available commands and their usage.
 
 ## Constraints
 
@@ -230,6 +126,47 @@ User: "Fill out a practice form"
 AI: Browser automation not available, provides manual form URL
 Result: User can click link to fill form manually
 ```
+
+## Usage Examples
+
+**Example 1: Fill form with custom data (headed mode)**
+```yaml
+- skill: web-fill-sample-form
+  parameters:
+    form_url: https://httpbin.org/forms/post
+    full_name: "Alice Johnson"
+    email: "alice@example.com"
+    country: "Canada"
+    headed_mode: true
+```
+AI will execute:
+```bash
+browser-use open https://httpbin.org/forms/post
+browser-use state
+browser-use click <name_field_index>
+browser-use type "Alice Johnson"
+# ... continue filling other fields
+```
+
+**Example 2: Fill form with default data (headless mode)**
+```yaml
+- skill: web-fill-sample-form
+  parameters:
+    headed_mode: false
+```
+This will use default values and run in background (no browser window shown).
+
+**Example 3: Fill form for practice (default behavior)**
+```yaml
+- skill: web-fill-sample-form
+```
+This will use all default values and open browser in headed mode for learning.
+
+**Example 4: AI discovers and uses CLI automatically**
+When AI sees this SKILL, it should:
+1. Check if `browser-use` CLI is available: `browser-use --version`
+2. If not installed, suggest: `pipx install browser-use`
+3. Execute CLI commands directly to fill the form
 
 ## Implementation Notes
 
