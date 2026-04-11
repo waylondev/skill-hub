@@ -48,13 +48,13 @@ skills:
     version: 1.0.0
     title: Configure Environment Variable Paths
     domain: env
-    tags: [env, path, environment, variable, config]
+    tags: [env, path, environment]
   - name: env-configure-pnpm
     path: skills/env-configure-pnpm
     version: 1.0.0
     title: Configure pnpm
     domain: env
-    tags: [env, pnpm, package, config]
+    tags: [env, pnpm, package]
   - name: env-configure-python
     path: skills/env-configure-python
     version: 1.0.0
@@ -66,7 +66,7 @@ skills:
     version: 1.0.0
     title: Configure Confluence CLI
     domain: env
-    tags: [env, confluence, cli, config, internal]
+    tags: [env, confluence, cli]
   - name: sn-request-ad-group
     path: skills/sn-request-ad-group
     version: 1.0.0
@@ -90,19 +90,31 @@ skills:
     version: 1.0.0
     title: Baidu Web Search
     domain: web
-    tags: [web, search, baidu, automation, browser]
+    tags: [web, search, baidu]
   - name: web-bilibili-trending
     path: skills/web-bilibili-trending
     version: 1.0.0
     title: Bilibili Trending Videos
     domain: web
-    tags: [web, bilibili, trending, videos, automation, browser]
+    tags: [web, bilibili, trending, videos]
+  - name: web-bilibili-search-play
+    path: skills/web-bilibili-search-play
+    version: 1.0.0
+    title: Search and Play Bilibili Video
+    domain: web
+    tags: [web, bilibili, search, video, browser]
+  - name: web-fill-sample-form
+    path: skills/web-fill-sample-form
+    version: 1.0.0
+    title: Fill Sample Web Form
+    domain: web
+    tags: [web, form, demo, practice, browser]
   - name: dev-generate-code-from-oas
     path: skills/dev-generate-code-from-oas
     version: 1.0.0
-    title: Generate Code from OAS
+    title: Generate Code from OpenAPI Specification
     domain: dev
-    tags: [dev, oas, openapi, codegen, generator]
+    tags: [openapi, oas, code-generation, api]
   - name: dev-create-remote-repo
     path: skills/dev-create-remote-repo
     version: 1.0.0
