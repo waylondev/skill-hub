@@ -1,15 +1,14 @@
 ---
 name: env-configure-gh
-description: >-
-  Use this skill when the user wants to configure GitHub CLI (gh),
-  authenticate with GitHub for command-line operations, or set up GitHub Enterprise access.
-version: 1.0.0
-displayName: Configure GitHub CLI
-domain: env
-action: configure
-object: gh
-tags: [env, github, gh, cli, config]
-type: SKILL
+description: Use this skill when the user wants to configure GitHub CLI (gh), authenticate with GitHub for command-line operations, or set up GitHub Enterprise access.
+metadata:
+  version: 1.0.0
+  displayName: Configure GitHub CLI
+  domain: env
+  action: configure
+  object: gh
+  tags: [env, github, gh, cli, config]
+  type: SKILL
 inputs:
   - name: enterprise_hostname
     type: string

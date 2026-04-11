@@ -4,13 +4,14 @@ description: >-
   Use this skill when the user wants to configure npm registry URL,
   switch to a different registry, or set up internal Nexus/Artifactory.
   Idempotent configuration (checks before applying).
-version: 1.0.0
-displayName: Configure npm Registry
-domain: env
-action: configure
-object: npm
-tags: [env, npm, nodejs, config, registry]
-type: SKILL
+metadata:
+  version: 1.0.0
+  displayName: Configure npm Registry
+  domain: env
+  action: configure
+  object: npm
+  tags: [env, npm, nodejs, config, registry]
+  type: SKILL
 inputs:
   - name: registry_url
     type: string

@@ -1,15 +1,14 @@
 ---
 name: dev-generate-code-from-oas
-description: >-
-  Use this skill when the user wants to generate code from an OpenAPI Specification (OAS) file,
-  create API client/server code from OAS, or generate project artifacts from an OpenAPI definition.
-version: 1.0.0
-displayName: Generate Code from OpenAPI Specification
-domain: dev
-action: generate
-object: code-from-oas
-tags: [openapi, oas, code-generation, api]
-type: SKILL
+description: Use this skill when the user wants to generate code from OpenAPI Specification (OAS), create API client libraries, or scaffold API integration code. Supports multiple programming languages and frameworks.
+metadata:
+  version: 1.0.0
+  displayName: Generate Code from OpenAPI Specification
+  domain: dev
+  action: generate
+  object: code-from-oas
+  tags: [openapi, oas, code-generation, api]
+  type: SKILL
 inputs:
   - name: oasFileLocation
     type: string

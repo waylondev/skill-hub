@@ -1,16 +1,14 @@
 ---
 name: env-configure-python
-description: >-
-  Use this skill when the user wants to configure Python environment variables,
-  add Python to PATH, or set up Python for command-line access.
-  Auto-detects Python installation if path not specified.
-version: 1.0.0
-displayName: Configure Python Environment Variables
-domain: env
-action: configure
-object: python
-tags: [env, python, pip, config]
-type: SKILL
+description: Use this skill when the user wants to configure Python environment variables, add Python to PATH, or set up Python for command-line access. Auto-detects Python installation if path not specified.
+metadata:
+  version: 1.0.0
+  displayName: Configure Python Environment Variables
+  domain: env
+  action: configure
+  object: python
+  tags: [env, python, config]
+  type: SKILL
 inputs:
   - name: python_home
     type: string

@@ -1,15 +1,14 @@
 ---
 name: env-configure-confluence-cli
-description: >-
-  Use this skill when the user wants to configure Confluence CLI,
-  set up internal Confluence host URL, or authenticate with Confluence API.
-version: 1.0.0
-displayName: Configure Confluence CLI
-domain: env
-action: configure
-object: confluence-cli
-tags: [env, confluence, cli, config, internal]
-type: SKILL
+description: Use this skill when the user wants to configure Confluence CLI, set up internal Confluence host URL, or authenticate with Confluence API.
+metadata:
+  version: 1.0.0
+  displayName: Configure Confluence CLI
+  domain: env
+  action: configure
+  object: confluence-cli
+  tags: [env, confluence, cli, config, internal]
+  type: SKILL
 inputs:
   - name: host
     type: string

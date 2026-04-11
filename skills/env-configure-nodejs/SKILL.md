@@ -1,16 +1,14 @@
 ---
 name: env-configure-nodejs
-description: >-
-  Use this skill when the user wants to configure Node.js environment variables,
-  add Node.js to PATH, or set up Node.js for command-line access.
-  Auto-detects Node.js installation if path not specified.
-version: 1.0.0
-displayName: Configure Node.js Environment Variables
-domain: env
-action: configure
-object: nodejs
-tags: [env, nodejs, npm, config]
-type: SKILL
+description: Use this skill when the user wants to configure Node.js environment variables, set up NODE_PATH and PATH, or add Node.js to the system PATH for command-line access. Auto-detects Node.js installation if path not specified.
+metadata:
+  version: 1.0.0
+  displayName: Configure Node.js Environment Variables
+  domain: env
+  action: configure
+  object: nodejs
+  tags: [env, nodejs, node, npm, config]
+  type: SKILL
 inputs:
   - name: nodejs_home
     type: string

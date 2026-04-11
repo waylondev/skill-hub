@@ -1,14 +1,14 @@
 ---
 name: sn-request-software
-description: >-
-  Use this skill when the user wants to request software installation via ServiceNow.
-version: 1.0.0
-displayName: ServiceNow Request Software
-domain: sn
-action: request
-object: software
-tags: [servicenow, software, apply, install]
-type: SKILL
+description: Use this skill when the user needs to request software installation through ServiceNow, submit a software request for approval, or access software through company Software Center. Handles the complete request workflow.
+metadata:
+  version: 1.0.0
+  displayName: ServiceNow Request Software
+  domain: sn
+  action: request
+  object: software
+  tags: [servicenow, software, request, approval]
+  type: SKILL
 inputs:
   - name: software_name
     type: string

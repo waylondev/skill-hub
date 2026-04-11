@@ -1,15 +1,14 @@
 ---
 name: dev-create-jenkins-pipeline
-description: >-
-  Use this skill when the user wants to create a Jenkins pipeline,
-  set up a new CI/CD pipeline in Jenkins, or configure a job for a project.
-version: 1.0.0
-displayName: Create Jenkins Pipeline
-domain: dev
-action: create
-object: jenkins-pipeline
-tags: [jenkins, pipeline, ci, cd, job]
-type: SKILL
+description: Use this skill when the user wants to create a Jenkins pipeline, set up CI/CD automation, or configure Jenkins jobs for builds and deployments. Supports declarative pipeline syntax.
+metadata:
+  version: 1.0.0
+  displayName: Create Jenkins Pipeline
+  domain: dev
+  action: create
+  object: jenkins-pipeline
+  tags: [jenkins, pipeline, ci, cd, job]
+  type: SKILL
 inputs:
   - name: pipeline_name
     type: string

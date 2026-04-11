@@ -1,15 +1,14 @@
 ---
 name: web-search-baidu
-description: >-
-  Use this skill when the user wants to search on Baidu, retrieve search results,
-  or find information from Baidu search engine. Supports customizable result count.
-version: 1.0.0
-displayName: Baidu Search
-domain: web
-action: search
-object: baidu
-tags: [web, search, baidu, browser]
-type: SKILL
+description: Use this skill when the user wants to search on Baidu, retrieve search results, or find information from Baidu search engine. Supports customizable result count.
+metadata:
+  version: 1.0.0
+  displayName: Baidu Search
+  domain: web
+  action: search
+  object: baidu
+  tags: [web, search, baidu, browser]
+  type: SKILL
 inputs:
   - name: query
     type: string

@@ -1,16 +1,14 @@
 ---
 name: env-configure-gradle
-description: >-
-  Use this skill when the user wants to configure Gradle environment variables,
-  set up GRADLE_HOME and PATH, or add Gradle to the system PATH for Java builds.
-  Requires Java to be configured first.
-version: 1.0.0
-displayName: Configure Gradle Environment Variables
-domain: env
-action: configure
-object: gradle
-tags: [env, gradle, java, build, config]
-type: SKILL
+description: Use this skill when the user wants to configure Gradle environment variables, set up GRADLE_HOME and PATH, or add Gradle to the system PATH for command-line builds. Supports both Gradle 7.x and 8.x.
+metadata:
+  version: 1.0.0
+  displayName: Configure Gradle
+  domain: env
+  action: configure
+  object: gradle
+  tags: [env, gradle, java, build, config]
+  type: SKILL
 inputs:
   - name: gradle_home
     type: string

@@ -1,14 +1,14 @@
 ---
 name: sn-request-ad-group
-description: >-
-  Use this skill when the user wants to request access to Active Directory security groups or distribution groups via ServiceNow.
-version: 1.0.0
-displayName: ServiceNow Request AD Group Permission
-domain: sn
-action: request
-object: ad-group
-tags: [servicenow, ad, active-directory, permission, group]
-type: SKILL
+description: Use this skill when the user wants to request access to Active Directory security groups or distribution groups via ServiceNow.
+metadata:
+  version: 1.0.0
+  displayName: ServiceNow Request AD Group Permission
+  domain: sn
+  action: request
+  object: ad-group
+  tags: [servicenow, ad, active-directory, permission, group]
+  type: SKILL
 inputs:
   - name: group_name
     type: string

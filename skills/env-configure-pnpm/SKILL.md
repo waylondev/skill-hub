@@ -4,13 +4,14 @@ description: >-
   Use this skill when the user wants to configure pnpm package manager,
   set up custom registry, or optimize pnpm store directory.
   Supports custom registry, store directory, and peer dependencies settings.
-version: 1.0.0
-displayName: Configure pnpm
-domain: env
-action: configure
-object: pnpm
-tags: [env, pnpm, package, config]
-type: SKILL
+metadata:
+  version: 1.0.0
+  displayName: Configure pnpm
+  domain: env
+  action: configure
+  object: pnpm
+  tags: [env, pnpm, package, config]
+  type: SKILL
 inputs:
   - name: registry
     type: string

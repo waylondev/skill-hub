@@ -1,16 +1,14 @@
 ---
 name: web-bilibili-trending
-description: >-
-  Use this skill when the user wants to browse Bilibili trending videos,
-  discover popular content, or check what's trending on Bilibili.
-  Supports category filtering and time range selection.
-version: 1.0.0
-displayName: Browse Bilibili Trending
-domain: web
-action: browse
-object: bilibili-trending
-tags: [web, bilibili, trending, videos, browser]
-type: SKILL
+description: Use this skill when the user wants to browse trending videos on Bilibili, discover popular content by category, or analyze trending video data. Returns structured trending video information.
+metadata:
+  version: 1.0.0
+  displayName: Bilibili Trending Videos
+  domain: web
+  action: browse
+  object: bilibili-trending
+  tags: [web, bilibili, trending, videos]
+  type: SKILL
 inputs:
   - name: category
     type: string

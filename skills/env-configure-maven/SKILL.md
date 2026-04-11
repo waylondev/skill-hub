@@ -1,16 +1,14 @@
 ---
 name: env-configure-maven
-description: >-
-  Use this skill when the user wants to configure Maven environment variables,
-  set up MAVEN_HOME and PATH, or add Maven to the system PATH for Java builds.
-  Requires Java to be configured first.
-version: 1.0.0
-displayName: Configure Maven Environment Variables
-domain: env
-action: configure
-object: maven
-tags: [env, maven, java, build, config]
-type: SKILL
+description: Use this skill when the user wants to configure Maven environment variables, set up MAVEN_HOME and PATH, or add Maven to the system PATH for Java builds. Requires Java to be configured first.
+metadata:
+  version: 1.0.0
+  displayName: Configure Maven Environment Variables
+  domain: env
+  action: configure
+  object: maven
+  tags: [env, maven, java, build, config]
+  type: SKILL
 inputs:
   - name: maven_home
     type: string

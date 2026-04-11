@@ -1,16 +1,14 @@
 ---
 name: env-configure-java
-description: >-
-  Use this skill when the user wants to configure Java environment variables,
-  set up JAVA_HOME and PATH, or add Java to the system PATH for command-line access.
-  Auto-detects Java installation if path not specified.
-version: 1.0.0
-displayName: Configure Java Environment Variables
-domain: env
-action: configure
-object: java
-tags: [env, java, jdk, config]
-type: SKILL
+description: Use this skill when the user wants to configure Java environment variables, set up JAVA_HOME and PATH, or add Java to the system PATH for command-line access. Auto-detects Java installation if path not specified.
+metadata:
+  version: 1.0.0
+  displayName: Configure Java Environment Variables
+  domain: env
+  action: configure
+  object: java
+  tags: [env, java, jdk, config]
+  type: SKILL
 inputs:
   - name: java_home
     type: string

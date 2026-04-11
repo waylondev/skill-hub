@@ -1,15 +1,14 @@
 ---
 name: swc-install-package
-description: >-
-  Use this skill when the user wants to install approved software packages
-  from Software Center, verify software installation, or check software availability.
-version: 1.0.0
-displayName: Software Center Install Software
-domain: swc
-action: install
-object: package
-tags: [software-center, install, package]
-type: SKILL
+description: Use this skill when the user wants to install approved software packages from Software Center, verify software installation, or check software availability.
+metadata:
+  version: 1.0.0
+  displayName: Software Center Install Software
+  domain: swc
+  action: install
+  object: package
+  tags: [software-center, install, package]
+  type: SKILL
 inputs:
   - name: package_name
     type: string

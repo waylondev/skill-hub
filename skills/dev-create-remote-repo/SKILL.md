@@ -1,15 +1,14 @@
 ---
 name: dev-create-remote-repo
-description: >-
-  Use this skill when the user wants to create a remote Git repository,
-  initialize a new repository on GitHub/GitLab, or set up a remote repository for a project.
-version: 1.0.0
-displayName: Create Remote Git Repository
-domain: dev
-action: create
-object: remote-repo
-tags: [git, repository, github, gitlab, repo]
-type: SKILL
+description: Use this skill when the user wants to create a new Git repository on GitHub, GitLab, or other platforms, initialize a remote repository for a project, or set up repository infrastructure.
+metadata:
+  version: 1.0.0
+  displayName: Create Remote Git Repository
+  domain: dev
+  action: create
+  object: remote-repo
+  tags: [git, repository, github, gitlab, repo]
+  type: SKILL
 inputs:
   - name: repo_name
     type: string

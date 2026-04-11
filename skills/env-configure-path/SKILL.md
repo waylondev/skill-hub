@@ -1,14 +1,14 @@
 ---
 name: env-configure-path
-description: >-
-  Use this skill when the user wants to add a specific path to the PATH environment variable or set environment variables like JAVA_HOME, NODE_HOME, etc.
-version: 1.0.0
-displayName: Configure Environment Variable Paths
-domain: env
-action: configure
-object: path
-tags: [env, path, environment, variable, config]
-type: SKILL
+description: Use this skill when the user wants to add custom paths to the system or user PATH environment variable, make tools accessible from command line, or configure environment variable paths. Supports Windows, macOS, and Linux.
+metadata:
+  version: 1.0.0
+  displayName: Configure Environment Variable Paths
+  domain: env
+  action: configure
+  object: path
+  tags: [env, path, environment]
+  type: SKILL
 inputs:
   - name: path
     type: string

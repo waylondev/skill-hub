@@ -1,16 +1,14 @@
 ---
 name: env-configure-git
-description: >-
-  Use this skill when the user wants to configure Git username and email,
-  set up Git identity for commits, or verify Git configuration.
-  Supports idempotent configuration (checks before applying).
-version: 1.0.0
-displayName: Configure Git Identity
-domain: env
-action: configure
-object: git
-tags: [env, git, scm, config]
-type: SKILL
+description: Use this skill when the user wants to configure Git username and email, set up Git identity for commits, or verify Git configuration. Supports idempotent configuration (checks before applying).
+metadata:
+  version: 1.0.0
+  displayName: Configure Git Identity
+  domain: env
+  action: configure
+  object: git
+  tags: [env, git, scm, config]
+  type: SKILL
 inputs:
   - name: user_name
     type: string

@@ -1,16 +1,14 @@
 ---
 name: web-bilibili-search-play
-description: >-
-  Use this skill when the user wants to search for content on Bilibili,
-  find specific videos, or play videos from Bilibili search results.
-  Supports keyword search and automatic playback of top results.
-version: 1.0.0
-displayName: Search and Play Bilibili Video
-domain: web
-action: search
-object: bilibili-video
-tags: [web, bilibili, search, video, browser]
-type: SKILL
+description: Use this skill when the user wants to search for content on Bilibili, find specific videos, or play videos from Bilibili search results. Supports keyword search and automatic playback of top results.
+metadata:
+  version: 1.0.0
+  displayName: Search and Play Bilibili Video
+  domain: web
+  action: search
+  object: bilibili-video
+  tags: [web, bilibili, search, video, browser]
+  type: SKILL
 inputs:
   - name: search_query
     type: string
