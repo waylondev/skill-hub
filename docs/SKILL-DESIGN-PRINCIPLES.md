@@ -109,10 +109,53 @@ Skills provide **atomic capabilities**, AI handles:
 
 **Every Skill Follows the Same Structure**
 
+### Frontmatter Format
+
+```yaml
+---
+name: {domain}-{action}-{object}
+description: Use this skill when the user wants to... (imperative sentence)
+metadata:
+  version: 1.0.0
+  displayName: Human-readable Skill Name
+  domain: {domain}
+  action: {action}
+  object: {object}
+  tags: [tag1, tag2, tag3]
+  type: SKILL
+inputs:
+  - name: param_name
+    type: string | integer | boolean
+    required: true | false
+    description: Parameter description
+---
+```
+
+### Frontmatter Fields
+
+**Core Fields (Required)**:
+- `name`: Unique identifier in format `{domain}-{action}-{object}`
+- `description`: Imperative sentence starting with "Use this skill when..."
+
+**Metadata Fields (in `metadata` sub-level)**:
+- `version`: Skill version (default: 1.0.0)
+- `displayName`: Human-readable name for UI display
+- `domain`: Domain category (env, sn, swc, web, dev, etc.)
+- `action`: Action type (configure, request, install, search, etc.)
+- `object`: Target object of the action
+- `tags`: Array of tags for categorization and search
+- `type`: Always "SKILL"
+
+**Input Parameters (Optional)**:
+- `inputs`: Array of parameter definitions
+  - `name`: Parameter name
+  - `type`: Parameter type (string, integer, boolean)
+  - `required`: Whether parameter is required
+  - `description`: Parameter description
+
+### Content Structure
+
 ```markdown
----
-# Frontmatter with metadata
----
 # Skill Name
 
 ## Purpose
@@ -136,6 +179,12 @@ What this Skill is NOT responsible for
 
 ## Error Handling
 Common errors and how to handle them
+
+## Example Usage
+Code examples showing how to use the Skill
+
+## Implementation Notes
+Additional guidance for AI implementation
 ```
 
 **Note**: Do NOT include "Related Skills" section - AI will discover related skills autonomously.
