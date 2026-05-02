@@ -56,6 +56,48 @@ This skill provides a systematic approach to analyzing COBOL legacy systems and 
 11. **ALWAYS pause at human review checkpoints** - Wait for user confirmation at CP-1 through CP-5
 12. **USE analysis docs as context for Stage 2** - During code generation, read from 00-07 directory documents
 13. **MAINTAIN context index** - Track processed files to enable resume
+14. **ANALYZE EVERY .cbl PROGRAM's PROCEDURE DIVISION** - No program may be skipped; if context limit reached, save state and resume in next session
+15. **GENERATE CODE-LEVEL SPECS, NOT HIGH-LEVEL DESCRIPTIONS** - Every deliverable must be detailed enough for AI to generate compilable Java code without guessing
+
+## Phase Output Precision Standards (NEW — Minimum Acceptable Quality)
+
+| Phase | Output Type | Minimum Precision | AI Code-Generation Ready? |
+|-------|-------------|-------------------|--------------------------|
+| Phase 1 (Discovery) | File inventory table | Every file listed with type, size estimate, sub-app module | N/A — metadata only |
+| Phase 2 (VSAM) | Data dictionary | Every field: name, PIC, length, PK/FK, JPA type, column name | Yes for Entity generation |
+| Phase 3 (BMS) | Screen specs | **Every** BMS map: ALL field names, attributes (PROT/UNPROT), PIC, Java type, validation | Yes for DTO generation |
+| Phase 4 (COPYBOOK) | Data structures | Every level number, field, PIC, REDEFINES target, OCCURS count, 88-level values | Yes for Entity + Enum generation |
+| Phase 5 (Logic) | Program analysis | **Every program**: paragraph-to-method map, ALL IF/EVALUATE branches, ALL COMPUTE formulas, ALL validation rules, state machine (if applicable), CICS commands | **Must be YES** for Service generation |
+| Phase 6 (Architecture) | Architecture doc | Call graph, service boundaries, inter-service protocol (REST/gRPC/MQ), batch step sequence | Yes for service scaffolding |
+| Phase 7 (Test Matrix) | Test cases | Test ID, input, expected output, source program/line, golden test fixture path | Yes for test generation |
+| Phase 8 (Deliverables) | Java specs | **Complete Java code**: Entity, Repository, Service, Controller, DTO, Exception, Enum, Config | **Must be YES** for compilation |
+
+### Per-Program Logic Analysis Minimum Requirements (Phase 5)
+
+For **each** COBOL program, the analysis MUST include:
+
+1. **Complete Paragraph Inventory** — Every paragraph/section name with line number
+2. **Complete Branch Map** — Every IF/ELSE/EVALUATE/WHEN with its condition and source line
+3. **Complete File I/O Operations** — Every READ/WRITE/REWRITE/STARTBR/READNEXT/READPREV/ENDBR with file name, key field, RESP handling
+4. **Complete Screen I/O** (CICS) — Every SEND MAP/RECEIVE MAP with field-level mapping
+5. **Complete Validation Rules** — Every IF-check that rejects input, with the error message and field
+6. **Complete State Transitions** (if multi-state) — State name, trigger, target state
+7. **Complete Variable Usage** — Working-storage variables that hold business data (not just WS-RESP-CD)
+8. **CommArea Structure** — If program uses commarea, list every field accessed and its purpose
+
+**If any of the above is missing for a program, the analysis is INCOMPLETE and must be regenerated.**
+
+### Per-BMS-Map Analysis Minimum Requirements (Phase 3)
+
+For **each** BMS map, the analysis MUST include:
+
+1. **Every DFHMSD field** — Field name, position (row/column), PIC, attribute (PROT/UNPROT/DRAG), initial value
+2. **Input Field Mapping** — UNPROT fields → Request DTO field with validation rule
+3. **Output Field Mapping** — PROT fields → Response DTO field
+4. **Map Flow** — Which program SENDs this map, which program RECEIVEs, what happens on each PF key
+5. **Cross-Reference** — If map field references a COPYBOOK field (e.g., `TRAN-ID` from `CVTRA05Y`), note the link
+
+**If a project has >10 BMS maps, analyze ALL of them. No shortcuts.**
 
 ## Execution Flow
 
@@ -215,7 +257,10 @@ project-name/
 │   ├── vsam-data-formats.md
 │   ├── jcl-batch-mapping.md
 │   ├── business-rules.md
-│   └── security-mapping.md
+│   ├── security-mapping.md
+│   ├── dto-specification.md          # [NEW] Complete DTO classes
+│   ├── exception-handling.md         # [NEW] Exception hierarchy + GlobalExceptionHandler
+│   └── openapi-spec.yaml             # [NEW] OpenAPI 3.0 spec
 ├── 09-database-migrations/           # [IF include-flyway=true]
 │   ├── V1__initial_schema.sql
 │   ├── V2__indexes_and_constraints.sql
@@ -246,7 +291,7 @@ project-name/
 
 | Mode | Scope | Output | Use Case |
 |------|-------|--------|----------|
-| `lite` | Core phases 1-9 | Core analysis + entity specs + service guides | Small projects < 50 COBOL programs, quick assessments |
+| `lite` | Core phases 1-9 | Core analysis + entity specs + service guides + DTOs + exceptions | Small projects < 50 COBOL programs, quick assessments |
 | `full` | All 20+ phases | All deliverables + microservice architecture + CI/CD + deployment | Enterprise projects |
 
 ## Language Policy
@@ -305,6 +350,17 @@ When a deliverable file exceeds reasonable size limits:
 2. Each part file MUST begin with `> Part X of N — continued from part X-1`
 3. Part 1 MUST contain a table of contents with links to all parts
 4. NEVER truncate content — split into the exact number of parts needed
+
+## Cross-Validation Rules (NEW — Prevent Data Inconsistency)
+
+These rules ensure data consistency across all phase documents:
+
+1. **Entity-VSAM Cross-Check**: Every field in an Entity MUST have a matching field in the VSAM/COPYBOOK analysis. No invented fields.
+2. **BMS-DTO Cross-Check**: Every UNPROT BMS field MUST appear in at least one Request DTO. Every PROT output field MUST appear in at least one Response DTO.
+3. **Program-Service Cross-Check**: Every COBOL program analyzed in Phase 5 MUST have a corresponding Service class in Phase 8.
+4. **Repository-IO Cross-Check**: Every VSAM file READ/WRITE in Phase 5 MUST have a corresponding Repository method in Phase 8.
+5. **API-Endpoint Cross-Check**: Every BMS screen in Phase 3 MUST have at least one REST endpoint in Phase 8.
+6. **Exception-Error Cross-Check**: Every error condition in Phase 5 (RESP code handling, IF validation failure) MUST have a corresponding exception type and HTTP status in Phase 8.
 
 ## Notes
 

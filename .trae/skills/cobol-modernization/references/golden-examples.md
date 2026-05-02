@@ -484,6 +484,390 @@ public class Account {
 }
 ```
 
+## Example 3: CICS Browsing (STARTBR/READNEXT/READPREV) → Cursor-Based Pagination
+
+### COBOL Pattern
+```cobol
+PROCESS-PAGE-FORWARD.
+    MOVE WS-TRNID-LAST TO TRAN-ID.
+    EXEC CICS STARTBR DATASET('TRANSACT') RIDFLD(TRAN-ID)
+         KEYLENGTH(16) GTEQ RESP(WS-RESP-CD) END-EXEC.
+
+    EXEC CICS READNEXT DATASET('TRANSACT') INTO(TRAN-RECORD)
+         RIDFLD(TRAN-ID) RESP(WS-RESP-CD) END-EXEC.
+
+    IF WS-RESP-CD = DFHRESP(NORMAL)
+        PERFORM VARYING WS-IDX FROM 1 BY 1
+            UNTIL WS-IDX > 10 OR WS-RESP-CD NOT = DFHRESP(NORMAL)
+            DISPLAY TRAN-ID TRAN-DESC TRAN-AMT
+            EXEC CICS READNEXT DATASET('TRANSACT') INTO(TRAN-RECORD)
+                 RIDFLD(TRAN-ID) RESP(WS-RESP-CD) END-EXEC
+        END-PERFORM
+    END-IF.
+
+    IF WS-RESP-CD = DFHRESP(ENDFILE)
+        MOVE 'N' TO WS-NEXT-PAGE-FLG
+    END-IF.
+
+PROCESS-PAGE-BACKWARD.
+    MOVE WS-TRNID-FIRST TO TRAN-ID.
+    EXEC CICS STARTBR DATASET('TRANSACT') RIDFLD(TRAN-ID)
+         KEYLENGTH(16) GTEQ RESP(WS-RESP-CD) END-EXEC.
+
+    EXEC CICS READPREV DATASET('TRANSACT') INTO(TRAN-RECORD)
+         RIDFLD(TRAN-ID) RESP(WS-RESP-CD) END-EXEC.
+
+    IF WS-RESP-CD = DFHRESP(NORMAL)
+        PERFORM VARYING WS-IDX FROM 1 BY 1
+            UNTIL WS-IDX > 10 OR WS-RESP-CD NOT = DFHRESP(NORMAL)
+            DISPLAY TRAN-ID TRAN-DESC TRAN-AMT
+            EXEC CICS READPREV DATASET('TRANSACT') INTO(TRAN-RECORD)
+                 RIDFLD(TRAN-ID) RESP(WS-RESP-CD) END-EXEC
+        END-PERFORM
+    END-IF.
+
+    IF WS-RESP-CD = DFHRESP(ENDFILE)
+        MOVE 'N' TO WS-PREV-PAGE-FLG
+    END-IF.
+```
+
+### Java Equivalent
+
+```java
+// TransactionListService.java
+// Source: [program.cbl], PROCESS-PAGE-FORWARD/PROCESS-PAGE-BACKWARD
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class TransactionListService {
+
+    private final TransactionRepository transactionRepository;
+
+    private static final int PAGE_SIZE = 10;
+
+    // Source: PROCESS-PAGE-FORWARD, lines [N]-[M]
+    // CICS: STARTBR (GTEQ from lastId) → READNEXT × 10 → ENDBR
+    public CursorPageResponse<TransactionDto> pageForward(String lastCursorId, int pageNum) {
+        // Read one extra to determine if there's a next page
+        List<Transaction> items = transactionRepository.findAfter(lastCursorId,
+            PageRequest.ofSize(PAGE_SIZE + 1));
+
+        boolean hasNext = items.size() > PAGE_SIZE;
+        if (hasNext) {
+            items = items.subList(0, PAGE_SIZE);
+        }
+
+        String nextCursor = hasNext
+            ? items.get(items.size() - 1).getTransactionId()
+            : null;
+
+        // For backward navigation, store firstId for this page
+        String prevCursor = (pageNum > 1) ? lastCursorId : null;
+
+        return CursorPageResponse.<TransactionDto>builder()
+            .items(items.stream().map(this::mapToDto).toList())
+            .pageNum(pageNum + 1)
+            .hasNextPage(hasNext)
+            .hasPrevPage(pageNum > 1)
+            .nextCursor(nextCursor)
+            .prevCursor(prevCursor)
+            .build();
+    }
+
+    // Source: PROCESS-PAGE-BACKWARD, lines [N]-[M]
+    // CICS: STARTBR (GTEQ from firstId) → READPREV × 10 → ENDBR
+    public CursorPageResponse<TransactionDto> pageBackward(String firstCursorId, int pageNum) {
+        // READPREV reads in reverse order; need to reverse the list for display
+        List<Transaction> items = transactionRepository.findBefore(firstCursorId,
+            PageRequest.ofSize(PAGE_SIZE + 1));
+
+        boolean hasPrev = items.size() > PAGE_SIZE;
+        if (hasPrev) {
+            items = items.subList(0, PAGE_SIZE);
+        }
+        Collections.reverse(items); // Reverse to forward order
+
+        String prevCursor = hasPrev
+            ? items.get(0).getTransactionId()
+            : null;
+
+        return CursorPageResponse.<TransactionDto>builder()
+            .items(items.stream().map(this::mapToDto).toList())
+            .pageNum(Math.max(1, pageNum - 1))
+            .hasNextPage(pageNum > 0)
+            .hasPrevPage(hasPrev)
+            .nextCursor(firstCursorId)
+            .prevCursor(prevCursor)
+            .build();
+    }
+
+    private TransactionDto mapToDto(Transaction t) {
+        return TransactionDto.builder()
+            .id(t.getTransactionId())
+            .description(t.getDescription())
+            .formattedAmount(formatAmount(t.getAmount()))
+            .build();
+    }
+
+    private String formatAmount(BigDecimal amount) {
+        // Source: WS-TRAN-AMT formatting (PIC +99999999.99)
+        return String.format("$%,.2f", amount);
+    }
+}
+
+// TransactionRepository.java — cursor-based pagination methods
+@Repository
+public interface TransactionRepository extends JpaRepository<Transaction, String> {
+
+    // Source: STARTBR + READNEXT (forward browse)
+    @Query("SELECT t FROM Transaction t WHERE t.transactionId > :lastId ORDER BY t.transactionId ASC")
+    List<Transaction> findAfter(@Param("lastId") String lastId, Pageable pageable);
+
+    // Source: STARTBR + READPREV (backward browse)
+    @Query("SELECT t FROM Transaction t WHERE t.transactionId < :firstId ORDER BY t.transactionId DESC")
+    List<Transaction> findBefore(@Param("firstId") String firstId, Pageable pageable);
+}
+
+// CursorPageResponse.java — reusable pagination wrapper
+@Data @Builder @NoArgsConstructor @AllArgsConstructor
+public class CursorPageResponse<T> {
+    private List<T> items;
+    private Integer pageNum;
+    private Boolean hasNextPage;
+    private Boolean hasPrevPage;
+    private String nextCursor;    // lastId for PF8 (forward)
+    private String prevCursor;    // firstId for PF7 (backward)
+}
+```
+
+---
+
+## Example 4: Batch Program (CBTRN01C) → Spring Batch Job
+
+### COBOL Pattern
+```cobol
+PROCEDURE DIVISION.
+PERFORM OPEN-FILES.
+
+READ DAILY-TRAN
+    AT END MOVE 'Y' TO WS-EOF-FLG
+END-READ.
+
+PERFORM UNTIL WS-EOF-FLG = 'Y'
+    EVALUATE DALYTRAN-FILE-STATUS
+        WHEN '00'
+            PERFORM LOOKUP-CARD-XREF
+            IF WS-XREF-FOUND = 'Y'
+                PERFORM LOOKUP-CUST-FILE
+                PERFORM LOOKUP-CARD-FILE
+                PERFORM LOOKUP-ACCT-FILE
+                IF WS-ALL-FOUND = 'Y'
+                    PERFORM WRITE-TRANSACT-FILE
+                ELSE
+                    PERFORM WRITE-REJECT-FILE
+                END-IF
+            ELSE
+                PERFORM WRITE-REJECT-FILE
+            END-IF
+        WHEN '10'
+            MOVE 'Y' TO WS-EOF-FLG
+        WHEN OTHER
+            MOVE 'Y' TO WS-ERR-FLG
+    END-EVALUATE
+    READ DAILY-TRAN
+        AT END MOVE 'Y' TO WS-EOF-FLG
+    END-READ
+END-PERFORM.
+
+PERFORM CLOSE-FILES.
+```
+
+### Java Equivalent
+
+```java
+// DailyTransactionBatchConfig.java
+// Source: CBTRN01C.cbl + POSTTRAN.jcl
+
+@Configuration
+@RequiredArgsConstructor
+public class DailyTransactionBatchConfig {
+
+    private final JobBuilderFactory jobBuilderFactory;
+    private final StepBuilderFactory stepBuilderFactory;
+    private final CardXrefRepository cardXrefRepository;
+    private final CustomerRepository customerRepository;
+    private final CardRepository cardRepository;
+    private final AccountRepository accountRepository;
+
+    @Bean
+    public Job postDailyTransactionsJob() {
+        // Source: JCL step sequence: OPENFIL → PROCESS → CLOSEFIL
+        return jobBuilderFactory.get("postDailyTransactionsJob")
+            .start(openFilesStep())
+            .next(postTransactionsStep())
+            .next(closeFilesStep())
+            .build();
+    }
+
+    @Bean
+    public Step openFilesStep() {
+        return stepBuilderFactory.get("openFilesStep")
+            .tasklet((contribution, chunkContext) -> {
+                log.info("Opening input file: {}",
+                    chunkContext.getStepContext().getJobParameters().get("inputFile"));
+                return RepeatStatus.FINISHED;
+            })
+            .build();
+    }
+
+    @Bean
+    public Step postTransactionsStep(DataSource dataSource) {
+        return stepBuilderFactory.get("postTransactionsStep")
+            .<DailyTransactionRecord, Transaction>chunk(100, dataSource)
+            .reader(dailyTransactionReader())
+            .processor(dailyTransactionProcessor())
+            .writer(transactionWriter(dataSource))
+            .faultTolerant()
+            .skipPolicy(dailyTransactionSkipPolicy())
+            .skipLimit(1000)
+            .listener(new SkipListenerSupport() {
+                @Override
+                public void onSkipInProcess(DailyTransactionRecord item, Throwable t) {
+                    log.warn("Skipped transaction record: card={}, reason={}",
+                        item.getCardNumber(), t.getMessage());
+                }
+            })
+            .build();
+    }
+
+    @Bean
+    public FlatFileItemReader<DailyTransactionRecord> dailyTransactionReader() {
+        // Source: DALYTRAN.PS — RECLN=350, fixed-width format
+        return new FlatFileItemReaderBuilder<DailyTransactionRecord>()
+            .name("dailyTransactionReader")
+            .resource(new FileSystemResource("${batch.input.file:dalytran.dat}"))
+            .fixedLength()
+            .columns(new Range[]{
+                new Range(1, 16),    // DALYTRAN-ID PIC X(16)
+                new Range(17, 18),   // DALYTRAN-TYPE-CD PIC X(02)
+                new Range(19, 22),   // DALYTRAN-CAT-CD PIC 9(04)
+                new Range(23, 32),   // DALYTRAN-SOURCE PIC X(10)
+                new Range(33, 132),  // DALYTRAN-DESC PIC X(100)
+                new Range(133, 143), // DALYTRAN-AMT PIC S9(09)V99
+                new Range(144, 152), // DALYTRAN-MERCHANT-ID PIC 9(09)
+                new Range(153, 202), // DALYTRAN-MERCHANT-NAME PIC X(50)
+                new Range(203, 252), // DALYTRAN-MERCHANT-CITY PIC X(50)
+                new Range(253, 262), // DALYTRAN-MERCHANT-ZIP PIC X(10)
+                new Range(263, 278), // DALYTRAN-CARD-NUM PIC X(16)
+                new Range(279, 304), // DALYTRAN-ORIG-TS PIC X(26)
+                new Range(305, 330)  // DALYTRAN-PROC-TS PIC X(26)
+            })
+            .names(new String[]{
+                "transactionId", "typeCode", "categoryCode", "source",
+                "description", "amount", "merchantId", "merchantName",
+                "merchantCity", "merchantZip", "cardNumber",
+                "originalTimestamp", "processedTimestamp"
+            })
+            .fieldSetMapper(new BeanWrapperFieldSetMapper<DailyTransactionRecord>() {{
+                setTargetType(DailyTransactionRecord.class);
+            }})
+            .build();
+    }
+
+    @Bean
+    public ItemProcessor<DailyTransactionRecord, Transaction> dailyTransactionProcessor() {
+        // Source: CBTRN01C processing logic:
+        // LOOKUP-CARD-XREF → LOOKUP-CUST-FILE → LOOKUP-CARD-FILE → LOOKUP-ACCT-FILE → WRITE-TRANSACT-FILE
+        return record -> {
+            // LOOKUP-CARD-XREF by card number
+            CardXref xref = cardXrefRepository.findById(record.getCardNumber())
+                .orElseThrow(() -> new SkipRecordException("Card not found in xref: " + record.getCardNumber()));
+
+            // LOOKUP-CUST-FILE
+            Customer customer = customerRepository.findById(xref.getCustomerId())
+                .orElseThrow(() -> new SkipRecordException("Customer not found: " + xref.getCustomerId()));
+
+            // LOOKUP-CARD-FILE
+            Card card = cardRepository.findById(xref.getCardNumber())
+                .orElseThrow(() -> new SkipRecordException("Card not found: " + xref.getCardNumber()));
+
+            // LOOKUP-ACCT-FILE
+            Account account = accountRepository.findById(xref.getAccountId())
+                .orElseThrow(() -> new SkipRecordException("Account not found: " + xref.getAccountId()));
+
+            // All lookups succeeded — build Transaction entity
+            return Transaction.builder()
+                .transactionId(record.getTransactionId())
+                .typeCode(record.getTypeCode())
+                .categoryCode(record.getCategoryCode())
+                .source(record.getSource())
+                .description(record.getDescription())
+                .amount(record.getAmount())
+                .merchantId(record.getMerchantId())
+                .merchantName(record.getMerchantName())
+                .merchantCity(record.getMerchantCity())
+                .merchantZip(record.getMerchantZip())
+                .cardNumber(record.getCardNumber())
+                .originalTimestamp(record.getOriginalTimestamp())
+                .processedTimestamp(LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd-HH.mm.ss.SSSSSS")))
+                .build();
+        };
+    }
+
+    @Bean
+    public JdbcBatchItemWriter<Transaction> transactionWriter(DataSource dataSource) {
+        // Source: WRITE-TRANSACT-FILE (VSAM KSDS WRITE)
+        return new JdbcBatchItemWriterBuilder<Transaction>()
+            .dataSource(dataSource)
+            .sql("INSERT INTO transaction (transaction_id, type_code, category_code, " +
+                 "source, description, amount, merchant_id, merchant_name, " +
+                 "merchant_city, merchant_zip, card_number, original_timestamp, " +
+                 "processed_timestamp) " +
+                 "VALUES (:transactionId, :typeCode, :categoryCode, " +
+                 ":source, :description, :amount, :merchantId, :merchantName, " +
+                 ":merchantCity, :merchantZip, :cardNumber, :originalTimestamp, " +
+                 ":processedTimestamp)")
+            .beanMapped()
+            .build();
+    }
+
+    @Bean
+    public SkipPolicy dailyTransactionSkipPolicy() {
+        // Source: EVALUATE DALYTRAN-FILE-STATUS — skip invalid records
+        return (throwable, skipCount) -> {
+            if (throwable instanceof SkipRecordException) {
+                return true; // Skip and log
+            }
+            if (throwable instanceof FlatFileParseException && skipCount <= 1000) {
+                return true; // Skip parse errors
+            }
+            return false; // All other exceptions fail the job
+        };
+    }
+
+    @Bean
+    public Step closeFilesStep() {
+        return stepBuilderFactory.get("closeFilesStep")
+            .tasklet((contribution, chunkContext) -> {
+                log.info("Batch processing complete. Closing files.");
+                return RepeatStatus.FINISHED;
+            })
+            .build();
+    }
+}
+
+// SkipRecordException.java
+public class SkipRecordException extends RuntimeException {
+    public SkipRecordException(String message) {
+        super(message);
+    }
+}
+```
+
+---
+
 ## Code Review Checklist
 
 Before accepting any generated Java code:
@@ -499,4 +883,9 @@ Before accepting any generated Java code:
 - [ ] All ID generation uses SEQUENCE/Snowflake (NOT MAX+1)
 - [ ] All constructor injection used (NO field injection)
 - [ ] All @RequestBody parameters have @Valid
+- [ ] All pagination uses cursor-based pattern (findAfter/findBefore, NOT Pageable offset)
+- [ ] All batch programs use Spring Batch (NOT plain loops)
+- [ ] All BMS maps have Request + Response DTOs
+- [ ] All exceptions have HTTP status mapping in GlobalExceptionHandler
 - [ ] Test coverage >= 80% for generated code
+

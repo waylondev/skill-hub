@@ -4,6 +4,8 @@
 
 All checks MUST pass before delivery. If ANY fails, regenerate the deficient deliverable.
 
+### Phase 1-2 Checks (Discovery & Data)
+
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
 | 1 | File Coverage | 100% of .cbl/.cpy/.bms files analyzed | Count files vs documented |
@@ -22,7 +24,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 14 | Modern Stack | Spring Boot 3.3.x + Java 21 + Jakarta EE 10 | Check pom.xml |
 | 15 | Locking Strategy | UPDATE operations @Lock(PESSIMISTIC_WRITE) or @Version | Check repository methods |
 | 16 | Cache Usage | Reference data uses @Cacheable | Check service methods |
-| 17 | Pagination | All list operations support Pageable | Check repository signatures |
+| 17 | Pagination | All list operations support cursor-based pagination | Check repository signatures have findAfter/findBefore |
 | 18 | COMP-3 Coverage | All COMP/COMP-3 with hex examples | Check vsam-data-formats.md |
 | 19 | AIX Coverage | All VSAM AIX to DB indexes | Check vsam-aix-mapping.md |
 | 20 | GDG Coverage | All GDG to partitioned jobs | Check jcl-batch-mapping.md |
@@ -36,11 +38,36 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 28 | OCCURS Coverage | All OCCURS/ODI to Java Lists | Check complex-copybook-guide.md |
 | 29 | Flyway Scripts | All DB migrations versioned | Check V*.sql exist |
 | 30 | Code Coverage | Critical paths >= 80% coverage | Check JaCoCo reports |
-| 31 | REPLACING Coverage | All COPY REPLACING statements traced to COPYBOOK | Check COPY REPLACING Registry in copybook-data-structures.md |
-| 32 | DFSORT/ICETOOL Coverage | All JCL SORT steps mapped to Java Stream / Spring Batch | Check Data Pipeline documentation in program-logic-analysis.md |
-| 33 | BMS LENGTH Mapping | All DFHMDF LENGTH=N mapped to @Column/@Size | Check DTO @Size annotations vs BMS LENGTH values |
-| 34 | Golden Baseline Confidence | All AI-derived baselines have confidence tags | Check @Tag("confidence-high/medium/low") presence |
-| 35 | Token Budget Compliance | Stage 2 uses _kb-reference.md, not full docs | Verify Stage 2 codegen only reads compact knowledge base |
+
+### NEW Phase 3-7 Checks (BMS, Logic, Architecture, Testing)
+
+| # | Check | Criteria | Verify Method |
+|---|-------|----------|--------------|
+| 31 | BMS Field Completeness | EVERY BMS map has ≥ 8 analysis sections (ASCII layout, field inventory, PF keys, input mapping, output mapping, commarea, business rules, pagination if applicable) | Count sections per map in bms-map-analysis.md |
+| 32 | BMS-Program Linkage | EVERY .bms file linked to at least one .cbl program's Screen I/O section | Cross-reference BMS inventory with Phase 5 Screen I/O tables |
+| 33 | Program Completeness | EVERY .cbl program has ALL 12 sections: Paragraph Inventory, Branch Map, File I/O, Screen I/O, Validation Rules, Computation Formulas, State Machine (if applicable), Variable Usage, CommArea, Error Handling, Java Method Signatures | Count sections per program in program-logic-analysis.md |
+| 34 | Branch Exhaustiveness | EVERY IF/EVALUATE branch in every program documented with source line | Grep IF/EVALUATE in source, count vs Branch Map entries |
+| 35 | File I/O Completeness | EVERY SELECT/ASSIGN/EXEC CICS READ/WRITE/STARTBR has corresponding Repository method | Cross-reference Phase 5 File I/O tables with Phase 8 Repository specs |
+| 36 | PF Key Completeness | EVERY PF key used in a program is documented in both Phase 3 (screen) and Phase 5 (logic) | Cross-reference PF key tables across phases |
+| 37 | CommArea Consistency | CommArea fields in Phase 5 match COCOM01Y definition from Phase 4 | Compare field names, PIC, lengths |
+| 38 | Architecture-Program Consistency | Every COBOL program is assigned to exactly one microservice in Phase 6 | Count programs in Phase 1 vs services in Phase 6 |
+| 39 | Test-Program Coverage | At least 3 test cases exist for every COBOL program in Phase 5 | Count test cases per program in Phase 7 |
+| 40 | Golden Test Baseline | Golden test input/output defined for all CRUD + batch operations | Verify fixture table completeness |
+
+### NEW Cross-Validation Checks (Phase 8 Code Generation Gate)
+
+| # | Check | Criteria | Verify Method |
+|---|-------|----------|--------------|
+| 41 | Entity-VSAM Consistency | Every Entity field maps to a COPYBOOK/VSAM field; no invented fields | Compare Entity field count vs COPYBOOK field count |
+| 42 | BMS-DTO Consistency | Every UNPROT field appears in Request DTO; every PROT field appears in Response DTO | Cross-reference Phase 3 field inventory with Phase 8 DTO specs |
+| 43 | Program-Service Consistency | Every COBOL program has a corresponding Service class with methods for every paragraph | Compare paragraph count in Phase 5 vs method count in Phase 8 |
+| 44 | Repository-IO Consistency | Every VSAM file access (READ/WRITE/STARTBR) in Phase 5 has a Repository method in Phase 8 | Cross-reference Phase 5 File I/O with Phase 8 Repository |
+| 45 | API-Screen Consistency | Every BMS map has at least one GET + one POST endpoint in Phase 8 Controller | Count BMS maps in Phase 3 vs Controller endpoints in Phase 8 |
+| 46 | Exception-Error Consistency | Every error condition (RESP code handling, IF validation) in Phase 5 has an exception + HTTP status in Phase 8 | Cross-reference Phase 5 Error Handling with Phase 8 Exception spec |
+| 47 | Validation-Bean Consistency | Every validation rule in Phase 5 has a Bean Validation annotation AND a test case in Phase 7 | Cross-reference Phase 5 Validation Rules with Phase 8 DTOs and Phase 7 test matrix |
+| 48 | Batch-JCL Consistency | Every JCL job has a Spring Batch Job configuration with matching Step sequence | Cross-reference JCL steps with Phase 8 Batch Config |
+| 49 | Security-Access Consistency | Every USRSEC user type check in COBOL code has @PreAuthorize in Java | Cross-reference Phase 5 UserType checks with Phase 8 Security spec |
+| 50 | No-Guessing Rule | Every Java field, method, class, and DTO has a source reference comment tracing back to COBOL file + line | Grep ALL Java code for `// Source:` comments; count vs total elements |
 
 ## Verification Anchor Points
 
@@ -50,18 +77,18 @@ After each phase, self-check these 3 anchors before proceeding:
 |-------|-----------------|---------------|-------------------|
 | 1 | 00-portfolio/ + 01-source-inventory/ exist | Inventory table has program names | File count matches source |
 | 2 | 02-vsam-analysis/ exists | File-to-Entity mapping table present | All VSAM SELECT statements mapped |
-| 3 | 03-bms-analysis/ exists | BMS→REST mapping table present, LENGTH→@Column mapping verified | All .bms files mapped |
+| 3 | 03-bms-analysis/ exists | BMS→REST mapping table present, LENGTH→@Column mapping verified | All .bms files mapped; every map has ≥ 8 sections |
 | 4 | 04-copybook-analysis/ exists | Field mapping table + REPLACING Registry present | All .cpy files parsed, all REPLACING traced |
-| 5 | 05-program-logic/ exists | Business rules table + Data Pipeline documentation present | All .cbl logic extracted, all DFSORT/ICETOOL mapped |
-| 6 | 06-architecture/ exists | Mermaid diagrams render | All dependencies mapped |
-| 7 | 07-test-matrix/ exists | Test scenarios table + Golden baseline confidence tags present | All code paths covered |
-| 8 | 08-deliverables/ has >= 10 files | Entity code compilable, @Size annotations match BMS LENGTH | All specs complete |
+| 5 | 05-program-logic/ exists | Business rules table + ALL programs analyzed with 12 sections each | ALL .cbl programs done; paragraph count matches source; every IF/EVALUATE documented |
+| 6 | 06-architecture/ exists | Mermaid diagrams render | All dependencies mapped; every program assigned to one service |
+| 7 | 07-test-matrix/ exists | Test scenarios table + Golden baseline confidence tags present | ≥ 3 tests per program |
+| 8 | 08-deliverables/ has >= 12 files | All Java code compilable, cross-validation checks 41-50 pass | All specs complete; every element has source reference |
 
 ## Delivery Checklist
 
 ### Portfolio Assessment
 - [ ] Application inventory with asset counts, LOC, complexity
-- [ ] Each program classified: Retire/Retain/Rehost/Refactor/Rewrite
+- [ ] Each program classified: Retire/Retain/Rehost/Rehost/Refactor/Rewrite
 - [ ] Dead code identified (>12 months inactive, unreferenced COPYBOOKs)
 - [ ] Complexity metrics computed (cyclomatic, I/O ops, external deps)
 - [ ] Migration priority scoring per program (see scoring table below)
@@ -106,12 +133,29 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] All entities use Lombok
 - [ ] All UPDATE operations have locking strategy
 - [ ] All reference queries use @Cacheable
-- [ ] All list queries support Pageable
+- [ ] All list queries support cursor-based pagination
 - [ ] All COPY REPLACING statements traced in REPLACING Registry
 - [ ] All DFSORT/ICETOOL operations mapped in Data Pipeline documentation
 - [ ] All DFHMDF LENGTH values mapped to @Column(length=N) + @Size(max=N)
 - [ ] Golden baselines have confidence tags (HIGH/MEDIUM/LOW/UNCERTAIN)
 - [ ] AI-derived baselines marked with @Tag("ai-derived") where applicable
+- [ ] **Every program analysis has ALL 12 required sections**
+- [ ] **Every BMS map has ALL 8 required sections**
+- [ ] **Cross-validation checks 41-50 all pass**
+
+### Phase 8 Code Generation Gate (NEW)
+- [ ] All Entity classes have complete Java code (no pseudocode)
+- [ ] All Repository interfaces have complete Java code (no pseudocode)
+- [ ] All Service classes have complete Java code with constructor injection
+- [ ] All DTO classes exist for every BMS map (Request + Response)
+- [ ] All Controller classes exist for every screen
+- [ ] Exception hierarchy + GlobalExceptionHandler complete
+- [ ] CursorPageResponse<T> defined for pagination screens
+- [ ] All Spring Batch configurations complete (Job + Step + Reader + Writer)
+- [ ] SecurityFilterChain + JWT filter code complete
+- [ ] OpenAPI 3.0 spec generated
+- [ ] All code elements have `// Source:` reference comments
+- [ ] **Cross-validation checks 41-50 documented as PASS**
 
 ### Session State
 - [ ] `_state-snapshot.json` created after each phase
@@ -191,6 +235,11 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] COBOL validations → Bean Validation
 - [ ] INVALID KEY → Optional.orElseThrow()
 - [ ] REDEFINES → @Inheritance or separate DTOs
+- [ ] ALL Service methods have constructor injection (no @Autowired fields)
+- [ ] ALL DTOs have Bean Validation annotations
+- [ ] ALL pagination uses cursor-based pattern (NOT offset)
+- [ ] GlobalExceptionHandler covers ALL exception types
+- [ ] Password migration supports both plain-text and BCrypt
 
 ### Data Migration Gate
 - [ ] COMP-3 round-trip golden test passed

@@ -1,8 +1,8 @@
-# Phase 6: Architecture Reconstruction + Dependency Graph
+# Phase 6: Architecture Reconstruction + Dependency Graph + Inter-Service Protocol
 
 ## Objective
 
-Reconstruct the as-is architecture from source code analysis. Produce detailed Mermaid diagrams showing program dependencies, data flows, hybrid architecture, and microservice boundary recommendations.
+Reconstruct the as-is architecture from source code analysis. Produce detailed Mermaid diagrams showing program dependencies, data flows, microservice boundary recommendations, **inter-service communication protocols**, and JCL-to-Spring Batch mapping.
 
 ## Input
 
@@ -108,11 +108,51 @@ graph LR
     SYNC --> PGMB
 ```
 
+## Inter-Service Communication Protocol (NEW — Required)
+
+### Service-to-Service Dependency Map
+
+| Consumer Service | Provider Service | Data Needed | Protocol | Endpoint/Topic | Reason |
+|-----------------|-----------------|------------|----------|---------------|--------|
+| transaction-service | card-service | Card validation | REST (synchronous) | GET /api/v1/cards/{id}/validate | Card exists? Active? |
+| transaction-service | account-service | Account balance | REST (synchronous) | GET /api/v1/accounts/{id}/balance | Balance check before debit |
+| auth-service | admin-service | User profile | REST (synchronous) | GET /api/v1/admin/users/{id} | User lookup during login |
+| card-service | account-service | Account status | REST (synchronous) | GET /api/v1/accounts/{id}/status | Verify account active |
+| batch-service | transaction-service | Daily transactions | Event (async) | topic: daily-transactions-ready | Batch trigger |
+| batch-service | account-service | Account updates | Event (async) | topic: account-updates | Interest calculation |
+
+### Protocol Decision Rules
+
+| Scenario | Protocol | Rationale | COBOL Equivalent |
+|----------|----------|-----------|-----------------|
+| Caller needs immediate response | REST (synchronous) | Blocking call, need data now | CICS LINK/XCTL |
+| Fire-and-forget notification | Message Queue (async) | Non-blocking, eventual consistency | MQ PUT |
+| Batch data handoff | Shared database / File | Bulk data transfer | VSAM file share |
+| Event-driven trigger | Event Stream | Multiple consumers | JCL job dependency |
+
+### API Gateway Routing Table
+
+| Route Path | Backend Service | Auth Required | Rate Limit |
+|-----------|-----------------|--------------|-----------|
+| /api/v1/auth/** | auth-service | No | 100 req/min |
+| /api/v1/accounts/** | account-service | Yes (USER/ADMIN) | 500 req/min |
+| /api/v1/cards/** | card-service | Yes (USER/ADMIN) | 500 req/min |
+| /api/v1/transactions/** | transaction-service | Yes (USER/ADMIN) | 200 req/min |
+| /api/v1/admin/** | admin-service | Yes (ADMIN only) | 100 req/min |
+
+### Circuit Breaker Configuration
+
+| Service Call | Circuit Breaker | Timeout | Retry | Fallback |
+|-------------|----------------|---------|-------|----------|
+| transaction → card | @CircuitBreaker | 3s | 2 | Return cached card status |
+| transaction → account | @CircuitBreaker | 3s | 2 | Reject transaction (safe) |
+| auth → admin | @CircuitBreaker | 2s | 1 | Return minimal user info |
+
 ## Integration Patterns
 
-| Pattern | From | To | Protocol |
-|---------|------|-----|---------|
-| [pattern] | [from] | [to] | [protocol] |
+| Pattern | From | To | Protocol | COBOL Source |
+|---------|------|-----|---------|-------------|
+| [pattern] | [from] | [to] | [protocol] | [program.cbl] |
 
 ## System Context Diagram
 
@@ -131,7 +171,6 @@ C4Context
 | Flow | Source Program | Data | Destination | Via |
 |------|---------------|------|------------|-----|
 | [name] | [pgm] | [data] | [dest] | [trans] |
-```
 
 ## Microservice Decomposition
 
@@ -146,6 +185,7 @@ Build the target architecture by asking:
 2. **What data does it own?** → Defines Entity + Repository
 3. **What triggers it?** → Defines API/Event endpoints
 4. **What does it depend on?** → Defines integration patterns
+5. **How does it communicate with other services?** → Defines protocol (REST/MQ/Event)
 
 ## JCL Conversion to Spring Batch
 
@@ -184,6 +224,14 @@ Build the target architecture by asking:
 | Authorization | RACF Profiles | @PreAuthorize("hasRole") |
 | Transaction Auth | Resource Class | Method-level @PreAuthorize |
 
+### Inter-Service Authentication
+
+| Pattern | Implementation | Notes |
+|---------|---------------|-------|
+| Internal REST calls | mTLS / Service Account JWT | Gateway handles external auth |
+| Async messages | Message signing / TLS | Queue-level auth |
+| Shared database | Same DB user, schema-level ACL | Services share DB, not schemas |
+
 ## Execution Steps
 
 ### Step 1: Build Dependency Graph
@@ -210,6 +258,7 @@ Apply forward engineering principles:
 2. Define service boundaries (single domain ownership)
 3. Define integration patterns between services
 4. Add infrastructure layer (Gateway, MQ, Cache)
+5. **Define inter-service communication protocol for every dependency**
 
 ### Step 4: Map JCL to Spring Batch
 
@@ -224,6 +273,7 @@ For RACF profiles found:
 1. Map User authentication → JWT
 2. Map Resource authorization → @PreAuthorize
 3. Document the migration of plain-text passwords → BCrypt
+4. Define inter-service authentication strategy
 
 ### Step 6: Export Architecture Diagrams
 
@@ -235,5 +285,8 @@ Write `06-architecture/scheduler-mapping.md` (if scheduler exists)
 - [ ] Every diagram component traceable to COBOL source
 - [ ] All Mermaid diagrams verified rendering correctly
 - [ ] Service boundaries follow single-ownership principle
+- [ ] **Inter-service protocol defined for every service dependency**
+- [ ] **API Gateway routing table covers all services**
+- [ ] **Circuit breaker configuration defined for all synchronous calls**
 - [ ] Solution architect invited to review CP-3
 - [ ] Save `_state-snapshot.json` with {'phase':6,'status':'pending-review'}
