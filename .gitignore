@@ -21,7 +21,8 @@ Thumbs.db
 
 # IDE
 .idea/
-.trae/
+.trae/*
+!.trae/skills/
 .playwright-cli/
 
 # VS Code - ignore personal settings but keep project snippets

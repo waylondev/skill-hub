@@ -31,7 +31,17 @@ pipx install yt-dlp
 - Keeps yt-dlp in isolated virtual environment
 - Recommended for Python tool management
 
-### Method 3: Via Package Manager
+### Method 3: Via uv (Modern Python Tool Manager)
+```bash
+uv tool install yt-dlp
+```
+- Uses `uv` for fast, reliable tool installation
+- Runs with: `uv tool run yt-dlp [options] [url]`
+- Recommended if you already use `uv` in your workflow
+- List installed tools: `uv tool list`
+- Upgrade: `uv tool install --upgrade yt-dlp`
+
+### Method 4: Via Package Manager
 
 **macOS (Homebrew)**:
 ```bash
@@ -53,7 +63,7 @@ sudo apt update && sudo apt install -y python3-pip && pip3 install yt-dlp
 sudo dnf install -y python3-pip && pip3 install yt-dlp
 ```
 
-### Method 4: Direct Download
+### Method 5: Direct Download
 - Download from [GitHub Releases](https://github.com/yt-dlp/yt-dlp/releases)
 - Place the executable in a directory in your PATH
 - No dependencies required (standalone executable)
@@ -125,8 +135,10 @@ Should show version information and enabled features.
 | Issue | Solution |
 |-------|----------|
 | `pip: command not found` | Install Python first, or use package manager method |
+| `uv: command not found` | Install uv first: `curl -LsSf https://astral.sh/uv/install.sh \| sh` or see https://docs.astral.sh/uv/ |
 | `brew: command not found` | Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"` |
 | `winget: command not found` | Update Windows to version 1709+ or use Chocolatey |
 | Permission denied | Use `sudo` (Linux/macOS) or run as Administrator (Windows) |
 | `yt-dlp` not found after pip install | Add Python Scripts directory to PATH |
+| `yt-dlp` not found after uv install | Use `uv tool run yt-dlp` instead of direct `yt-dlp` command |
 | `ffmpeg` not found after download | Ensure `bin/` directory is added to PATH, then restart terminal |

@@ -155,7 +155,7 @@ sequenceDiagram
 | 🔷 Environment | `env-configure-maven` | Configure Maven environment |
 | 🔧 Environment | `env-configure-path` | Configure PATH variables |
 
-👉 **See all skills**: Browse the [`skills/`](./skills/) directory
+👉 **See all skills**: Browse the [`.trae/skills/`](./.trae/skills/) directory
 
 ---
 
@@ -199,7 +199,7 @@ graph LR
 ```bash
 1. Write SKILL.md (follow design principles)
 2. Test locally
-3. skill push ./skills/your-skill
+3. skill push ./.trae/skills/your-skill
 4. Submit PR
 ```
 

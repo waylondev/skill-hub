@@ -161,7 +161,7 @@ One Skill only covers **one step**. AI orchestrates all steps.
                           ↓
 ┌─────────────────────────────────────────────────────────┐
 │              Skill-Hub Repository                        │
-│  skills/                                                 │
+│  .trae/skills/                                           │
 │  ├── sn-request-software/SKILL.md  ← AI reads this      │
 │  ├── swc-install-package/SKILL.md  ← AI reads this      │
 │  └── env-configure-java/SKILL.md   ← AI reads this      │
@@ -338,7 +338,7 @@ Configure Maven environment variables (MAVEN_HOME and PATH) only.
 | `skill install <name>` | Install locally | `skill install sn-request-software` |
 | `skill uninstall <name>` | Uninstall | `skill uninstall sn-request-software` |
 | `skill read <name>` | Read skill content for AI | `skill read sn-request-software` |
-| `skill push <path>` | Publish | `skill push ./skills/xxx` |
+| `skill push <path>` | Publish | `skill push ./.trae/skills/xxx` |
 
 ### 5.2 Implementation
 
@@ -355,7 +355,7 @@ Configure Maven environment variables (MAVEN_HOME and PATH) only.
 
 ```
 skill-hub/
-├── skills/
+├── .trae/skills/
 │   ├── sn-request-software/SKILL.md
 │   ├── swc-install-package/SKILL.md
 │   └── env-configure-java/SKILL.md

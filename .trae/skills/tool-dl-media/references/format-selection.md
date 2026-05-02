@@ -75,3 +75,62 @@ yt-dlp -f "bestvideo[vcodec^=av01]+bestaudio/best" URL
 | Mobile viewing | MP4, 720p | Good for smaller screens |
 | Music collection | FLAC or Opus 128kbps | Lossless or transparent quality |
 | Quick reference | MP4, 480p | Small file size for quick access |
+
+## Platform-Specific Format Notes
+
+### Bilibili (B站)
+
+**URL Formats**:
+- BV号: `https://www.bilibili.com/video/BV1XXXXX/`
+- AV号: `https://www.bilibili.com/video/avXXXXX/`
+- Playlist: `https://www.bilibili.com/video/BV1XXXXX/?p=X`
+
+**Available Formats**:
+- Bilibili typically provides: 360p, 480p, 720p, 1080p, 1080p+, 4K
+- 1080p+ and 4K usually require login (use cookies)
+- Audio is usually separate from video (DASH format)
+
+**Recommended Commands**:
+```bash
+# Download 720p video with audio
+uv tool run yt-dlp -f "bestvideo[height=720]+bestaudio/best[height=720]" "https://www.bilibili.com/video/BV1XXXXX/"
+
+# Download best quality with login
+uv tool run yt-dlp -f "bestvideo+bestaudio/best" --cookies-from-browser chrome "https://www.bilibili.com/video/BV1XXXXX/"
+
+# Extract audio only as MP3
+uv tool run yt-dlp -x --audio-format mp3 --audio-quality 192K "https://www.bilibili.com/video/BV1XXXXX/"
+
+# Download with danmaku (bullet comments) as subtitles
+uv tool run yt-dlp --write-subs --sub-lang danmaku "https://www.bilibili.com/video/BV1XXXXX/"
+```
+
+**Notes**:
+- Danmaku can be downloaded as subtitles using `--write-subs --sub-lang danmaku`
+- Some content may be geo-restricted outside mainland China
+- High quality (1080p+) requires Bilibili premium membership or login
+- Use `--cookies-from-browser` for authenticated downloads
+
+### YouTube
+
+**Available Formats**:
+- Wide range: 144p to 8K depending on video
+- 1080p+ uses separate video/audio streams (DASH)
+- Requires ffmpeg for merging
+
+**Recommended Commands**:
+```bash
+# Download 1080p with best audio
+uv tool run yt-dlp -f "bestvideo[height=1080]+bestaudio/best[height=1080]" URL
+
+# Download subtitles/captions
+uv tool run yt-dlp --write-subs --sub-lang en,en-GB URL
+
+# Download as audio only
+uv tool run yt-dlp -x --audio-format mp3 URL
+```
+
+**Notes**:
+- High quality may require authentication
+- Use cookies for age-restricted content
+- yt-dlp auto-merges video+audio streams when ffmpeg is available
