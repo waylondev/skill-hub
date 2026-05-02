@@ -36,10 +36,14 @@ This skill provides a systematic approach to analyzing COBOL legacy systems and 
 | include-jacoco | true | Include JaCoCo code coverage |
 | include-screen-ascii | true | Include BMS ASCII screen layout |
 | include-navigation-state-machine | true | Include screen navigation state diagram |
+| include-security-audit | true | **NEW** — Include security audit report (Phase 8d) |
+| include-mq-catalog | auto | **NEW** — Include MQ message catalog (auto=only if MQ detected) |
+| include-batch-deps | auto | **NEW** — Include batch dependency DAG (auto=only if JCL+GDG exist) |
+| include-data-model-merge | auto | **NEW** — Include IMS/DB2/VSAM model merge (auto=multi-source) |
 | batch-size | 8 | COBOL files per batch processing |
-| enable-human-review | true | Enable human review checkpoints |
+| enable-human-review | true | Enable human review checkpoints (CP-1 to CP-5) |
 | chunking-strategy | auto | File processing: auto/module-based/rolling |
-| mode | lite | Processing mode: lite (core phases) / full (all 20+ phases) |
+| mode | lite | Processing mode: lite (core phases 1-8) / full (all phases 1-10+) / v4-enhanced (includes 8a-8g) |
 
 ## CRITICAL RULES
 
@@ -58,6 +62,10 @@ This skill provides a systematic approach to analyzing COBOL legacy systems and 
 13. **MAINTAIN context index** - Track processed files to enable resume
 14. **ANALYZE EVERY .cbl PROGRAM's PROCEDURE DIVISION** - No program may be skipped; if context limit reached, save state and resume in next session
 15. **GENERATE CODE-LEVEL SPECS, NOT HIGH-LEVEL DESCRIPTIONS** - Every deliverable must be detailed enough for AI to generate compilable Java code without guessing
+16. **ALWAYS GENERATE DTO CLASSES WITH VALIDATION** - Every Request DTO must have Bean Validation annotations extracted from COBOL IF rules; no annotation-less DTOs
+17. **ALWAYS GENERATE FLYWAY SCRIPTS** - If include-flyway=true (default), generate V1__initial_schema.sql from VSAM/DB2/IMS data dictionaries, NOT from invented schemas
+18. **ALWAYS AUDIT SECURITY** - Plaintext passwords, unencrypted PII, missing RBAC must be flagged in security-audit.md
+19. **ALWAYS ANALYZE MQ MESSAGE FORMATS** - If MQGET/MQPUT found in source, generate complete message schemas with field-level precision
 
 ## Phase Output Precision Standards (NEW — Minimum Acceptable Quality)
 
@@ -71,6 +79,13 @@ This skill provides a systematic approach to analyzing COBOL legacy systems and 
 | Phase 6 (Architecture) | Architecture doc | Call graph, service boundaries, inter-service protocol (REST/gRPC/MQ), batch step sequence | Yes for service scaffolding |
 | Phase 7 (Test Matrix) | Test cases | Test ID, input, expected output, source program/line, golden test fixture path | Yes for test generation |
 | Phase 8 (Deliverables) | Java specs | **Complete Java code**: Entity, Repository, Service, Controller, DTO, Exception, Enum, Config | **Must be YES** for compilation |
+| Phase 8a (DTO) | DTO classes | **Complete DTO** with Bean Validation annotations for every UNPROT BMS field, error message strings from COBOL | Yes for API contract generation |
+| Phase 8b (Flyway) | SQL scripts | **Complete Flyway** V1+V2+V3: every VSAM/DB2/IMS table, all FKs, all AIX→index, CHECK constraints, seed data | Yes for DB initialization |
+| Phase 8c (OpenAPI) | YAML spec | **Complete OpenAPI 3.0**: every endpoint, every schema, source references in descriptions | Yes for Swagger UI + Client SDK |
+| Phase 8d (Security) | Audit report | All plaintext passwords, PII fields, missing RBAC patterns with Java remediation code | Yes for compliance audit |
+| Phase 8e (Batch Deps) | DAG + Scheduler | Every JCL job in dependency graph, COND→Flow translation, CA7/Control-M→CronJob | Yes for batch orchestration |
+| Phase 8f (MQ Catalog) | Message schemas | Every MQ queue/format with field-level schema, CorrelID pattern, RabbitMQ topology | Yes for MQ migration |
+| Phase 8g (Data Merge) | Unified model | All VSAM+DB2+IMS entities merged, deduplicated, normalized, with migration sequence | Yes for final schema |
 
 ### Per-Program Logic Analysis Minimum Requirements (Phase 5)
 
@@ -169,7 +184,14 @@ After ALL phases complete, run Mandatory Checks from `references/quality-checkli
 
 | # | Phase | Document | Purpose |
 |---|-------|----------|---------|
-| 8 | Deliverables | [phases/07-deliverables.md](phases/07-deliverables.md) | Entity/Repo/Service/API specifications |
+| 8 | Core Deliverables | [phases/07-deliverables.md](phases/07-deliverables.md) | Entity/Repo/Service/API specifications |
+| 8a | DTO & Validation | [phases/10-dto-specification.md](phases/10-dto-specification.md) | **NEW** — Complete DTO classes with Bean Validation from COBOL IF rules |
+| 8b | Flyway Migrations | [phases/11-flyway-migration.md](phases/11-flyway-migration.md) | **NEW** — Flyway SQL from VSAM/DB2/IMS data dictionaries |
+| 8c | OpenAPI 3.0 | [phases/12-openapi.md](phases/12-openapi.md) | **NEW** — OpenAPI 3.0 YAML from BMS/REST endpoint mappings |
+| 8d | Security Audit | [phases/13-security-audit.md](phases/13-security-audit.md) | **NEW** — Plaintext passwords, encryption gaps, RBAC mapping |
+| 8e | Batch Dependencies | [phases/14-batch-deps.md](phases/14-batch-deps.md) | **NEW** — JCL/GDG dependency DAG → Spring Batch Flow + K8s CronJob |
+| 8f | MQ Catalog | [phases/15-mq-catalog.md](phases/15-mq-catalog.md) | **NEW** — MQ message format schemas + RabbitMQ topology |
+| 8g | Data Model Merge | [phases/16-data-model-merge.md](phases/16-data-model-merge.md) | **NEW** — IMS/DB2/VSAM unified relational model |
 | 9 | Code Generation | [phases/08-codegen.md](phases/08-codegen.md) | AI code generation + golden examples |
 | 10+ | Deployment | [phases/09-deployment.md](phases/09-deployment.md) | Frontend, CI/CD, K8s, monitoring, compliance |
 
@@ -179,8 +201,9 @@ After ALL phases complete, run Mandatory Checks from `references/quality-checkli
 |----------|---------|
 | [references/cobol-to-java-mappings.md](references/cobol-to-java-mappings.md) | COBOL→Java type/PIC/CICS/JCL mapping tables |
 | [references/golden-examples.md](references/golden-examples.md) | Production-grade code examples (Phase 9.5 standard) |
-| [references/quality-checklist.md](references/quality-checklist.md) | QA mandatory checks + delivery checklist + pitfalls |
+| [references/quality-checklist.md](references/quality-checklist.md) | QA mandatory checks + delivery checklist + pitfalls (68 checks) |
 | [references/production-patterns.md](references/production-patterns.md) | Migration strategies + deployment patterns |
+| [phases/cp-review-protocol.md](phases/cp-review-protocol.md) | **NEW** — Human review checkpoint protocol (CP-1 to CP-5) |
 
 ## Human Review Checkpoints
 
@@ -336,12 +359,14 @@ project-name/
 │   ├── bms-map-analysis.md
 │   └── screen-navigation-state-machine.md  # [IF enabled]
 ├── 04-copybook-analysis/
-│   └── copybook-data-structures.md
+│   ├── copybook-data-structures.md
+│   └── unified-data-model.md          # [NEW v4 — Phase 8g] IMS/DB2/VSAM merged model
 ├── 05-program-logic/
 │   └── program-logic-analysis.md
 ├── 06-architecture/
 │   ├── architecture-diagrams.md
-│   └── scheduler-mapping.md          # [IF scheduler exists]
+│   ├── scheduler-mapping.md          # [IF scheduler exists]
+│   └── batch-dependency-graph.md     # [NEW v4 — Phase 8e] JCL/GDG dependency DAG
 ├── 07-test-matrix/
 │   └── test-matrix.md
 ├── 08-deliverables/
@@ -356,9 +381,11 @@ project-name/
 │   ├── jcl-batch-mapping.md
 │   ├── business-rules.md
 │   ├── security-mapping.md
-│   ├── dto-specification.md          # [NEW] Complete DTO classes
-│   ├── exception-handling.md         # [NEW] Exception hierarchy + GlobalExceptionHandler
-│   └── openapi-spec.yaml             # [NEW] OpenAPI 3.0 spec
+│   ├── dto-specification.md          # [NEW v4 — Phase 8a] Complete DTO classes
+│   ├── exception-handling.md         # Exception hierarchy + GlobalExceptionHandler
+│   ├── openapi-spec.yaml             # [NEW v4 — Phase 8c] OpenAPI 3.0 spec
+│   ├── security-audit.md             # [NEW v4 — Phase 8d] Security findings + remediation
+│   └── mq-message-catalog.md         # [NEW v4 — Phase 8f] MQ format schemas
 ├── 09-database-migrations/           # [IF include-flyway=true]
 │   ├── V1__initial_schema.sql
 │   ├── V2__indexes_and_constraints.sql

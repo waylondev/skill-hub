@@ -69,6 +69,34 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 49 | Security-Access Consistency | Every USRSEC user type check in COBOL code has @PreAuthorize in Java | Cross-reference Phase 5 UserType checks with Phase 8 Security spec |
 | 50 | No-Guessing Rule | Every Java field, method, class, and DTO has a source reference comment tracing back to COBOL file + line | Grep ALL Java code for `// Source:` comments; count vs total elements |
 
+### NEW Phase 8a/8b/8c Checks (DTO, Flyway, OpenAPI — v4 Enhancements)
+
+| # | Check | Criteria | Verify Method |
+|---|-------|----------|--------------|
+| 51 | DTO Completeness | Every BMS map has Request + Response DTO pair with ALL UNPROT/PROT fields mapped | Compare Phase 3 BMS inventory with Phase 8a DTO classes |
+| 52 | Bean Validation Completeness | Every COBOL IF validation rule has corresponding Bean Validation annotation | Grep COBOL IF-checks vs @Valid/@NotNull/@NotBlank/@Size |
+| 53 | Flyway Table Completeness | Every VSAM/DB2/IMS entity has a CREATE TABLE in V1__initial_schema.sql | Count entities in Phase 2 + 4 vs CREATE TABLE count |
+| 54 | Flyway FK Completeness | Every COPYBOOK FK relationship has ALTER TABLE foreign key | Compare Phase 2 FK list with V2 FK constraints |
+| 55 | Flyway AIX → Index | Every VSAM AIX has corresponding CREATE INDEX in V2 | Compare Phase 2 AIX list with V2 indexes |
+| 56 | Flyway Check Constraints | Every 88-level enum has CHECK constraint in V2 | Compare Phase 4 enum list with V2 CHECK constraints |
+| 57 | Flyway Seed Data | All lookup/reference tables have seed INSERT statements | V3 INSERT count ≥ reference table count |
+| 58 | OpenAPI Endpoint Completeness | All Phase 8 REST endpoints appear in openapi-spec.yaml paths | Endpoint count in Phase 8 vs OpenAPI path count |
+| 59 | OpenAPI Schema Completeness | All Phase 8a DTO classes appear as OpenAPI schema components | DTO count in Phase 8a vs OpenAPI schema count |
+| 60 | OpenAPI Source References | Every endpoint description includes COBOL source reference | Grep OpenAPI spec for BMS file names |
+
+### NEW Sub-Application Coverage Checks (v4 Enhancements)
+
+| # | Check | Criteria | Verify Method |
+|---|-------|----------|--------------|
+| 61 | Sub-App File Coverage | ALL sub-application .cbl/.cpy/.bms/.jcl files inventoried and analyzed | Compare Phase 1 sub-app counts with sub-app directory ls |
+| 62 | IMS DBD/PSB Coverage | ALL IMS DBD and PSB files documented with segment structure | Count .dbd + .psb files vs Phase 1 inventory |
+| 63 | DB2 DDL/DCL Coverage | ALL DB2 DDL and DCL files inventoried with table mappings | Count .ddl + .dcl files vs Phase 1 inventory |
+| 64 | COMP-3 Field Inventory | ALL COMP-3 fields across entire project identified with hex layout | Grep COMP-3 in all .cbl files vs Phase 4 COMP-3 section |
+| 65 | MQ Message Coverage | ALL MQGET/MQPUT/MQPUT1 in any program documented with queue names and format | Grep MQ commands vs Phase 5 MQ documentation |
+| 66 | ASM/Maclib Coverage | ALL assembler and maclib files analyzed with Java replacement strategy | Count .asm + .mac files vs Phase 1 inventory |
+| 67 | Scheduler Coverage | ALL scheduler files (CA7, Control-M, etc.) mapped to K8s CronJob or Spring @Scheduled | Count scheduler files vs Phase 6 scheduler mapping |
+| 68 | Security Audit Report | Security audit output documents ALL plaintext/anomalous patterns with remediation | Audit report section exists in Phase 8 deliverables |
+
 ## Verification Anchor Points
 
 After each phase, self-check these 3 anchors before proceeding:
