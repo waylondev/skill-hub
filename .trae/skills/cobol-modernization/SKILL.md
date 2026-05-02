@@ -210,6 +210,104 @@ At each checkpoint:
 | `_etl-config.json` | VSAM-to-RDBMS migration configuration | After Phase 2 complete |
 | `_review-log.md` | Human review feedback and decisions | At each checkpoint |
 
+### State Snapshot Template (`_state-snapshot.json`)
+
+```json
+{
+  "project": "<project-name>",
+  "analysis-date": "YYYY-MM-DD",
+  "current-phase": 5,
+  "current-batch": 3,
+  "total-batches": 10,
+  "stage": "analysis",
+  "phase-status": {
+    "1": "completed",
+    "2": "completed",
+    "3": "completed",
+    "4": "completed",
+    "5": "in-progress",
+    "6": "pending",
+    "7": "pending",
+    "8": "pending"
+  },
+  "files-processed": [
+    "COSGN00C.cbl",
+    "COMEN01C.cbl",
+    "COADM01C.cbl"
+  ],
+  "files-pending": [
+    "COACTUPC.cbl",
+    "COACTVWC.cbl",
+    "COCRDLIC.cbl"
+  ],
+  "review-checkpoints": {
+    "CP-1": "passed",
+    "CP-2": "pending",
+    "CP-3": "pending",
+    "CP-4": "pending",
+    "CP-5": "pending"
+  },
+  "resume-instructions": "Read _context-index.md for processed files. Start Phase 5 batch 4."
+}
+```
+
+### Context Index Template (`_context-index.md`)
+
+```markdown
+# Context Index — <project-name>
+
+## Phase Progress
+
+| Phase | Status | Batches Completed | Last Updated |
+|-------|--------|-------------------|-------------|
+| 1. Discovery | DONE | 1/1 | YYYY-MM-DD |
+| 2. VSAM | DONE | 1/1 | YYYY-MM-DD |
+| 3. BMS | DONE | 2/2 | YYYY-MM-DD |
+| 4. COPYBOOK | DONE | 1/1 | YYYY-MM-DD |
+| 5. Logic | IN-PROGRESS | 3/10 | YYYY-MM-DD |
+| 6. Architecture | PENDING | 0/1 | - |
+| 7. Test Matrix | PENDING | 0/1 | - |
+| 8. Deliverables | PENDING | 0/1 | - |
+
+## Files Processed
+
+### Phase 1 — Discovery
+- [x] All files scanned, inventory complete
+
+### Phase 2 — VSAM
+- [x] vsam-data-dictionary.md generated
+
+### Phase 3 — BMS
+- [x] bms-map-analysis.md generated (17 maps)
+
+### Phase 4 — COPYBOOK
+- [x] copybook-data-structures.md generated (29 copybooks)
+
+### Phase 5 — Logic (Batch Processing)
+- [x] Batch 1: COSGN00C, COMEN01C, COADM01C (authentication + menu)
+- [x] Batch 2: COACTUPC, COACTVWC (account operations)
+- [x] Batch 3: COCRDLIC, COCRDSLC, COCRDUPC (card operations)
+- [ ] Batch 4: COTRN00C, COTRN01C, COTRN02C (transaction operations)
+- [ ] Batch 5: COBIL00C, CORPT00C (billing + reports)
+- [ ] Batch 6: COUSR00C, COUSR01C, COUSR02C, COUSR03C (user management)
+- [ ] Batch 7: Batch processing programs (CB*)
+- [ ] Batch 8: Sub-application modules
+
+## Key Elements Extracted
+
+### Entities
+- Customer, Account, Card, CardXref, Transaction, TranType, TranCat, TranCatBal, DiscGroup, UserSecurity
+
+### 88-Level Enums
+- UserType (ADMIN/USER), CardStatus (ACTIVE/INACTIVE), ProgramContext (ENTER/REENTER)
+
+### PF Key Mappings
+- ENTER=submit, PF3=exit, PF5=save, PF7=prev-page, PF8=next-page, PF12=cancel
+
+### State Machines
+- Card Update: NOT_FETCHED → SHOW_DETAILS → CHANGES_NOT_OK / CHANGES_OK → SAVED
+```
+
 ### Resume Protocol
 
 1. Read `_state-snapshot.json` for last completed phase
@@ -362,6 +460,95 @@ These rules ensure data consistency across all phase documents:
 5. **API-Endpoint Cross-Check**: Every BMS screen in Phase 3 MUST have at least one REST endpoint in Phase 8.
 6. **Exception-Error Cross-Check**: Every error condition in Phase 5 (RESP code handling, IF validation failure) MUST have a corresponding exception type and HTTP status in Phase 8.
 
+## Automated Batch Processing Strategy (NEW — Production Enhancement)
+
+### Module-Based Chunking (for projects with sub-applications)
+
+When `include-sub-applications` is `auto` or `true`, detect sub-applications by directory structure and process each module independently:
+
+| Step | Action | Output |
+|------|--------|--------|
+| 1 | Scan for sub-directories containing .cbl files | Module inventory |
+| 2 | For each module: count .cbl/.cpy/.bms files | Module size assessment |
+| 3 | Order modules by dependency (e.g., main → sub-app) | Processing order |
+| 4 | Process modules sequentially, updating `_context-index.md` after each | Incremental progress |
+
+### Program Pattern Detection (for Phase 5 automation)
+
+Automatically detect common COBOL program patterns and apply pre-defined analysis templates:
+
+| Pattern | Detection Criteria | Analysis Template |
+|---------|-------------------|-------------------|
+| **CRUD-Single** | One VSAM file, READ + WRITE/REWRITE operations | Standard CRUD: findById, save, update, delete |
+| **CRUD-Master** | Primary VSAM file + cross-reference lookup | Master-detail: findByKey, findByFK, save, update |
+| **List-Pagination** | STARTBR + READNEXT/READPREV + screen array | Paginated list: findAll(pageable), findByFilters(pageable) |
+| **Search-Then-Display** | RECEIVE MAP → READ → SEND MAP | Search: searchByCriteria → display |
+| **Search-Then-Update** | RECEIVE MAP → READ UPDATE → REWRITE | Update: searchById → validate → save |
+| **Menu-Dispatcher** | EVALUATE menu-option → XCTL | Router: route(option) → redirect |
+| **Batch-Sequential** | Sequential READ of all records + DISPLAY | Batch: processAllRecords() |
+| **Batch-Import/Export** | READ from one file → WRITE to another | ETL: read(source) → transform → write(target) |
+
+### State Machine Template (for update programs)
+
+For programs with stateful interaction (e.g., COCRDUPC with search→edit→validate→save):
+
+```
+State: NOT_FETCHED → SHOW_DETAILS → CHANGES_NOT_OK / CHANGES_OK → SAVED
+Transitions:
+  - NOT_FETCHED + Enter(key provided) → SHOW_DETAILS
+  - NOT_FETCHED + PF3 → EXIT
+  - SHOW_DETAILS + Enter(validation fail) → CHANGES_NOT_OK
+  - SHOW_DETAILS + Enter(validation pass) → CHANGES_OK
+  - CHANGES_NOT_OK + Enter → SHOW_DETAILS (display errors)
+  - CHANGES_OK + PF5 → SAVED
+  - CHANGES_OK + Enter → SHOW_DETAILS (review again)
+  - CHANGES_OK + PF3 → NOT_FETCHED
+  - SAVED + PF3 → NOT_FETCHED
+```
+
+## Sub-Application Analysis Strategy (NEW — Production Enhancement)
+
+### Multi-Module Project Detection
+
+When the source directory contains sub-directories with their own COBOL programs, treat each as a separate sub-application:
+
+```
+source-root/
+├── cbl/              # Main application (always process first)
+├── bms/
+├── cpy/
+├── jcl/
+├── app-authorization-ims-db2-mq/   # Sub-app 1
+│   ├── cbl/
+│   ├── bms/
+│   ├── cpy/
+│   ├── ims/
+│   └── ddl/
+└── app-transaction-type-db2/       # Sub-app 2
+    ├── cbl/
+    ├── bms/
+    ├── cpy/
+    ├── ddl/
+    └── dcl/
+```
+
+### Sub-App Processing Order
+
+| Priority | Sub-App Type | Reason |
+|----------|-------------|--------|
+| 1 | Main CICS/VSAM app | Core functionality, highest user impact |
+| 2 | DB2 sub-apps | Reference data, easier to migrate (SQL → JPA) |
+| 3 | IMS sub-apps | Legacy DB, higher complexity |
+| 4 | MQ sub-apps | Integration layer, depends on above |
+| 5 | Assembler | Low-level utilities, lowest priority |
+
+### Sub-App Isolation Rules
+
+1. **Separate output directories** — Each sub-app gets its own analysis directory under the main output
+2. **Independent Entity sets** — Sub-apps should NOT share entities with main app unless explicitly referenced
+3. **Cross-app calls documented** — If main app XCTLs to sub-app program, document as inter-service call
+4. **Shared COPYBOOKs identified** — If sub-app uses same .cpy as main app, note the shared data contract
+
 ## Notes
 
 - This skill is designed for COBOL-to-Java/Spring Boot migration projects
@@ -371,3 +558,5 @@ These rules ensure data consistency across all phase documents:
 - COBOL Source Traceability: Every Java element MUST reference source file + line
 - For large projects (50+ programs), process in groups of related modules
 - ALWAYS verify Mermaid diagrams render correctly before delivery
+- ALWAYS generate `_state-snapshot.json` and `_context-index.md` for projects > 10 COBOL programs
+- ALWAYS apply program pattern detection in Phase 5 to speed up analysis
