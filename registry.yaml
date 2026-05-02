@@ -127,3 +127,15 @@ skills:
     title: Create Jenkins Pipeline
     domain: dev
     tags: [dev, jenkins, pipeline, ci, cd, job]
+  - name: tool-dl-media
+    path: skills/tool-dl-media
+    version: 1.1.0
+    title: Download Media from Online Platforms
+    domain: tool
+    tags: [download, media, video, audio, yt-dlp, subtitle, playlist, bilibili, uv]
+  - name: web-fill-complex-form
+    path: skills/web-fill-complex-form
+    version: 1.0.0
+    title: Fill Complex Web Form
+    domain: web
+    tags: [web, form, dynamic, combobox, async, browser]
