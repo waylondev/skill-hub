@@ -7,65 +7,153 @@ Parse every COPYBOOK file. Extract field definitions, data types, REDEFINES, OCC
 ## Input
 
 - All COPYBOOK files (.cpy)
+- Phase 2 VSAM analysis (for file-to-entity mapping context)
 
 ## Deliverables
 
-### `04-copybook-analysis/copybook-data-structures.md`
+### 4.1 `04-copybook-analysis/copybook-data-structures.md`
 
-Template structure:
+Complete template for the main deliverable:
 
 ```markdown
 # COPYBOOK Data Structures
 
+## Project Summary
+
+- **Total COPYBOOKs Analyzed:** [N]
+- **Total Fields Extracted:** [N]
+- **Total Enums Generated:** [N]
+- **COPY REPLACING Occurrences:** [N]
+
 ## COPYBOOK Inventory
-| # | COPYBOOK | Description | Fields | Used By |
-|---|----------|-------------|--------|---------|
-| 1 | [name] | [description] | [N] | [program list] |
 
-## Field-Level Analysis (per COPYBOOK)
+| # | COPYBOOK | Description | Fields | REDEFINES | OCCURS | 88-Level | Used By Programs |
+|---|----------|-------------|--------|-----------|--------|----------|-----------------|
+| 1 | [name.cpy] | [description] | [N] | [Y/N] | [Y/N] | [N] | [program list] |
+| 2 | [name.cpy] | [description] | [N] | [Y/N] | [Y/N] | [N] | [program list] |
 
-### [COPYBOOK Name] — [Description]
+---
 
-| Level | Field | PIC | Usage | OCCURS | 88-Level | Java Type | JPA |
-|-------|-------|-----|-------|--------|----------|-----------|-----|
-| 05 | [name] | [pic] | [usage] | [N] | [enums] | [type] | [annotations] |
+## Per-COPYBOOK Analysis
+
+### [COPYBOOK-id]
+
+**Source:** `[filepath]`, lines [start]-[end]
+**Purpose:** [business description from header comments or inferred]
+**Referenced By:** [list of programs using this COPYBOOK]
+
+#### Tree Structure
+
+```
+[COPYBOOK-01-LEVEL-NAME] (PIC=X(N), Total Record Length=[N])
+├── 05 [field-name]       PIC [pic]  [usage]     → Java: [Type]
+│   ├── 88 [CONST-1]      VALUE '[X]'
+│   └── 88 [CONST-2]      VALUE '[Y]'
+├── 05 [group-field]
+│   ├── 10 [sub-field-1]  PIC [pic]              → Java: [Type]
+│   └── 10 [sub-field-2]  PIC [pic]              → Java: [Type]
+├── 05 [occurs-field]     PIC [pic]  OCCURS [N]  → Java: List<[Type]>
+├── 05 [filler]           PIC X(N)               → (FILLER — skip, offset [N])
+└── 05 [redef-field]      REDEFINES [field]      → Java: [strategy]
+```
+
+#### Field-Level Mapping Table
+
+| Level | Field | PIC | Usage | OCCURS | 88 Values | Java Type | JPA Column | Notes |
+|-------|-------|-----|-------|--------|-----------|-----------|------------|-------|
+| 05 | [name] | [pic] | [usage] | [N] | [enums] | [type] | [annotation] | [note] |
+| 05 | [group] | GROUP | - | - | - | - | @Embedded | Group header |
+| 10 | [child] | [pic] | [usage] | - | - | [type] | [annotation] | [note] |
+
+#### Enum Extraction
+
+```java
+// Source: [COPYBOOK.cpy], lines [N]-[M]
+// Original COBOL:
+//     05 [field] PIC X(01).
+//       88 [CONST-1] VALUE '[val1]'.
+//       88 [CONST-2] VALUE '[val2]'.
+
+@Getter
+public enum [EnumName] {
+    [CONST_1]("[val1]"),
+    [CONST_2]("[val2]");
+
+    private final String code;
+
+    [EnumName](String code) { this.code = code; }
+
+    public static [EnumName] fromCode(String code) {
+        for ([EnumName] v : values()) {
+            if (v.code.equals(code)) return v;
+        }
+        throw new IllegalArgumentException("Unknown [EnumName] code: " + code);
+    }
+}
+```
+
+#### COMP-3 Field Inventory (if applicable)
+
+| Field | PIC | Digits | Storage Bytes | Java Type | Unpack Method |
+|-------|-----|--------|--------------|-----------|---------------|
+| [name] | S9(N)V99 COMP-3 | [N+2] | [(N+2+1)/2] | BigDecimal | `Comp3Converter.unpack(bytes, [scale])` |
+
+#### REDEFINES Strategy (if applicable)
+
+| Original Field | REDEFINES Target | Discriminator | Java Strategy |
+|---------------|-----------------|---------------|---------------|
+| [field] | [target] | [discriminator field] | @Inheritance or separate DTOs |
+
+#### OCCURS Handling (if applicable)
+
+| Field | OCCURS Count | DEPENDING ON | Java Type | JPA Strategy |
+|-------|-------------|--------------|-----------|--------------|
+| [name] | [N] | [yes/no] | `List<[Type]>` | @ElementCollection or @OneToMany |
+
+---
+
+(REPEAT above section for EACH COPYBOOK)
 
 ## Entity Structure Summary
 
 ### Entity: [EntityName] ← [COPYBOOK Name]
 
-| Field (Java) | Type | Mapping Rule | COBOL Source | Column |
-|-------------|------|-------------|-------------|--------|
-| [name] | [type] | [rule] | [file:line] | [ddl] |
+**VSAM File:** [filename], key: [field], RECLN=[N]
+
+| Java Field | Type | COBOL Source (level:field:line) | JPA Column | Constraints |
+|-----------|------|--------------------------------|------------|-------------|
+| [name] | [type] | [05:FIELD:123] | `@Column(name="col", length=N)` | [nullable, unique] |
+
+## COPY REPLACING Registry
+
+| Program | COPYBOOK | Original | Replaced By | Type | PIC Change |
+|---------|----------|----------|-------------|------|-----------|
+| [pgm].cbl | [cb].cpy | ACCT-ID | CUST-ID | FIELD | X(10)→X(12) |
+| [pgm].cbl | [cb].cpy | ==WS-== | ==DB-== | PREFIX | — |
 ```
 
-### Per-COPYBOOK detail (mandatory):
+### 4.2 `04-copybook-analysis/entity-relationships.md`
+
+Document entity relationships derived from COPYBOOK cross-references:
 
 ```markdown
-### [COPYBOOK-id]
-- **Source:** [filepath]
-- **Lines:** [start]-[end]
-- **Purpose:** [business description]
+# Entity Relationships
 
-**Structure:**
-```
-[01-level name]
-├── 05 [field-name]   PIC [pic]  [usage]   → [Java Type]  [@Annotation]
-│   ├── 88 [value-1]  VALUE '[X]'
-│   ├── 88 [value-2]  VALUE '[X]'
-│   └── 88 [value-3]  VALUE '[X]'
-├── 05 [child-field-1] PIC [pic]  [usage]   → [Java Type]
-├── 05 [child-field-2] PIC [pic]  OCCURS [n] → List<[Type]>
-├── 05 [filler-field]  PIC [pic]             → (FILLER — skip)
-└── 05 [redef-field]   REDEFINES [field-name] → [pattern]
-```
+## Relationship Matrix
 
-**Enum Extraction:**
-```java
-// 88-level → enum
-public enum [EnumName] {
-    [VALUE_1]("[X]"), [VALUE_2]("[X]"), [VALUE_3]("[X]")
-}
+| Parent Entity | Child Entity | Relationship | FK Field | Source |
+|--------------|-------------|-------------|----------|--------|
+| Customer | Account | @OneToMany | customer_id | [copybook]:[line] |
+| Account | Card | @OneToMany | account_id | [copybook]:[line] |
+| Card | Transaction | @OneToMany | card_number | [copybook]:[line] |
+
+## Relationship Diagram
+
+```mermaid
+erDiagram
+    CUSTOMER ||--o{ ACCOUNT : "has"
+    ACCOUNT ||--o{ CARD : "owns"
+    CARD ||--o{ TRANSACTION : "generates"
 ```
 ```
 
@@ -75,7 +163,7 @@ public enum [EnumName] {
 
 For each COPYBOOK file:
 1. Parse 01-level record structures
-2. Analyze level numbers: 01=root, 05-49=child groups, 66=rename, 77=elementary, 88=condition name
+2. Analyze level numbers: 01=root, 05-49=child groups, 66=rename, 77=elementary, 88=condition
 3. Extract PIC clause for each field
 4. Note USAGE: COMP/COMP-3/COMP-5/DISPLAY/INDEX/POINTER
 5. Detect REDEFINES with type discriminator
@@ -87,18 +175,17 @@ For each COPYBOOK file:
 
 Apply mapping from `references/cobol-to-java-mappings.md`:
 
-| COBOL PIC Pattern | Java Type | JPA Column |
-|-------------------|-----------|------------|
-| 9(N) where N ≤ 9 | Integer | `INTEGER` |
-| 9(N) where N > 9 | Long | `BIGINT` |
-| 9(N) leading zeros | String | `VARCHAR(N)` |
-| S9(N)V99 (currency) | BigDecimal | `DECIMAL(N+2,2)` |
-| S9(N)V9(M) (high precision) | BigDecimal | `DECIMAL(N+M,M)` |
-| X(N) YYYYMMDD date | LocalDate | (custom) |
-| X(N) DD-MM-YYYY date | LocalDate | (custom) |
-| X(N) timestamp | LocalDateTime | (custom) |
-| X(N) general text | String | `VARCHAR(N)` |
-| X(01) Y/N flag | String | `VARCHAR(1)` |
+| COBOL PIC Pattern | Java Type | JPA Column | Notes |
+|-------------------|-----------|------------|-------|
+| 9(N) where N ≤ 9 | Integer | `INTEGER` | Direct parse |
+| 9(N) where N > 9 | Long | `BIGINT` | Direct parse |
+| 9(N) leading zeros | String | `VARCHAR(N)` | Preserve leading zeros |
+| S9(N)V99 (currency) | BigDecimal | `DECIMAL(N+2,2)` | NEVER use double/float |
+| S9(N)V9(M) (high precision) | BigDecimal | `DECIMAL(N+M,M)` | Explicit scale |
+| X(N) YYYYMMDD date | LocalDate | `DATE` | `DateTimeFormatter.ofPattern("yyyyMMdd")` |
+| X(N) timestamp | LocalDateTime | `TIMESTAMP` | Custom formatter |
+| X(N) general text | String | `VARCHAR(N)` | trim() trailing spaces |
+| X(01) Y/N flag | String | `VARCHAR(1)` | Map Y→true, N→false |
 
 ### Step 3: Handle OCCURS Patterns
 
@@ -106,13 +193,14 @@ Apply mapping from `references/cobol-to-java-mappings.md`:
 |---------------|------|-----|
 | `OCCURS 5 TIMES` | `List<Detail>` with pre-allocation | `@ElementCollection` or `@OneToMany(cascade=ALL)` |
 | `OCCURS DEPENDING ON COUNT` | `List<Item>` with size validation | `@OneToMany(cascade=ALL, orphanRemoval=true)` |
+| Nested OCCURS | `List<Group>` each with `List<Item>` | `@ElementCollection` on nested class |
 
 ### Step 4: Handle REDEFINES with Discriminator
 
 REDEFINES patterns:
 1. **Type Discriminator:** Field X PIC X(1) discriminates structure → `@Inheritance(strategy=SINGLE_TABLE)` + `@DiscriminatorColumn(name="type", discriminatorType=STRING)`
 2. **Alternate views:** Same data viewed differently → Create separate DTO classes, choose based on context flag
-3. **Variable lengths:** Use nullable fields in single Entity
+3. **Variable lengths:** Use nullable fields in single Entity with `@Column(length=maxLength)`
 
 ### Step 5: Extract Enums from 88-Level
 
@@ -120,7 +208,7 @@ REDEFINES patterns:
 
 | COBOL | Java |
 |-------|------|
-| 05 STATUS PIC X(1). 88 STATUS-ACTIVE VALUE 'A'. 88 STATUS-INACTIVE VALUE 'I'. | `enum Status { ACTIVE("A"), INACTIVE("I") }` |
+| `05 STATUS PIC X(1). 88 STATUS-ACTIVE VALUE 'A'. 88 STATUS-INACTIVE VALUE 'I'. | `enum Status { ACTIVE("A"), INACTIVE("I") }` |
 
 ### Step 6: Identify Entity Relationships
 
@@ -146,8 +234,8 @@ For COPYBOOKs referenced by multiple VSAM files:
 | REPLACING Scenario | Rule | Java Entity Handling |
 |-------------------|------|---------------------|
 | Field name substituted | Map substituted name, not original | `// Source: [COPYBOOK], field [original] REPLACED BY [new] in [program]` |
-| Same COPYBOOK, different REPLACING across programs | **One COPYBOOK = One Entity**, but document all program-specific name variants | Create a "Field Alias Table" in the analysis output |
-| REPLACING changes PIC length (e.g., `==X(10)== BY ==X(20)==`) | Entity uses the **maximum** length from all programs, document as *variable-length* | `@Column(name="field", length=20)` with source note `// REPLACED from PIC X(10) to X(20) in [program]` |
+| Same COPYBOOK, different REPLACING across programs | **One COPYBOOK = One Entity**, document all program-specific variants | Create a "Field Alias Table" in the analysis output |
+| REPLACING changes PIC length (e.g., `==X(10)== BY ==X(20)==`) | Entity uses the **maximum** length from all programs | `@Column(name="field", length=20)` with source note |
 
 **Analysis Output Requirement:**
 For every COPY statement with REPLACING found, append a REPLACING trace table:
@@ -155,41 +243,43 @@ For every COPY statement with REPLACING found, append a REPLACING trace table:
 ```markdown
 ## COPY REPLACING Registry
 
-| Program | COPYBOOK | Original | Replaced By | Type |
-|---------|----------|----------|-------------|------|
-| [pgm].cbl | [cb].cpy | ACCT-ID | CUST-ID | FIELD |
-| [pgm].cbl | [cb].cpy | WS-ACCT-STATUS | DB-ACCT-STATUS | PREFIX |
+| Program | COPYBOOK | Original | Replaced By | Type | PIC Change |
+|---------|----------|----------|-------------|------|-----------|
+| [pgm].cbl | [cb].cpy | ACCT-ID | CUST-ID | FIELD | X(10)→X(12) |
+| [pgm].cbl | [cb].cpy | WS-ACCT-STATUS | DB-ACCT-STATUS | PREFIX | — |
 ```
 
 ### Step 8: Export COPYBOOK Analysis
 
 Write `04-copybook-analysis/copybook-data-structures.md` containing:
 1. COPYBOOK inventory with usage counts
-2. Full field-level analysis per COPYBOOK
+2. Full field-level analysis per COPYBOOK (tree structure + mapping table)
 3. Entity structure summary (Entity ← COPYBOOK)
 4. JAVA ENUM definitions (from 88-level)
-5. Java Patterns: REDEFINES / OCCURS strategies
-6. Ancestral BMS fields → GraphQL mutation mapping (if GraphQL enabled)
-7. Ancestral list screen fields → GraphQL queries (if GraphQL enabled)
+5. COMP-3 field inventory (if any)
+6. REDEFINES strategy documentation (if any)
+7. OCCURS handling documentation (if any)
+8. COPY REPLACING registry (if any)
+9. Entity relationship diagram
 
 ## Mandatory Coverage Rules
 
 - **100%:** Every 01/05/elementary field must appear (FILLER = documented but not mapped)
 - **88-level:** Document as Java enum with values
 - **COMP-3:** Note byte count formula: `(digits+1)/2`
-- **Legacy Type Preserved:** Document in _state-snapshot.json before overriding
-- **REPLACING:** Every COPY REPLACING statement must be traced back to its COPYBOOK; all substituted names recorded in the REPLACING Registry; PIC length changes from REPLACING must use the maximum across all programs
+- **REPLACING:** Every COPY REPLACING statement must be traced; all substituted names recorded in registry; PIC length changes use maximum across all programs
 
 ## Quality Gate (Human Review CP-1)
 
 Before proceeding to Phase 5:
-- [ ] Every COPYBOOK fully parsed
-- [ ] ALL fields mapped (100% coverage)
-- [ ] All REDEFINES patterns identified
-- [ ] All OCCURS patterns mapped to Lists
-- [ ] All 88-level conditions extracted as Enums
-- [ ] All COMP/COMP-3 fields noted
+- [ ] Every COPYBOOK fully parsed — count matches Phase 1 inventory
+- [ ] ALL fields mapped (100% coverage — FILLER noted but skipped)
+- [ ] All REDEFINES patterns identified with Java strategy
+- [ ] All OCCURS patterns mapped to Java Lists with JPA strategy
+- [ ] All 88-level conditions extracted as Java enums with `fromCode()` method
+- [ ] All COMP/COMP-3 fields noted with byte count and unpack method
 - [ ] All COPY REPLACING statements traced and registered
-- [ ] Entity relationships documented
+- [ ] Entity relationships documented with @ManyToOne/@OneToMany
+- [ ] Tree structure present for EACH COPYBOOK
 - [ ] DBA review invited at this checkpoint
-- [ ] Save `_state-snapshot.json` with {'phase':4,'status':'pending-review'}
+- [ ] Save `_state-snapshot.json` with `{'phase':4,'status':'pending-review'}`

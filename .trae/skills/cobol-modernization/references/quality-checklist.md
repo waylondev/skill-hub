@@ -8,7 +8,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
-| 1 | File Coverage | 100% of .cbl/.cpy/.bms files analyzed | Count files vs documented |
+| 1 | File Coverage | 100% of .cbl/.cpy/.bms/.jcl files analyzed | Count files vs documented |
 | 2 | Field Coverage | 100% of COPYBOOK fields mapped (FILLER noted) | Compare COPYBOOK to entity fields |
 | 3 | Logic Coverage | 100% of COMPUTE/IF/EVALUATE blocks documented | Compare COBOL paragraphs to Service methods |
 | 4 | API Coverage | 100% of BMS Maps mapped to REST endpoints | Count .bms vs API endpoints |
@@ -39,7 +39,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 29 | Flyway Scripts | All DB migrations versioned | Check V*.sql exist |
 | 30 | Code Coverage | Critical paths >= 80% coverage | Check JaCoCo reports |
 
-### NEW Phase 3-7 Checks (BMS, Logic, Architecture, Testing)
+### Phase 3-7 Checks (BMS, Logic, Architecture, Testing)
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
@@ -54,7 +54,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 39 | Test-Program Coverage | At least 3 test cases exist for every COBOL program in Phase 5 | Count test cases per program in Phase 7 |
 | 40 | Golden Test Baseline | Golden test input/output defined for all CRUD + batch operations | Verify fixture table completeness |
 
-### NEW Cross-Validation Checks (Phase 8 Code Generation Gate)
+### Cross-Validation Checks (Phase 8 Code Generation Gate)
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
@@ -69,7 +69,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 49 | Security-Access Consistency | Every USRSEC user type check in COBOL code has @PreAuthorize in Java | Cross-reference Phase 5 UserType checks with Phase 8 Security spec |
 | 50 | No-Guessing Rule | Every Java field, method, class, and DTO has a source reference comment tracing back to COBOL file + line | Grep ALL Java code for `// Source:` comments; count vs total elements |
 
-### NEW Phase 8a/8b/8c Checks (DTO, Flyway, OpenAPI — v4 Enhancements)
+### Phase 8a/8b/8c Checks (DTO, Flyway, OpenAPI — v4 Enhancements)
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
@@ -84,7 +84,7 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 59 | OpenAPI Schema Completeness | All Phase 8a DTO classes appear as OpenAPI schema components | DTO count in Phase 8a vs OpenAPI schema count |
 | 60 | OpenAPI Source References | Every endpoint description includes COBOL source reference | Grep OpenAPI spec for BMS file names |
 
-### NEW Sub-Application Coverage Checks (v4 Enhancements)
+### Sub-Application Coverage Checks (v4 Enhancements)
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
@@ -107,7 +107,7 @@ After each phase, self-check these 3 anchors before proceeding:
 | 2 | 02-vsam-analysis/ exists | File-to-Entity mapping table present | All VSAM SELECT statements mapped |
 | 3 | 03-bms-analysis/ exists | BMS→REST mapping table present, LENGTH→@Column mapping verified | All .bms files mapped; every map has ≥ 8 sections |
 | 4 | 04-copybook-analysis/ exists | Field mapping table + REPLACING Registry present | All .cpy files parsed, all REPLACING traced |
-| 5 | 05-program-logic/ exists | Business rules table + ALL programs analyzed with 12 sections each | ALL .cbl programs done; paragraph count matches source; every IF/EVALUATE documented |
+| 5 | 05-program-logic/ exists | Business rules table + ALL programs analyzed with 12 sections each | ALL .cbl programs done; paragraph count matches source |
 | 6 | 06-architecture/ exists | Mermaid diagrams render | All dependencies mapped; every program assigned to one service |
 | 7 | 07-test-matrix/ exists | Test scenarios table + Golden baseline confidence tags present | ≥ 3 tests per program |
 | 8 | 08-deliverables/ has >= 12 files | All Java code compilable, cross-validation checks 41-50 pass | All specs complete; every element has source reference |
@@ -116,30 +116,10 @@ After each phase, self-check these 3 anchors before proceeding:
 
 ### Portfolio Assessment
 - [ ] Application inventory with asset counts, LOC, complexity
-- [ ] Each program classified: Retire/Retain/Rehost/Rehost/Refactor/Rewrite
+- [ ] Each program classified: Retire/Retain/Rehost/Refactor/Rewrite
 - [ ] Dead code identified (>12 months inactive, unreferenced COPYBOOKs)
 - [ ] Complexity metrics computed (cyclomatic, I/O ops, external deps)
-- [ ] Migration priority scoring per program (see scoring table below)
-
-### Migration Priority Scoring
-
-| Factor | Weight | Calculation |
-|--------|--------|-------------|
-| Lines of code | 1 point / 100 LOC | 500 LOC → 5 points |
-| File I/O operations | 3 points each | 5 VSAM ops → 15 points |
-| CALL/COPY dependencies | 2 points each | 4 COPYBOOKs → 8 points |
-| EVALUATE/IF branches | 1 point / 5 branches | 30 branches → 6 points |
-| COMPUTE/ARITHMETIC ops | 2 points each | 8 COMPUTEs → 16 points |
-| CICS commands | 2 points each | 10 CICS cmds → 20 points |
-| COMP-3 fields accessed | 3 points each | 4 COMP-3 → 12 points |
-| Screen (BMS) complexity | 1 point / 10 fields | 40 fields → 4 points |
-
-| Score Range | Priority | Migration Order |
-|-------------|----------|----------------|
-| 0-10 | LOW | Wave 3 |
-| 11-30 | MEDIUM | Wave 2 |
-| 31-60 | HIGH | Wave 1 |
-| 60+ | CRITICAL | Wave 1 (senior devs) |
+- [ ] Migration priority scoring per program
 
 ### Analysis Completeness
 - [ ] Every .cbl file analyzed and documented
@@ -167,11 +147,11 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] All DFHMDF LENGTH values mapped to @Column(length=N) + @Size(max=N)
 - [ ] Golden baselines have confidence tags (HIGH/MEDIUM/LOW/UNCERTAIN)
 - [ ] AI-derived baselines marked with @Tag("ai-derived") where applicable
-- [ ] **Every program analysis has ALL 12 required sections**
-- [ ] **Every BMS map has ALL 8 required sections**
-- [ ] **Cross-validation checks 41-50 all pass**
+- [ ] Every program analysis has ALL 12 required sections
+- [ ] Every BMS map has ALL 8 required sections
+- [ ] Cross-validation checks 41-50 all pass
 
-### Phase 8 Code Generation Gate (NEW)
+### Phase 8 Code Generation Gate
 - [ ] All Entity classes have complete Java code (no pseudocode)
 - [ ] All Repository interfaces have complete Java code (no pseudocode)
 - [ ] All Service classes have complete Java code with constructor injection
@@ -183,7 +163,7 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] SecurityFilterChain + JWT filter code complete
 - [ ] OpenAPI 3.0 spec generated
 - [ ] All code elements have `// Source:` reference comments
-- [ ] **Cross-validation checks 41-50 documented as PASS**
+- [ ] Cross-validation checks 41-50 documented as PASS
 
 ### Session State
 - [ ] `_state-snapshot.json` created after each phase
@@ -193,18 +173,32 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] `_review-log.md` review feedback documented
 - [ ] Resume protocol tested
 
-### ETL & Data Migration
-- [ ] `_etl-config.json` with VSAM-to-RDBMS mapping
-- [ ] ETL Python script with COMP-3 unpacking
-- [ ] ETL validation checklist (record count, balance, null checks)
-- [ ] EBCDIC → UTF-8 conversion plan
-
 ### Migration Strategy
 - [ ] Strangler Fig plan (4 phases)
 - [ ] Database coexistence plan (5 phases)
 - [ ] Rollback plan per migration phase
 - [ ] Dual-write reconciliation process
 - [ ] Cutover criteria defined
+
+## Migration Priority Scoring
+
+| Factor | Weight | Calculation |
+|--------|--------|-------------|
+| Lines of code | 1 point / 100 LOC | 500 LOC → 5 points |
+| File I/O operations | 3 points each | 5 VSAM ops → 15 points |
+| CALL/COPY dependencies | 2 points each | 4 COPYBOOKs → 8 points |
+| EVALUATE/IF branches | 1 point / 5 branches | 30 branches → 6 points |
+| COMPUTE/ARITHMETIC ops | 2 points each | 8 COMPUTEs → 16 points |
+| CICS commands | 2 points each | 10 CICS cmds → 20 points |
+| COMP-3 fields accessed | 3 points each | 4 COMP-3 → 12 points |
+| Screen (BMS) complexity | 1 point / 10 fields | 40 fields → 4 points |
+
+| Score Range | Priority | Migration Order |
+|-------------|----------|----------------|
+| 0-10 | LOW | Wave 3 |
+| 11-30 | MEDIUM | Wave 2 |
+| 31-60 | HIGH | Wave 1 |
+| 60+ | CRITICAL | Wave 1 (senior devs) |
 
 ## Common COBOL → Java Modernization Pitfalls
 
@@ -217,8 +211,8 @@ After each phase, self-check these 3 anchors before proceeding:
 | COMP-3 packed decimal | Binary packed, not readable | Comp3Converter.unpack() |
 | REDEFINES overlay | Same memory, different views | @Inheritance or separate DTOs |
 | FILLER padding | Unused bytes | Document but skip mapping |
-| COPY REPLACING | Compile-time field name/text substitution | Always trace REPLACING back to COPYBOOK; use replaced names in Entity; build REPLACING Registry table |
-| BMS DFHMDF LENGTH ignored | BMS sets field byte length | Ignoring → missing @Size validation on DTOs, truncated data in DB | Always map LENGTH=N → @Column(length=N) + @Size(max=N) |
+| COPY REPLACING | Compile-time field name/text substitution | Always trace REPLACING back to COPYBOOK; use replaced names in Entity |
+| BMS DFHMDF LENGTH ignored | BMS sets field byte length | Always map LENGTH=N → @Column(length=N) + @Size(max=N) |
 
 ### Numeric Precision
 
@@ -227,13 +221,6 @@ After each phase, self-check these 3 anchors before proceeding:
 | Division rounding | Truncate toward zero | Depends | Always RoundingMode.HALF_UP |
 | Overflow | Silent truncation | Exception/infinity | @Column(precision,scale) + validation |
 | Leading zeros | Preserved in PIC 9(N) | Lost in Integer/Long | Use String if leading zeros matter |
-
-### Testing Mistakes
-
-- **Incomplete edge cases**: Only testing success + 1 failure → use Phase 7 test matrix to cover ALL paths
-- **Not verifying written files**: Always read back generated files (CRITICAL RULE #8)
-- **State pollution**: Use @Transactional test methods that rollback
-- **No COBOL baseline**: Document expected COBOL behavior before writing Java
 
 ### Concurrency Safety (CRITICAL)
 
@@ -248,10 +235,9 @@ After each phase, self-check these 3 anchors before proceeding:
 
 | Pitfall | COBOL Behavior | Naive Java | Production Java |
 |---------|---------------|-----------|-----------------|
-| DFSORT/SORT pipeline skipped | JCL SORT step between COBOL programs transforms data | COBOL programs called directly without the intermediate transform | Reconstruct the full pipeline as Spring Batch steps: extract → transform → aggregate → report |
-| ICETOOL operations ignored | SUM/COUNT/SELECT in SYSIN are data processing logic | Data passed through unchanged, losing aggregation/filtering | Map each ICETOOL operation to a Stream/Spring Batch equivalent |
-| SORT intermediate file format unknown | SORT step reformats via OUTFIL/REFORMAT | Wrong field positions cause data corruption | Document field layout changes at each pipeline stage in a Data Pipeline table |
-| INCLUDE/OMIT conditions lost | SYSIN filter conditions filter rows between programs | All rows passed through, violating business logic | Implement as `stream.filter()` or Spring Batch `ClassifierCompositeItemProcessor` |
+| DFSORT/SORT pipeline skipped | JCL SORT step transforms data | Programs called directly | Reconstruct full pipeline as Spring Batch steps |
+| ICETOOL operations ignored | SUM/COUNT/SELECT in SYSIN are logic | Data passed through unchanged | Map each ICETOOL to Stream/Spring Batch equivalent |
+| INCLUDE/OMIT conditions lost | SYSIN filter conditions filter rows | All rows passed through | Implement as `stream.filter()` or ClassifierCompositeItemProcessor |
 
 ## Production Acceptance Checklist
 
