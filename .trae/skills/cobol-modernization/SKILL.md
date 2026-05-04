@@ -5,6 +5,28 @@ description: Complete COBOL-to-Java migration framework with portfolio assessmen
 
 # COBOL Modernization Skill
 
+## Before You Start
+
+### Prerequisites Checklist
+- [ ] **COBOL Source Directory**: All .cbl/.cpy/.bms/.jcl source files collected in one accessible directory
+- [ ] **Source File Encoding**: Confirmed EBCDIC or ASCII encoding; if EBCDIC, pre-convert to UTF-8 (see `references/ebcdic-conversion-toolchain.md`)
+- [ ] **Project Size Assessment**: Count .cbl files to determine processing strategy (see Context Window Management)
+  - Small (<10 files): Single session feasible
+  - Medium (10-50 files): Phase-based execution with checkpoints recommended
+  - Large (50+ files): Module-based chunking mandatory, state files required
+- [ ] **COBOL Dialect Identified**: IBM Enterprise COBOL / Micro Focus / GnuCOBOL / other (see `phases/15-cobol-dialects.md`)
+- [ ] **Target Stack Confirmed**: Spring Boot ${spring-boot-version} + Java ${java-version} + PostgreSQL (or configured target-db)
+- [ ] **Review Team Available**: DBA + COBOL developer + Business analyst + Solution architect + QA lead (see Human Review Checkpoints)
+- [ ] **AI Session Prepared**: Sufficient context window for project size; be ready to use `_state-snapshot.json` for pause/resume
+
+### Recommended Project Classification
+| Project Scale | .cbl Files | Typical LOC | Recommended Mode | Estimated Sessions |
+|--------------|-----------|-------------|-----------------|-------------------|
+| Small | 1-10 | <5K | lite | 1-2 |
+| Medium | 10-50 | 5K-50K | lite | 3-8 (with checkpoints) |
+| Large | 50-200 | 50K-500K | lite or full | 10-30 (state files mandatory) |
+| Enterprise | 200+ | 500K+ | full | 30+ (module-chunked) |
+
 ## Quick Start
 
 ```
@@ -183,6 +205,28 @@ For projects >10 COBOL programs, maintain state files:
 - **Technical deliverables** (code, SQL, config): English
 - **File/directory names**: English, kebab-case
 - **Code comments**: English, with COBOL source reference format
+
+## Known Limitations & Roadmap
+
+### Current Limitations
+| Limitation | Impact | Workaround |
+|-----------|--------|------------|
+| No real-time COBOL-to-Java compiler | Manual review required at CP-1 to CP-5 | Human review checkpoints |
+| EBCDIC source requires pre-conversion | Extra step before Phase 1 | Use `references/ebcdic-conversion-toolchain.md` |
+| AI context window limits large projects | Batch processing needed | Session State Management + state files |
+| COBOL SORT/MERGE semantics | Inline SORT with USING/GIVING not auto-detected | Manually flag to Phase 1 |
+| Nested COPY REPLACING chains | Multi-level REPLACING may lose trace | REPLACING Registry tracks up to 3 levels |
+| IMS segment hierarchy flattening | Complex IMS DBD may lose parent-child relations | `phases/16-data-model-merge.md` |
+
+### Roadmap (Planned)
+- [ ] **Phase 21**: gRPC API generation from COBOL LINK/XCTL patterns
+- [ ] **Phase 22**: GraphQL schema generation for complex BMS browse screens
+- [ ] **Phase 23**: Event-driven architecture migration (COBOL CICS START → Kafka events)
+- [ ] **Reference**: COBOL Report Writer (RW) → JasperReports mapping
+- [ ] **Reference**: COBOL DEBUGGING declaratives → Java AOP aspect patterns
+- [ ] **Tooling**: Automated EBCDIC→UTF-8 pre-conversion script
+- [ ] **Tooling**: Sample COBOL test dataset for skill validation
+- [ ] **Integration**: VS Code / Eclipse plugin for Phase execution dashboard
 
 ## Exception Handling
 
