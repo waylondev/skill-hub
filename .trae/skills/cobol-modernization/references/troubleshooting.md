@@ -40,6 +40,7 @@
 |-------|--------------|------------|
 | COPY REPLACING not applied | Field name in Entity matches original COPYBOOK | Search .cbl for `REPLACING`, apply substituted name |
 | COMP-3 byte count wrong | Unpack method uses wrong byte count | Verify formula: `(total_digits + 1) / 2` |
+| COMP-3 sign nibble not handled | Negative values appear positive | Sign nibble: 0x0C=positive, 0x0D=negative, 0x0F=unsigned. Check `Comp3Converter.unpack()` last byte low nibble |
 | REDEFINES overlap not handled | Same memory area mapped to two Entity fields | Use @Inheritance or separate DTOs with discriminator |
 | OCCURS count ignored | Single field instead of List<Entity> | Check for OCCURS clause, convert to List<T> |
 | 88-level values merged into wrong enum | Enums have mixed purposes | Group 88-levels by their parent field |

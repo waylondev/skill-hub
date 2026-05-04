@@ -14,7 +14,7 @@ User intent                      → Execute phases
 "分析代码逻辑"                    → Phase 1 + Phase 5
 "生成迁移文档"                    → Core Phases (1-9)
 "生成Java代码"                    → Core Phases + Code Generation (9)
-"完整迁移到生产"                  → ALL phases including extended (10-20)
+"完整迁移到生产"                  → ALL phases including extended (10+)
 ```
 
 ## Configuration Parameters
@@ -60,13 +60,12 @@ Phase 8 (Deliverables)  → Entity/Repository/Service/DTO/Controller specs
 Phase 9 (Code Generation) → Complete, compilable Java code          → CP-5 Review
 ```
 
-### Stage 3: Extended (Phases 10-20, mode=full only)
+### Stage 3: Extended (Phases 10+, mode=full only)
 
 ```
-Phase 10-11  → Frontend migration guide + Cost estimation
-Phase 12-13  → CI/CD pipeline + Docker/Kubernetes deployment
-Phase 14-15  → Developer onboarding + COBOL dialect support
-Phase 16-20  → Migration utilities + Compliance + Benchmarking
+Phase 10a-g  → DTO/Flyway/OpenAPI/Security/Batch/MQ/Data sub-deliverables
+Phase 11     → AI code generation from Phase 8-10 specs
+Phase 12+    → Frontend, CI/CD, K8s, compliance, benchmarking
 ```
 
 ## Core Rules
@@ -115,34 +114,30 @@ See `phases/` directory for detailed phase specifications:
 | # | Phase | File | Purpose |
 |---|-------|------|---------|
 | 1 | Discovery | `phases/01-discovery.md` | Scan & classify source files |
-| 2 | VSAM | `phases/01-discovery.md#phase-2` | VSAM → JPA Repository mapping |
-| 3 | BMS | `phases/02-screens.md` | BMS Map → REST API mapping |
-| 4 | COPYBOOK | `phases/03-copybook.md` | Data structure → JPA Entity mapping |
-| 5 | Logic | `phases/04-logic.md` | Business logic → Service implementation |
-| 6 | Architecture | `phases/05-architecture.md` | Dependency graph + microservice split |
-| 7 | Testing | `phases/06-testing.md` | Test matrix + golden baseline |
-| 8 | Deliverables | `phases/07-deliverables.md` | Complete Java specifications |
-| 9 | Code Gen | `phases/08-codegen.md` | AI code generation |
-| 10+ | Extended | `phases/09-deployment.md` | Frontend, CI/CD, K8s, compliance |
+| 2 | VSAM | `phases/02-vsam.md` | VSAM → JPA Repository mapping |
+| 3 | BMS | `phases/03-screens.md` | BMS Map → REST API mapping |
+| 4 | COPYBOOK | `phases/04-copybook.md` | Data structure → JPA Entity mapping |
+| 5 | Logic | `phases/05-logic.md` | Business logic → Service implementation |
+| 6 | Architecture | `phases/06-architecture.md` | Dependency graph + microservice split |
+| 7 | Testing | `phases/07-testing.md` | Test matrix + golden baseline |
+| 8 | Deliverables | `phases/08-deliverables.md` | Complete Java specifications |
+| 9 | Code Gen | `phases/09-codegen.md` | AI code generation |
+| 10+ | Extended | `phases/10-deployment.md` | Frontend, CI/CD, K8s, compliance |
 
-### Phase 8 Sub-Deliverables
+### Phase 8 Sub-Deliverables (8a-8g)
 
-Phase 8 generates multiple deliverables. All are part of the main Phase 8 execution:
+Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in Phases 10a-10g:
 
-| Sub | Deliverable | Template Source |
-|-----|------------|-----------------|
-| 8.1 | Entity Specification | `phases/07-deliverables.md` §8.1 |
-| 8.2 | Repository Specification | `phases/07-deliverables.md` §8.2 |
-| 8.3 | DTO Specification | `phases/07-deliverables.md` §8.3 |
-| 8.4 | Service Implementation | `phases/07-deliverables.md` §8.4 |
-| 8.5 | Exception Handling | `phases/07-deliverables.md` §8.5 |
-| 8.6 | REST API (Controller) | `phases/07-deliverables.md` §8.6 |
-| 8.7 | Enums & Constants | `phases/07-deliverables.md` §8.7 |
-| 8.8 | JCL → Spring Batch | `phases/07-deliverables.md` §8.8 |
-| 8.9 | Business Rules | `phases/07-deliverables.md` §8.9 |
-| 8.10 | Security Mapping | `phases/07-deliverables.md` §8.10 |
-| 8.11 | Flyway Scripts | `phases/07-deliverables.md` §8.11 |
-| 8.12 | OpenAPI Spec | `phases/07-deliverables.md` §8.12 |
+| Sub | Deliverable | Phase File |
+|-----|------------|------------|
+| 8.1-8.12 | Core Java specs (Entity/Repo/Service/DTO/API/Exception/Enum/Batch/Rules/Security/Flyway/OpenAPI) | `phases/08-deliverables.md` |
+| 10a | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
+| 10b | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
+| 10c | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
+| 10d | Security Audit report | `phases/13-security-audit.md` |
+| 10e | Batch Dependency DAG | `phases/14-batch-deps.md` |
+| 10f | MQ Message Catalog | `phases/15-mq-catalog.md` |
+| 10g | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
 
 ## Reference Library
 
@@ -153,6 +148,8 @@ Phase 8 generates multiple deliverables. All are part of the main Phase 8 execut
 | `references/quality-checklist.md` | QA mandatory checks (68 checks) + delivery checklist |
 | `references/production-patterns.md` | Migration strategies + deployment patterns |
 | `references/troubleshooting.md` | Common issues, recovery protocols, debugging guides |
+| `references/assembler-replacement.md` | Assembler utility → Java replacement patterns |
+| `references/complex-copybook-guide.md` | REDEFINES, OCCURS, COPY REPLACING advanced patterns |
 
 ## Human Review Checkpoints
 
@@ -221,3 +218,40 @@ After Phase 8, verify consistency across all documents:
 4. **Repository-IO**: Every VSAM READ/WRITE has a Repository method
 5. **API-Screen**: Every BMS screen has at least one REST endpoint
 6. **Exception-Error**: Every error condition has exception type + HTTP status
+
+## Context Window Management
+
+### Token Budget Guidelines
+
+| Scenario | Approximate Tokens | Strategy |
+|----------|-------------------|----------|
+| Small project (<10 .cbl files) | ~15K-30K | Single session OK |
+| Medium project (10-50 .cbl) | ~50K-150K | Phase-based execution with checkpoints |
+| Large project (50+ .cbl) | ~200K+ | Module-based chunking, state files mandatory |
+
+### Loading Strategy
+
+| Phase | Load Full | Load Compact | Process |
+|-------|-----------|-------------|---------|
+| 1-4 | Source files being analyzed | SKILL.md + current phase doc | Read only relevant .cbl/.cpy files |
+| 5 (Logic) | One .cbl at a time | `_kb-reference.md` + mappings | NEVER load all .cbl at once |
+| 6-7 | Phase 1-5 summaries | `_context-index.md` | Summarize, don't load full docs |
+| 8-9 | One deliverable at a time | `_kb-reference.md` + golden examples | Generate from analysis docs only |
+
+## Getting Started (First-Time Use)
+
+1. **Prepare your COBOL source directory** — Ensure all .cbl/.cpy/.bms/.jcl files are in one directory
+2. **Invoke the skill** — Provide the source directory path
+3. **Stage 1 runs** — The skill analyzes all files through Phase 7
+4. **Review at checkpoints** — At CP-1 through CP-4, review generated documents
+5. **Say "continue"** — Stage 2 generates complete Java specifications (Phase 8-9)
+6. **Review CP-5** — Verify Java code completeness
+7. **(Optional) Mode=full** — Extended phases for CI/CD, deployment, compliance
+
+Example:
+```
+User: "分析这个COBOL项目: C:\projects\legacy-bank-cobol\source"
+→ Skill runs Phases 1-7, pauses at CP-1
+User: "继续" (or "continue")
+→ Skill resumes Stage 2, generates Phase 8-9
+```

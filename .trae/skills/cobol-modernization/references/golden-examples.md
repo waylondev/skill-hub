@@ -889,3 +889,187 @@ Before accepting any generated Java code:
 - [ ] All exceptions have HTTP status mapping in GlobalExceptionHandler
 - [ ] Test coverage >= 80% for generated code
 
+---
+
+## Scenario 4: gRPC Service (for inter-service communication)
+
+**Use case:** COBOL programs that CALL other COBOL subprograms or are called by external systems.
+Replaced with gRPC for high-performance inter-service communication within the migrated architecture.
+
+### gRPC Protocol Definition
+
+```protobuf
+// Source: COBOL CALL hierarchy → service boundary analysis
+// Replaces: CALL 'COTRN00C' USING WS-COMMAREA
+syntax = "proto3";
+package cobol.transaction;
+option java_multiple_files = true;
+option java_package = "com.bank.transaction.grpc";
+
+// CommArea → gRPC message mapping
+message CommArea {
+  string user_id = 1;           // CDEMO-USER-ID, X(08)
+  string user_type = 2;         // CDEMO-USER-TYPE, X(01)
+  string program_context = 3;   // CDEMO-PGM-CONTEXT, X(01)
+  string account_id = 4;        // ACCT-ID, X(12)
+  string transaction_type = 5;  // TRAN-TYPE, X(02)
+  string amount = 6;            // TRAN-AMT, S9(9)V99 COMP-3
+  string response_code = 7;     // WS-RESP-CD, X(04)
+  string response_message = 8;  // WS-MESSAGE, X(80)
+}
+
+message TranQueryRequest {
+  string account_id = 1;
+  string cursor = 2;            // For cursor-based pagination
+  int32 page_size = 3;          // Default 10
+}
+
+message TranQueryResponse {
+  repeated Transaction transactions = 1;
+  string next_cursor = 2;
+  bool has_more = 3;
+  int32 total_count = 4;
+}
+
+message Transaction {
+  string tran_id = 1;           // TRAN-ID, X(16)
+  string account_id = 2;
+  string tran_type = 3;
+  string amount = 4;
+  string tran_date = 5;         // TRAN-DATE, X(10)
+  string description = 6;
+}
+
+service TransactionService {
+  rpc QueryTransactions (TranQueryRequest) returns (TranQueryResponse);
+  rpc GetTransactionById (TransactionByIdRequest) returns (Transaction);
+  rpc ProcessTransaction (ProcessTranRequest) returns (ProcessTranResponse);
+}
+
+message TransactionByIdRequest {
+  string tran_id = 1;
+}
+
+message ProcessTranRequest {
+  string account_id = 1;
+  string tran_type = 2;
+  string amount = 3;
+  string description = 4;
+}
+
+message ProcessTranResponse {
+  string tran_id = 1;
+  string response_code = 2;
+  string response_message = 3;
+}
+```
+
+### gRPC Service Implementation
+
+```java
+// Source: COTRN00C (transaction query program), COTRN01C (transaction detail)
+// Replaces: CALL 'COTRN00C' USING WS-COMMAREA
+
+@GrpcService
+@Slf4j
+@RequiredArgsConstructor
+public class TransactionGrpcService extends TransactionServiceGrpc.TransactionServiceImplBase {
+    
+    private final TransactionService transactionService;
+    
+    @Override
+    public void queryTransactions(TranQueryRequest request,
+                                  StreamObserver<TranQueryResponse> responseObserver) {
+        log.info("gRPC QueryTransactions: account={}, cursor={}",
+                request.getAccountId(), request.getCursor());
+        
+        // Source: COTRN00C PROCEDURE DIVISION → gRPC method
+        List<Transaction> txns = transactionService.findAfterCursor(
+                request.getAccountId(),
+                request.getCursor().isEmpty() ? null : request.getCursor(),
+                request.getPageSize() > 0 ? request.getPageSize() : 10
+        );
+        
+        String nextCursor = txns.isEmpty() ? null : txns.get(txns.size() - 1).getTranId();
+        boolean hasMore = txns.size() >= request.getPageSize();
+        
+        TranQueryResponse response = TranQueryResponse.newBuilder()
+                .addAllTransactions(txns.stream()
+                        .map(this::toGrpcTransaction)
+                        .collect(Collectors.toList()))
+                .setNextCursor(nextCursor != null ? nextCursor : "")
+                .setHasMore(hasMore)
+                .build();
+        
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
+    
+    @Override
+    public void getTransactionById(TransactionByIdRequest request,
+                                    StreamObserver<Transaction> responseObserver) {
+        log.info("gRPC GetTransactionById: tranId={}", request.getTranId());
+        
+        transactionService.findById(request.getTranId())
+                .map(this::toGrpcTransaction)
+                .ifPresentOrElse(
+                        responseObserver::onNext,
+                        () -> responseObserver.onError(
+                                Status.NOT_FOUND
+                                        .withDescription("Transaction not found: " + request.getTranId())
+                                        .asRuntimeException()
+                        )
+                );
+        
+        responseObserver.onCompleted();
+    }
+    
+    @Override
+    public void processTransaction(ProcessTranRequest request,
+                                    StreamObserver<ProcessTranResponse> responseObserver) {
+        log.info("gRPC ProcessTransaction: account={}, type={}",
+                request.getAccountId(), request.getTranType());
+        
+        try {
+            ProcessTranResponse response = transactionService.processTransaction(
+                    request.getAccountId(),
+                    request.getTranType(),
+                    new BigDecimal(request.getAmount()),
+                    request.getDescription()
+            );
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            log.error("Transaction processing failed", e);
+            responseObserver.onError(
+                    Status.INTERNAL
+                            .withDescription("Transaction failed: " + e.getMessage())
+                            .asRuntimeException()
+            );
+        }
+    }
+    
+    private Transaction toGrpcTransaction(Transaction txn) {
+        return Transaction.newBuilder()
+                .setTranId(txn.getTranId())
+                .setAccountId(txn.getAccountId())
+                .setTranType(txn.getTranType())
+                .setAmount(txn.getAmount().toString())
+                .setTranDate(txn.getTranDate().toString())
+                .setDescription(txn.getDescription())
+                .build();
+    }
+}
+```
+
+### When to Use gRPC vs REST
+
+| COBOL Pattern | Communication Type | Java Replacement |
+|--------------|-------------------|-----------------|
+| Screen-based (BMS SEND/RECEIVE) | Synchronous, user-facing | REST API (Controller + DTO) |
+| CALL subprogram (internal) | Synchronous, low-latency | gRPC service |
+| CALL external program | Synchronous, cross-service | gRPC or REST (depends on consumer) |
+| MQPUT/MQGET | Asynchronous, decoupled | RabbitMQ/Kafka (see MQ catalog phase) |
+| CICS LINK | Synchronous, same region | Direct method call (same service) |
+| CICS XCTL | Synchronous, cross-region | gRPC or REST (different service) |
+
