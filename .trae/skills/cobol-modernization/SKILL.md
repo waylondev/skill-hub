@@ -82,13 +82,11 @@ Phase 8 (Deliverables)  → Entity/Repository/Service/DTO/Controller specs
 Phase 9 (Code Generation) → Complete, compilable Java code          → CP-5 Review
 ```
 
-### Stage 3: Extended (Phases 10+, mode=full only)
+### Stage 3: Extended (Phases 10-20, mode=full only)
 
-```
-Phase 10a-g  → DTO/Flyway/OpenAPI/Security/Batch/MQ/Data sub-deliverables
-Phase 11     → AI code generation from Phase 8-10 specs
-Phase 12+    → Frontend, CI/CD, K8s, compliance, benchmarking
-```
+Phase 10-16 provides detailed sub-deliverables (DTO/Flyway/OpenAPI/Security/Batch/MQ/Data Model).
+Phases 10-20 cover frontend, CI/CD, K8s, compliance, benchmarking and production operations.
+Each phase has its own independent document in the `phases/` directory.
 
 ## Core Rules
 
@@ -144,22 +142,33 @@ See `phases/` directory for detailed phase specifications:
 | 7 | Testing | `phases/07-testing.md` | Test matrix + golden baseline |
 | 8 | Deliverables | `phases/08-deliverables.md` | Complete Java specifications |
 | 9 | Code Gen | `phases/09-codegen.md` | AI code generation |
-| 10+ | Extended | `phases/10-deployment.md` | Frontend, CI/CD, K8s, compliance |
+| CP | Review Protocol | `phases/cp-review-protocol.md` | Human review checkpoint protocol |
+| 10 | Frontend | `phases/10-frontend-migration.md` | BMS → React/Angular frontend migration |
+| 11 | Cost | `phases/11-cost-estimation.md` | Infrastructure cost estimation & planning |
+| 12 | CI/CD | `phases/12-cicd-pipeline.md` | Jenkins & GitHub Actions pipeline |
+| 13 | Docker/K8s | `phases/13-docker-kubernetes.md` | Docker & Kubernetes deployment |
+| 14 | Onboarding | `phases/14-developer-onboarding.md` | Developer quick start & local setup |
+| 15 | Dialects | `phases/15-cobol-dialects.md` | COBOL dialect support mapping |
+| 16 | Toolchain | `phases/16-toolchain-utilities.md` | Migration toolchain & utilities |
+| 17 | Compliance | `phases/17-production-compliance.md` | PCI-DSS/HIPAA/SOX/GDPR compliance |
+| 18 | Data Migration | `phases/18-data-migration-strategy.md` | ETL pipeline & data validation strategy |
+| 19 | Regression | `phases/19-regression-testing.md` | Automated regression testing framework |
+| 20 | Perf Benchmark | `phases/20-performance-benchmarking.md` | JMH benchmarks & performance SLA |
 
-### Phase 8 Sub-Deliverables (8a-8g)
+### Phase 8 Sub-Deliverables (Phase 10-16)
 
-Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in Phases 10a-10g:
+Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in Phases 10-16:
 
-| Sub | Deliverable | Phase File |
-|-----|------------|------------|
+| Phase | Deliverable | Phase File |
+|-------|------------|------------|
 | 8.1-8.12 | Core Java specs (Entity/Repo/Service/DTO/API/Exception/Enum/Batch/Rules/Security/Flyway/OpenAPI) | `phases/08-deliverables.md` |
-| 10a | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
-| 10b | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
-| 10c | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
-| 10d | Security Audit report | `phases/13-security-audit.md` |
-| 10e | Batch Dependency DAG | `phases/14-batch-deps.md` |
-| 10f | MQ Message Catalog | `phases/15-mq-catalog.md` |
-| 10g | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
+| 10 | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
+| 11 | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
+| 12 | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
+| 13 | Security Audit report | `phases/13-security-audit.md` |
+| 14 | Batch Dependency DAG | `phases/14-batch-deps.md` |
+| 15 | MQ Message Catalog | `phases/15-mq-catalog.md` |
+| 16 | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
 
 ## Reference Library
 
@@ -172,6 +181,13 @@ Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated
 | `references/troubleshooting.md` | Common issues, recovery protocols, debugging guides |
 | `references/assembler-replacement.md` | Assembler utility → Java replacement patterns |
 | `references/complex-copybook-guide.md` | REDEFINES, OCCURS, COPY REPLACING advanced patterns |
+| `references/cobol-intrinsic-functions.md` | 50+ COBOL intrinsic function → Java mappings |
+| `references/racf-spring-security-mapping.md` | RACF → Spring Security detailed mapping |
+| `references/ebcdic-conversion-toolchain.md` | EBCDIC encoding conversion commands & Java libraries |
+| `references/performance-sla-templates.md` | OLTP & Batch performance SLA definition templates |
+| `references/observability-standards.md` | Metrics/Logging/Tracing observability standards |
+| `references/security-scanning-integration.md` | SAST/DAST security scanning CI integration guide |
+| `references/i18n-l10n-strategy.md` | COBOL message internationalization & localization strategy |
 
 ## Human Review Checkpoints
 

@@ -25,15 +25,15 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 | 15 | Locking Strategy | UPDATE operations @Lock(PESSIMISTIC_WRITE) or @Version | Check repository methods |
 | 16 | Cache Usage | Reference data uses @Cacheable | Check service methods |
 | 17 | Pagination | All list operations support cursor-based pagination | Check repository signatures have findAfter/findBefore |
-| 18 | COMP-3 Coverage | All COMP/COMP-3 with hex examples | Check vsam-data-formats.md |
-| 19 | AIX Coverage | All VSAM AIX to DB indexes | Check vsam-aix-mapping.md |
-| 20 | GDG Coverage | All GDG to partitioned jobs | Check jcl-batch-mapping.md |
+| 18 | COMP-3 Coverage | All COMP/COMP-3 with hex examples | Check cobol-to-java-mappings.md (COMP/COMP-3 → Java Type) + assembler-replacement.md (for COMP-3 unpack details) (COMP-3 formats consolidated in cobol-to-java-mappings.md and assembler-replacement.md) |
+| 19 | AIX Coverage | All VSAM AIX to DB indexes | Check phases/02-vsam.md (Phase 2 includes VSAM AIX analysis) (VSAM→JPA Repository mapping) |
+| 20 | GDG Coverage | All GDG to partitioned jobs | Check cobol-to-java-mappings.md (JCL Element → Spring Batch section) (JCL→Spring Batch mappings consolidated in cobol-to-java-mappings.md) |
 | 21 | Assembler Coverage | All Assembler calls have Java replacements | Check assembler-replacement.md |
 | 22 | DB2 Coverage | All EXEC SQL to JPA | Check repository specs |
 | 23 | IMS Coverage | All EXEC DLI to JPA | Check sub-application analysis |
 | 24 | MQ Coverage | All MQGET/MQPUT to JMS/RabbitMQ | Check sub-application analysis |
-| 25 | JCL Coverage | All JCL jobs to Spring Batch | Check jcl-batch-mapping.md |
-| 26 | Security Coverage | All RACF controls to Spring Security | Check security-mapping.md |
+| 25 | JCL Coverage | All JCL jobs to Spring Batch | Check cobol-to-java-mappings.md (JCL Element → Spring Batch section) (JCL→Spring Batch mappings consolidated in cobol-to-java-mappings.md) |
+| 26 | Security Coverage | All RACF controls to Spring Security | Check racf-spring-security-mapping.md (RACF→Spring Security detailed mapping) (Security mapping available in racf-spring-security-mapping.md) |
 | 27 | REDEFINES Coverage | All REDEFINES have Java strategy | Check complex-copybook-guide.md |
 | 28 | OCCURS Coverage | All OCCURS/ODI to Java Lists | Check complex-copybook-guide.md |
 | 29 | Flyway Scripts | All DB migrations versioned | Check V*.sql exist |
@@ -43,9 +43,9 @@ All checks MUST pass before delivery. If ANY fails, regenerate the deficient del
 
 | # | Check | Criteria | Verify Method |
 |---|-------|----------|--------------|
-| 31 | BMS Field Completeness | EVERY BMS map has ≥ 8 analysis sections (ASCII layout, field inventory, PF keys, input mapping, output mapping, commarea, business rules, pagination if applicable) | Count sections per map in bms-map-analysis.md |
+| 31 | BMS Field Completeness | EVERY BMS map has ≥ 8 analysis sections (ASCII layout, field inventory, PF keys, input mapping, output mapping, commarea, business rules, pagination if applicable) | Count sections per map in phases/03-screens.md (BMS analysis output in Phase 3) |
 | 32 | BMS-Program Linkage | EVERY .bms file linked to at least one .cbl program's Screen I/O section | Cross-reference BMS inventory with Phase 5 Screen I/O tables |
-| 33 | Program Completeness | EVERY .cbl program has ALL 12 sections: Paragraph Inventory, Branch Map, File I/O, Screen I/O, Validation Rules, Computation Formulas, State Machine (if applicable), Variable Usage, CommArea, Error Handling, Java Method Signatures | Count sections per program in program-logic-analysis.md |
+| 33 | Program Completeness | EVERY .cbl program has ALL 12 sections: Paragraph Inventory, Branch Map, File I/O, Screen I/O, Validation Rules, Computation Formulas, State Machine (if applicable), Variable Usage, CommArea, Error Handling, Java Method Signatures | Count sections per program in phases/05-logic.md (Program logic analysis output in Phase 5) |
 | 34 | Branch Exhaustiveness | EVERY IF/EVALUATE branch in every program documented with source line | Grep IF/EVALUATE in source, count vs Branch Map entries |
 | 35 | File I/O Completeness | EVERY SELECT/ASSIGN/EXEC CICS READ/WRITE/STARTBR has corresponding Repository method | Cross-reference Phase 5 File I/O tables with Phase 8 Repository specs |
 | 36 | PF Key Completeness | EVERY PF key used in a program is documented in both Phase 3 (screen) and Phase 5 (logic) | Cross-reference PF key tables across phases |
@@ -179,6 +179,18 @@ After each phase, self-check these 3 anchors before proceeding:
 - [ ] Rollback plan per migration phase
 - [ ] Dual-write reconciliation process
 - [ ] Cutover criteria defined
+
+### External File Reference Map
+The following table maps referenced file names to their actual locations for easy lookup:
+
+| Referenced As | Actual File(s) | Notes |
+|--------------|----------------|-------|
+| jcl-batch-mapping.md | `cobol-to-java-mappings.md` (JCL Element → Spring Batch) | JCL mappings consolidated |
+| vsam-data-formats.md | `cobol-to-java-mappings.md` (COMP-3 section) + `assembler-replacement.md` | COMP-3 format docs |
+| vsam-aix-mapping.md | `phases/02-vsam.md` | VSAM analysis in Phase 2 |
+| security-mapping.md | `racf-spring-security-mapping.md` | Security mapping reference |
+| bms-map-analysis.md | `phases/03-screens.md` | BMS analysis in Phase 3 |
+| program-logic-analysis.md | `phases/05-logic.md` | Program logic in Phase 5 |
 
 ## Migration Priority Scoring
 
