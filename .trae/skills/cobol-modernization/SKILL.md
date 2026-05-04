@@ -155,20 +155,20 @@ See `phases/` directory for detailed phase specifications:
 | 19 | Regression | `phases/19-regression-testing.md` | Automated regression testing framework |
 | 20 | Perf Benchmark | `phases/20-performance-benchmarking.md` | JMH benchmarks & performance SLA |
 
-### Phase 8 Sub-Deliverables (Phase 10-16)
+### Phase 8 Sub-Deliverables (8a-8g)
 
-Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in Phases 10-16:
+Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in sub-phases 8a-8g:
 
-| Phase | Deliverable | Phase File |
-|-------|------------|------------|
+| Sub | Deliverable | Phase File |
+|-----|------------|------------|
 | 8.1-8.12 | Core Java specs (Entity/Repo/Service/DTO/API/Exception/Enum/Batch/Rules/Security/Flyway/OpenAPI) | `phases/08-deliverables.md` |
-| 10 | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
-| 11 | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
-| 12 | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
-| 13 | Security Audit report | `phases/13-security-audit.md` |
-| 14 | Batch Dependency DAG | `phases/14-batch-deps.md` |
-| 15 | MQ Message Catalog | `phases/15-mq-catalog.md` |
-| 16 | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
+| 8a | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
+| 8b | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
+| 8c | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
+| 8d | Security Audit report | `phases/13-security-audit.md` |
+| 8e | Batch Dependency DAG | `phases/14-batch-deps.md` |
+| 8f | MQ Message Catalog | `phases/15-mq-catalog.md` |
+| 8g | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
 
 ## Reference Library
 
