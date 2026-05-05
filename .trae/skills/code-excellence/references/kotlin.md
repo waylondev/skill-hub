@@ -15,36 +15,120 @@ production‑grade, idiomatic Kotlin code. For Spring Boot framework guidance, s
 data class User(val id: Long, val name: String)
 ```
 - `equals`, `hashCode`, `toString`, `copy` — auto‑generated.
-- Do **not** use for JPA `@Entity`. Use regular classes and override `equals`/`hashCode` based on `@Id`.
+- **Critical**: Only constructor properties are included in `equals`/`hashCode`. Body properties are ignored.
+- Do **not** use for JPA `@Entity`. Use regular classes (see JPA section below).
+- Prefer `copy()` for immutable updates over mutable setters.
 
-### Null Safety
+### Null Safety — Expert Patterns
 ```kotlin
-val length = name?.length ?: 0
-user?.let { saveToDatabase(it) }
-// user!!.address — avoid. Crashes with NPE instead of a proper error.
+// Safe call + Elvis for early exit
+val name = user?.name ?: return
+val config = settings.timeout ?: throw IllegalStateException("timeout required")
+
+// Elvis with `also` for side effects on null
+val cache = cacheMap[key] ?: run {
+    val fresh = loadFromDb(key)
+    cacheMap[key] = fresh
+    fresh
+}
+
+// !! — use ONLY when:
+// 1. You've already checked for null (defensive re-check)
+// 2. It's a precondition violation (fail fast)
+// NEVER use !! for expected nulls — that's what `?:` is for
+val user: User = findUser(id) ?: throw UserNotFoundException(id)
 ```
+
+**Platform types from Java are dangerous**: `user.name` where `user` is from Java could be null at runtime. Always annotate Java interop with `@Nullable`/`@NonNull` or add explicit null checks.
 
 ### Sealed Classes & when
 ```kotlin
-sealed class Result<out T> {
-    data class Success<T>(val data: T) : Result<T>()
-    data class Error(val message: String) : Result<Nothing>()
+sealed interface OrderState {
+    data class Pending(val orderId: Long) : OrderState
+    data class Confirmed(val orderId: Long, val paymentId: String) : OrderState
+    data class Cancelled(val orderId: Long, val reason: String) : OrderState
 }
 
-val description = when (result) {
-    is Result.Success -> "Got: ${result.data}"
-    is Result.Error   -> "Failed: ${result.message}"
-} // Exhaustive: adding a variant → compile error in every when
+// Exhaustive — compiler errors if you miss a branch
+val status = when (state) {
+    is OrderState.Pending -> "awaiting payment"
+    is OrderState.Confirmed -> "confirmed, paying ${state.paymentId}"
+    is OrderState.Cancelled -> "cancelled: ${state.reason}"
+}
 ```
 
-### Scope Functions
+### Scope Functions — Correct Usage
 ```kotlin
-user?.let { repo.save(it) }           // null‑safe transform
-val config = AppConfig().apply { ... } // configure and return self
-val result = obj.run { compute() }     // compute from context
+// let: transform nullable, null-safe
+user?.let { repo.save(it) }
+
+// apply: configure object, return self
+val config = AppConfig().apply {
+    timeout = 30.seconds
+    retries = 3
+}
+
+// also: side effects on object, return self
+db.connect().also { logger.info("Connected to {}", it.url) }
+
+// run: compute result from context
+val result = obj.run { computeSomething() }
+
+// with: compute from non-null receiver
+with(formatter) { format(user) }
 ```
-- `let` = transform, `apply` = configure, `run`/`with` = compute.
-- Avoid deep nesting. Extract named functions past 2 levels.
+**Rule**: Never nest scope functions past 2 levels. If you need `obj.let { it.field.apply { ... } }`, extract to a named function.
+
+---
+
+## Collections — Safety Patterns
+
+```kotlin
+// first() throws on empty — use firstOrNull() when uncertain
+val admin = users.first { it.isAdmin }        // NoSuchElementException if none
+val admin = users.firstOrNull { it.isAdmin }  // null if none — SAFE
+
+// last() throws — use lastOrNull()
+val last = orders.last { it.isActive }        // throws if none match
+
+// single() throws if 0 or >1 match — use singleOrNull()
+val config = configs.single { it.isDefault }  // throws if missing or duplicate
+
+// elementAt() throws on out-of-bounds — use getOrNull() or elementAtOrNull()
+val third = list.elementAt(2)                 // throws if size < 3
+
+// filter vs filterTo — avoid intermediate collections for large datasets
+val actives = users.asSequence().filter { it.isActive }.toList()
+```
+
+---
+
+## Extension Functions — Limitations
+
+```kotlin
+// Extensions are resolved STATICALLY — not polymorphic
+open class Animal
+class Dog : Animal()
+
+fun Animal.speak() = "generic"
+fun Dog.speak() = "woof"
+
+val a: Animal = Dog()
+a.speak() // "generic" — NOT "woof"! Resolved by declared type, not runtime type
+```
+
+**Rule**: Extensions are compile-time syntactic sugar. They do NOT override. Use them for utility operations, not for polymorphic behavior.
+
+**SAM conversion**: Only Java interfaces get SAM conversion. For Kotlin interfaces, use `fun interface`.
+
+```kotlin
+// Java interface — SAM works
+val runnable = Runnable { println("running") }
+
+// Kotlin interface — needs fun interface
+fun interface KotlinCallback { fun call() }
+val callback = KotlinCallback { println("called") }
+```
 
 ---
 
@@ -67,6 +151,14 @@ withContext(Dispatchers.IO) { ... }       // Blocking I/O (DB, files, network)
 withContext(Dispatchers.Default) { ... }  // CPU‑intensive work
 // NEVER: GlobalScope.launch — uncontrolled lifecycle, impossible to cancel
 // NEVER: runBlocking inside a suspend function — blocks the thread
+
+// INJECT dispatchers for testability — don't hardcode
+class UserService(
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+    suspend fun find(id: Long) = withContext(ioDispatcher) { repo.findById(id) }
+}
+// In tests: UserService(testDispatcher) for deterministic execution
 ```
 
 ### SupervisorScope vs coroutineScope
@@ -88,7 +180,8 @@ flow { emit(loadPage(1)); emit(loadPage(2)) }
     .collect { ... }
 ```
 - Use `SharedFlow` for multicasting events (replaces `BroadcastChannel`).
-- Use `StateFlow` for observable state (replaces `LiveData` outside Android).
+- Use `StateFlow` for observable state — needs initial value and never completes.
+- Use `SharedFlow` for one-shot events (no initial value, can have multiple subscribers).
 
 ### Coroutine Testing
 ```kotlin
@@ -134,6 +227,40 @@ fun findUser(id: UserId): User = ...
 
 ---
 
+## Delegation Patterns
+
+### Class Delegation
+```kotlin
+interface Printer { fun print(doc: Document) }
+class RealPrinter : Printer { override fun print(doc: Document) { ... } }
+
+class LoggingPrinter(private val delegate: Printer) : Printer by delegate {
+    override fun print(doc: Document) {
+        log.info("Printing: ${doc.name}")
+        delegate.print(doc)
+    }
+}
+```
+
+### Property Delegation
+```kotlin
+// Lazy initialization — thread-safe by default
+val config by lazy { ConfigLoader.load() }
+
+// Observable properties
+var status by Delegates.observable("init") { prop, old, new ->
+    log.info("$prop changed from $old to $new")
+}
+
+// Map-backed properties — useful for DTOs from JSON
+class User(val map: Map<String, Any>) {
+    val name: String by map
+    val age: Int by map
+}
+```
+
+---
+
 ## Kotlin + JPA Specifics
 
 ### Entity Definition
@@ -141,13 +268,17 @@ fun findUser(id: UserId): User = ...
 @Entity
 class Order(
     @Id @GeneratedValue var id: Long = 0,
-    var status: String,
-    @OneToMany(mappedBy = "order", fetch = LAZY)
+    var status: String = "",
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     var items: MutableList<OrderItem> = mutableListOf()
 ) {
     // Regular class, NOT data class. Override equals/hashCode on @Id.
-    override fun equals(other: Any?): Boolean = /* compare by id */
-    override fun hashCode(): Int = id.hashCode()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Order) return false
+        return id != 0L && id == other.id
+    }
+    override fun hashCode(): Int = if (id != 0L) id.hashCode() else System.identityHashCode(this)
 
     // Domain behavior lives here
     fun addItem(item: OrderItem) { items.add(item); item.order = this }
@@ -158,6 +289,30 @@ class Order(
 ```kotlin
 fun Order.toDto() = OrderDto(id = id, status = status,
     items = items.map { it.toDto() })
+```
+
+---
+
+## Java Interop — Critical Rules
+
+| Kotlin | Java Equivalent | Note |
+|--------|----------------|------|
+| `==` | `equals()` | Structural equality in Kotlin |
+| `===` | `==` | Reference equality in Kotlin (opposite of Java) |
+| `fun interface` | Java SAM | Kotlin interfaces need `fun` for SAM |
+| `@JvmStatic` | static method | For companion object methods |
+| `@JvmOverloads` | overloaded methods | Generates Java-friendly overloads for default params |
+| `@JvmField` | public field | Exposes property as field (no getter) |
+
+```kotlin
+// Companion object with Java-friendly static access
+class Config {
+    companion object {
+        @JvmStatic
+        fun default(): Config = Config()
+    }
+}
+// Java: Config.default()
 ```
 
 ---

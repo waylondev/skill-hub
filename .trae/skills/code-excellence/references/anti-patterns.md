@@ -377,6 +377,231 @@ var result = retryWithBackoff(() -> client.call(), 3,
 
 ---
 
+## AP-11: Ignored Error Return (Go)
+
+**Symptom**: Using `_` to discard error returns from functions that can fail.
+
+### ❌ Wrong
+```go
+result, _ := json.Marshal(data) // If marshaling fails, result is nil — silent corruption
+os.WriteFile("config.json", data, 0644) // Error ignored — file not written, nobody knows
+_, _ = fmt.Fprintf(w, "Hello") // Network error ignored
+```
+
+### Root Cause
+Go's error-returning convention makes it easy to ignore errors with `_`. But the error exists for a reason — the operation may have failed, and continuing as if it succeeded causes silent data corruption or loss.
+
+### ✅ Expert Fix
+```go
+result, err := json.Marshal(data)
+if err != nil {
+    return fmt.Errorf("marshal config: %w", err)
+}
+
+if err := os.WriteFile("config.json", data, 0644); err != nil {
+    return fmt.Errorf("write config: %w", err)
+}
+
+_, err = fmt.Fprintf(w, "Hello")
+if err != nil {
+    log.Printf("failed to write response: %v", err)
+}
+```
+
+---
+
+## AP-12: God main.go (Go)
+
+**Symptom**: Everything crammed into `main()` — HTTP handlers, business logic, DB connections, middleware — all in one 500-line file.
+
+### ❌ Wrong
+```go
+func main() {
+    db, err := sql.Open("postgres", os.Getenv("DB_URL"))
+    if err != nil { log.Fatal(err) }
+
+    http.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+        // 100+ lines of business logic + SQL + JSON rendering
+    })
+    http.HandleFunc("/orders", func(w http.ResponseWriter, r *http.Request) {
+        // another 100+ lines
+    })
+    http.ListenAndServe(":8080", nil)
+}
+```
+
+### Root Cause
+Go's simplicity can become a trap: everything "works" in `main()`. But this makes testing impossible, hides dependencies, and grows without bounds.
+
+### ✅ Expert Fix
+```go
+// cmd/server/main.go — thin entry point
+func main() {
+    cfg := config.Load()
+    db := database.New(cfg.DatabaseURL)
+    userRepo := repository.NewUserRepository(db)
+    orderRepo := repository.NewOrderRepository(db)
+    userService := service.NewUserService(userRepo)
+    orderService := service.NewOrderService(orderRepo, userService)
+    router := handler.NewRouter(userService, orderService)
+    server.Start(router, cfg.Addr)
+}
+
+// internal/handler/users.go — handlers only
+func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
+    id := r.PathValue("id")
+    user, err := h.svc.Find(id)
+    if err != nil { respondError(w, err); return }
+    respondJSON(w, http.StatusOK, user)
+}
+```
+
+---
+
+## AP-13: ORM Model Leaked to API (Python)
+
+**Symptom**: FastAPI/Flask endpoint directly returns SQLAlchemy models.
+
+### ❌ Wrong
+```python
+@app.get("/users/{user_id}")
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    return db.query(User).filter(User.id == user_id).first()
+    # Leaks: hashed_password, internal flags, all relationships
+```
+
+### Root Cause
+SQLAlchemy models contain database-specific internals. Returning them directly couples your API to your DB schema, exposes sensitive fields, and triggers lazy-loaded relationships (N+1).
+
+### ✅ Expert Fix
+```python
+class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    name: str
+    email: str
+    created_at: datetime
+
+@app.get("/users/{user_id}", response_model=UserResponse)
+def get_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    return user  # Pydantic serializes only UserResponse fields
+```
+
+---
+
+## AP-14: Global Mutable State (Python)
+
+**Symptom**: Module-level mutable variables used as shared state.
+
+### ❌ Wrong
+```python
+# config.py
+DATABASE_URL = "sqlite:///dev.db"
+cache = {}
+
+# anywhere: config.DATABASE_URL = "something-else"
+# anyone can modify config.cache at any time
+```
+
+### Root Cause
+Python modules are singletons. Module-level mutable state is global, uncontrolled, and makes testing order-dependent.
+
+### ✅ Expert Fix
+```python
+class Settings(BaseSettings):
+    database_url: str = "sqlite:///dev.db"
+
+settings = Settings()  # immutable after construction
+
+# For caching, use dependency injection
+class CacheService:
+    def __init__(self): self._cache: dict = {}
+    def get(self, key): ...
+    def set(self, key, value): ...
+```
+
+---
+
+## AP-15: Bare Except in Python
+
+**Symptom**: `except:` or `except Exception:` that catches everything including `KeyboardInterrupt` and `SystemExit`.
+
+### ❌ Wrong
+```python
+try:
+    process_order(order)
+except Exception:
+    pass  # Silent failure — order lost forever
+
+try:
+    run_server()
+except:  # Catches KeyboardInterrupt — Ctrl+C won't work!
+    print("Error occurred")
+```
+
+### Root Cause
+Bare `except` catches `KeyboardInterrupt`, `SystemExit`, and `GeneratorExit` — exceptions that are meant to terminate the process.
+
+### ✅ Expert Fix
+```python
+try:
+    process_order(order)
+except OrderProcessingError as e:
+    logger.error("Failed to process order %s: %s", order.id, e)
+    raise
+
+# Or for truly unexpected errors:
+try:
+    process_order(order)
+except Exception as e:
+    logger.critical("Unexpected error processing %s", order.id, exc_info=True)
+    raise  # re-raise — don't swallow
+```
+
+---
+
+## AP-16: Data Class for JPA Entity (Kotlin)
+
+**Symptom**: Using Kotlin `data class` for JPA/Hibernate entities.
+
+### ❌ Wrong
+```kotlin
+@Entity
+data class Order(
+    @Id val id: Long = 0,
+    val status: String,
+    val items: MutableList<OrderItem>
+)
+// data class generates equals/hashCode including ALL properties
+// Hibernate proxies break this — detached entities fail equality checks
+```
+
+### Root Cause
+`data class` auto-generates `equals`/`hashCode` based on ALL constructor properties. Hibernate proxies for lazy-loaded associations produce false negatives. Also, JPA needs a no-arg constructor which `data class` doesn't provide by default.
+
+### ✅ Expert Fix
+```kotlin
+@Entity
+class Order(
+    @Id @GeneratedValue var id: Long = 0,
+    var status: String = "",
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    var items: MutableList<OrderItem> = mutableListOf()
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is Order) return false
+        return id != 0L && id == other.id
+    }
+    override fun hashCode(): Int = if (id != 0L) id.hashCode() else System.identityHashCode(this)
+}
+```
+
+---
+
 ## Quick Scan Checklist
 
 When reviewing generated code, check for these signals:
@@ -391,3 +616,9 @@ When reviewing generated code, check for these signals:
 - [ ] Any POST that creates without idempotency key? → **Missing Idempotency (AP-8)**
 - [ ] Any `try-catch` for non-exceptional paths? → **Exception as Flow Control (AP-9)**
 - [ ] Any `Thread.sleep` outside test code? → **Sleep in Production (AP-10)**
+- [ ] Any `_, _ = ` or discarded error in Go? → **Ignored Error (AP-11)**
+- [ ] Any Go `main()` with > 50 lines? → **God main.go (AP-12)**
+- [ ] Any Python endpoint returning ORM model? → **ORM Leak (AP-13)**
+- [ ] Any Python module-level mutable variable? → **Global Mutable State (AP-14)**
+- [ ] Any Python `except:` without specific exception? → **Bare Except (AP-15)**
+- [ ] Any Kotlin `data class` with `@Entity`? → **Data Class Entity (AP-16)**
