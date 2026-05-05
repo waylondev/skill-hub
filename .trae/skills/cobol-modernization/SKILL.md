@@ -1,317 +1,175 @@
 ---
 name: cobol-modernization
-description: Complete COBOL-to-Java migration framework with portfolio assessment, code analysis, documentation generation, testing matrix, and production migration strategies. Invoke when analyzing COBOL legacy systems, planning COBOL modernization projects, or migrating COBOL/CICS/VSAM to Java Spring Boot.
+version: 2.0.0
+description: >
+  COBOL 遗留系统现代化迁移技能，支持大规模生产代码分析、增量处理、
+  调用图构建、方言适配、动态调用处理、自动化回归测试及安全合规检查。
 ---
 
-# COBOL Modernization Skill
+# COBOL 现代化技能（cobol-modernization）
 
-## Before You Start
+## 概述
 
-### Prerequisites Checklist
-- [ ] **COBOL Source Directory**: All .cbl/.cpy/.bms/.jcl source files collected in one accessible directory
-- [ ] **Source File Encoding**: Confirmed EBCDIC or ASCII encoding; if EBCDIC, pre-convert to UTF-8 (see `references/ebcdic-conversion-toolchain.md`)
-- [ ] **Project Size Assessment**: Count .cbl files to determine processing strategy (see Context Window Management)
-  - Small (<10 files): Single session feasible
-  - Medium (10-50 files): Phase-based execution with checkpoints recommended
-  - Large (50+ files): Module-based chunking mandatory, state files required
-- [ ] **COBOL Dialect Identified**: IBM Enterprise COBOL / Micro Focus / GnuCOBOL / other (see `phases/15-cobol-dialects.md`)
-- [ ] **Target Stack Confirmed**: Spring Boot ${spring-boot-version} + Java ${java-version} + PostgreSQL (or configured target-db)
-- [ ] **Review Team Available**: DBA + COBOL developer + Business analyst + Solution architect + QA lead (see Human Review Checkpoints)
-- [ ] **AI Session Prepared**: Sufficient context window for project size; be ready to use `_state-snapshot.json` for pause/resume
+本技能用于将 COBOL 程序、Copybook、批处理作业、在线事务等遗留资产迁移至现代 Java 技术栈。技能覆盖从源码解析、架构设计、代码生成到生产部署的完整生命周期，并针对大体量生产项目提供了增量分析、并行处理、断点续传等企业级能力。
 
-### Recommended Project Classification
-| Project Scale | .cbl Files | Typical LOC | Recommended Mode | Estimated Sessions |
-|--------------|-----------|-------------|-----------------|-------------------|
-| Small | 1-10 | <5K | lite | 1-2 |
-| Medium | 10-50 | 5K-50K | lite | 3-8 (with checkpoints) |
-| Large | 50-200 | 50K-500K | lite or full | 10-30 (state files mandatory) |
-| Enterprise | 200+ | 500K+ | full | 30+ (module-chunked) |
+## 适用场景
 
-## Quick Start
+- 大型主机 COBOL 应用的全面迁移
+- 增量式现代化（逐步替换模块）
+- 多方言 COBOL 源码的统一分析
+- 需要严格回归测试和安全合规的金融、保险等领域
 
-```
-User intent                      → Execute phases
-──────────────────────────────────────────────────
-"分析这个COBOL项目"               → ALL Core Phases (1-9)
-"分析代码逻辑"                    → Phase 1 + Phase 5
-"生成迁移文档"                    → Core Phases (1-9)
-"生成Java代码"                    → Core Phases + Code Generation (9)
-"完整迁移到生产"                  → ALL phases including extended (10+)
-```
+## 前置条件
 
-## Configuration Parameters
+- 提供 COBOL 源码的编码格式（EBCDIC/ASCII）及记录长度
+- 明确目标方言（IBM Enterprise COBOL、Micro Focus、GnuCOBOL 等）
+- 准备可执行的测试用例或输入/输出对（用于回归验证）
 
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| target-db | postgresql | Target database: postgresql/mysql/oracle |
-| spring-boot-version | 3.3.x | Spring Boot version (LTS) |
-| java-version | 21 | Java version (LTS) |
-| mq-provider | jms | Message queue provider: jms/rabbitmq/kafka |
-| mode | lite | Processing: lite (phases 1-9) / full (phases 1-20) |
-| batch-size | 8 | COBOL files per batch processing |
-| enable-human-review | true | Enable review checkpoints CP-1 to CP-5 |
-| include-flyway | true | Include Flyway database migration scripts |
-| include-sub-applications | auto | Analyze optional sub-app modules |
-| diagram-style | modern | Mermaid diagram style: modern/standard/minimal |
-| output-format | markdown | Output format: markdown/confluence/html |
+## 技能版本
 
-## Execution Flow
+当前版本：2.0.0（详见 CHANGELOG.md）
 
-### Stage 1: Analysis (Phases 1-7)
+## 阶段流程
 
-Parse source code, extract structures, identify dependencies, build test matrix.
+技能按以下阶段顺序执行，每个阶段对应一个独立的指导文件（位于 `phases/` 目录）：
 
-```
-Phase 1 (Discovery)     → File inventory + complexity scoring
-Phase 2 (VSAM)          → Data dictionary + JPA Repository mapping
-Phase 3 (BMS)           → Screen specs + REST API mapping
-Phase 4 (COPYBOOK)      → Data structures → JPA Entity mapping    → CP-1 Review
-Phase 5 (Logic)         → Business logic → Service mapping        → CP-2 Review
-Phase 6 (Architecture)  → Dependency graph + microservice split    → CP-3 Review
-Phase 7 (Test Matrix)   → Test scenarios + golden baseline         → CP-4 Review
-```
+1. **Copybook 解析与转换** (`04-copybook.md`)  
+   解析 COPY 语句，展开嵌套，生成 Java DTO 或记录类。
 
-**After Stage 1:** Pause and prompt user: "Analysis complete. Review documents in 00-07 directories. Reply 'continue' to start code generation."
+2. **业务逻辑迁移** (`05-logic.md`)  
+   将 PROCEDURE DIVISION 转换为 Spring Service 或领域逻辑。
 
-### Stage 2: Generation (Phases 8-9)
+3. **目标架构设计** (`06-architecture.md`)  
+   定义微服务拆分、通信方式、数据存储策略。
 
-Generate complete Java code using Stage 1 analysis documents as context (NOT original COBOL source).
+4. **交付物清单** (`08-deliverables.md`)  
+   明确迁移产出的代码、配置、文档等。
 
-```
-Phase 8 (Deliverables)  → Entity/Repository/Service/DTO/Controller specs
-Phase 9 (Code Generation) → Complete, compilable Java code          → CP-5 Review
-```
+5. **代码生成** (`09-codegen.md`)  
+   基于中间表示生成 Java 代码、SQL 脚本等。
 
-### Stage 3: Extended (Phases 10-20, mode=full only)
+6. **DTO 规范** (`10-dto-specification.md`)  
+   统一数据传输对象的命名、结构、校验规则。
 
-Phase 10-16 provides detailed sub-deliverables (DTO/Flyway/OpenAPI/Security/Batch/MQ/Data Model).
-Phases 10-20 cover frontend, CI/CD, K8s, compliance, benchmarking and production operations.
-Each phase has its own independent document in the `phases/` directory.
+7. **前端迁移** (`10-frontend-migration.md`)  
+   处理 CICS BMS、SDF II 等屏幕定义到 Web 前端的转换。
 
-## Core Rules
+8. **数据库迁移（Flyway）** (`11-flyway-migration.md`)  
+   管理数据库版本，生成迁移脚本。
 
-1. **NEVER skip source files** — Every .cbl/.cpy/.bms/.jcl must be analyzed
-2. **NEVER use placeholder text** — All output must contain actual extracted data
-3. **ALWAYS trace to source** — Every Java element references `// Source: [filename], line [N]`
-4. **ALWAYS generate complete code** — No stubs, no pseudocode, no TODOs
-5. **ALWAYS follow directory structure** — See Output Directory Structure below
-6. **ALWAYS preserve COBOL semantics** — Fixed-width fields, PIC precision, COMP-3 packing
-7. **ALWAYS verify written files** — Read back generated files to confirm completeness
-8. **NEVER single-session large projects** — Use phased execution with state management
-9. **ALWAYS pause at checkpoints** — Wait for user confirmation at CP-1 through CP-5
-10. **ALWAYS analyze PROCEDURE DIVISION** — No program may be skipped; if context limit, save state and resume
+9. **CI/CD 流水线** (`12-cicd-pipeline.md`)  
+   构建、测试、部署的自动化流水线定义。
 
-## Output Directory Structure
+10. **OpenAPI 规范** (`12-openapi.md`)  
+    为生成的 REST API 编写 OpenAPI 文档。
 
-```
-project-name/
-├── 00-portfolio/              # Portfolio assessment
-├── 01-source-inventory/       # File inventory
-├── 02-vsam-analysis/          # VSAM data dictionary
-├── 03-bms-analysis/           # BMS screen specs
-├── 04-copybook-analysis/      # COPYBOOK → Entity mapping
-├── 05-program-logic/          # Business logic analysis
-├── 06-architecture/           # Architecture diagrams
-├── 07-test-matrix/            # Test scenarios
-├── 08-deliverables/           # Complete Java specifications
-├── 09-database-migrations/    # Flyway scripts
-└── 10-cicd-pipeline/          # CI/CD + deployment (full mode)
-```
+11. **容器化与编排** (`13-docker-kubernetes.md`)  
+    Docker 镜像构建及 Kubernetes 部署配置。
 
-## Input Validation (Step 0)
+12. **安全审计** (`13-security-audit.md`)  
+    源码安全扫描、敏感数据识别、许可证检查。
 
-Before any analysis, verify:
-- Source directory path provided and exists
-- At least one .cbl or .cpy file found
-- Files are readable
+13. **批处理依赖分析** (`14-batch-deps.md`)  
+    分析 JCL/PROC 中的作业依赖关系。
 
-If checks fail, prompt user with specific error message.
+14. **开发者入职** (`14-developer-onboarding.md`)  
+    新成员环境搭建、代码结构导航。
 
-## Phase References
+15. **消息队列目录** (`15-mq-catalog.md`)  
+    梳理 MQ 队列、通道、消息格式。
 
-See `phases/` directory for detailed phase specifications:
+16. **工具链实用程序** (`16-toolchain-utilities.md`)  
+    辅助脚本、格式转换、编码处理工具。
 
-| # | Phase | File | Purpose |
-|---|-------|------|---------|
-| 1 | Discovery | `phases/01-discovery.md` | Scan & classify source files |
-| 2 | VSAM | `phases/02-vsam.md` | VSAM → JPA Repository mapping |
-| 3 | BMS | `phases/03-screens.md` | BMS Map → REST API mapping |
-| 4 | COPYBOOK | `phases/04-copybook.md` | Data structure → JPA Entity mapping |
-| 5 | Logic | `phases/05-logic.md` | Business logic → Service implementation |
-| 6 | Architecture | `phases/06-architecture.md` | Dependency graph + microservice split |
-| 7 | Testing | `phases/07-testing.md` | Test matrix + golden baseline |
-| 8 | Deliverables | `phases/08-deliverables.md` | Complete Java specifications |
-| 9 | Code Gen | `phases/09-codegen.md` | AI code generation |
-| CP | Review Protocol | `phases/cp-review-protocol.md` | Human review checkpoint protocol |
-| 10 | Frontend | `phases/10-frontend-migration.md` | BMS → React/Angular frontend migration |
-| 11 | Cost | `phases/11-cost-estimation.md` | Infrastructure cost estimation & planning |
-| 12 | CI/CD | `phases/12-cicd-pipeline.md` | Jenkins & GitHub Actions pipeline |
-| 13 | Docker/K8s | `phases/13-docker-kubernetes.md` | Docker & Kubernetes deployment |
-| 14 | Onboarding | `phases/14-developer-onboarding.md` | Developer quick start & local setup |
-| 15 | Dialects | `phases/15-cobol-dialects.md` | COBOL dialect support mapping |
-| 16 | Toolchain | `phases/16-toolchain-utilities.md` | Migration toolchain & utilities |
-| 17 | Compliance | `phases/17-production-compliance.md` | PCI-DSS/HIPAA/SOX/GDPR compliance |
-| 18 | Data Migration | `phases/18-data-migration-strategy.md` | ETL pipeline & data validation strategy |
-| 19 | Regression | `phases/19-regression-testing.md` | Automated regression testing framework |
-| 20 | Perf Benchmark | `phases/20-performance-benchmarking.md` | JMH benchmarks & performance SLA |
+17. **生产合规** (`17-production-compliance.md`)  
+    确保迁移后系统满足运维、监控、审计要求。
 
-### Phase 8 Sub-Deliverables (8a-8g)
+18. **数据迁移策略** (`18-data-migration-strategy.md`)  
+    历史数据清洗、转换、校验方案。
 
-Phase 8 generates core specs (8.1-8.12). Extended sub-deliverables are generated in sub-phases 8a-8g:
+19. **回归测试** (`19-regression-testing.md`)  
+    自动化回归测试框架与用例生成。
 
-| Sub | Deliverable | Phase File |
-|-----|------------|------------|
-| 8.1-8.12 | Core Java specs (Entity/Repo/Service/DTO/API/Exception/Enum/Batch/Rules/Security/Flyway/OpenAPI) | `phases/08-deliverables.md` |
-| 8a | DTO & Validation (complete DTO classes) | `phases/10-dto-specification.md` |
-| 8b | Flyway Migrations (V1+V2+V3 SQL) | `phases/11-flyway-migration.md` |
-| 8c | OpenAPI 3.0 YAML spec | `phases/12-openapi.md` |
-| 8d | Security Audit report | `phases/13-security-audit.md` |
-| 8e | Batch Dependency DAG | `phases/14-batch-deps.md` |
-| 8f | MQ Message Catalog | `phases/15-mq-catalog.md` |
-| 8g | Data Model Merge (IMS/DB2/VSAM) | `phases/16-data-model-merge.md` |
+20. **性能基准测试** (`20-performance-benchmarking.md`)  
+    迁移前后性能对比与调优建议。
 
-## Reference Library
+21. **代码审查协议** (`cp-review-protocol.md`)  
+    审查清单、评审流程、质量门禁。
 
-| Document | Content |
-|----------|---------|
-| `references/cobol-to-java-mappings.md` | COBOL→Java type/PIC/CICS/JCL mapping tables |
-| `references/golden-examples.md` | Production-grade code examples (Phase 9 standard) |
-| `references/quality-checklist.md` | QA mandatory checks (68 checks) + delivery checklist |
-| `references/production-patterns.md` | Migration strategies + deployment patterns |
-| `references/troubleshooting.md` | Common issues, recovery protocols, debugging guides |
-| `references/assembler-replacement.md` | Assembler utility → Java replacement patterns |
-| `references/complex-copybook-guide.md` | REDEFINES, OCCURS, COPY REPLACING advanced patterns |
-| `references/cobol-intrinsic-functions.md` | 50+ COBOL intrinsic function → Java mappings |
-| `references/racf-spring-security-mapping.md` | RACF → Spring Security detailed mapping |
-| `references/ebcdic-conversion-toolchain.md` | EBCDIC encoding conversion commands & Java libraries |
-| `references/performance-sla-templates.md` | OLTP & Batch performance SLA definition templates |
-| `references/observability-standards.md` | Metrics/Logging/Tracing observability standards |
-| `references/security-scanning-integration.md` | SAST/DAST security scanning CI integration guide |
-| `references/i18n-l10n-strategy.md` | COBOL message internationalization & localization strategy |
+## 增强功能（v2.0 新增）
 
-## Human Review Checkpoints
+### 增量分析与变更检测
+- 基于 Git diff 或文件时间戳，仅分析变更的程序。
+- 维护分析结果缓存，避免重复处理。
 
-| Checkpoint | After Phase | Review Focus | Who |
-|-----------|-------------|--------------|-----|
-| CP-1 | Phase 4 | Entity relationships, field mappings | DBA + COBOL developer |
-| CP-2 | Phase 5 | Formulas, validation rules, edge cases | Business analyst + COBOL developer |
-| CP-3 | Phase 6 | Service boundaries, dependencies | Solution architect |
-| CP-4 | Phase 7 | Test coverage, golden baselines | QA lead + COBOL developer |
-| CP-5 | Phase 9 | Java completeness, patterns | Java developer + architect |
+### 调用图与依赖分析
+- 构建程序间调用图（CALL、LINK、XCTL）。
+- 识别 Copybook 包含关系，生成依赖矩阵。
+- 支持循环依赖检测与报告。
 
-## Session State Management
+### 方言适配层
+- 提供 COBOL 方言配置文件，声明关键字、内建函数、编译指令差异。
+- 内置 IBM Enterprise COBOL、Micro Focus、GnuCOBOL 等预设。
 
-For projects >10 COBOL programs, maintain state files:
+### 动态调用处理策略
+- 静态分析可解析的调用（常量 CALL）。
+- 对动态调用提供桩代码生成或人工标注接口。
 
-| File | Purpose |
-|------|---------|
-| `_state-snapshot.json` | Current phase, batch progress, review status |
-| `_context-index.md` | Files processed per batch |
-| `_kb-reference.md` | Compact knowledge base for Stage 2 |
-| `_review-log.md` | Human review feedback and decisions |
+### 自动化回归测试框架
+- 基于输入/输出对生成迁移前后的测试用例。
+- 集成到 CI 流水线，确保行为一致。
 
-**Resume Protocol:**
-1. Read `_state-snapshot.json` for last completed phase
-2. Read `_context-index.md` for processed files
-3. Skip completed work, process only pending items
+### 安全与合规检查
+- 扫描源码中的敏感字段（如 SSN、账号）。
+- 生成数据流图，标记敏感数据路径。
+- 检查第三方库许可证兼容性。
 
-## Language Policy
+### 并行与分布式处理
+- 支持按子系统/程序拆分任务，并行分析。
+- 提供资源预估模型（CPU/内存/时间）。
 
-- **User-facing documentation**: Match user's input language
-- **Technical deliverables** (code, SQL, config): English
-- **File/directory names**: English, kebab-case
-- **Code comments**: English, with COBOL source reference format
+### 断点续传与错误恢复
+- 分析状态持久化，支持中断后从检查点继续。
+- 错误隔离：单个程序失败不影响整体流程。
 
-## Known Limitations & Roadmap
+### 输入格式标准化
+- 明确支持的编码（EBCDIC/ASCII）、记录长度、行号区域。
+- 提供预处理工具（如 `iconv`、`cobol-formatter`）。
 
-### Current Limitations
-| Limitation | Impact | Workaround |
-|-----------|--------|------------|
-| No real-time COBOL-to-Java compiler | Manual review required at CP-1 to CP-5 | Human review checkpoints |
-| EBCDIC source requires pre-conversion | Extra step before Phase 1 | Use `references/ebcdic-conversion-toolchain.md` |
-| AI context window limits large projects | Batch processing needed | Session State Management + state files |
-| COBOL SORT/MERGE semantics | Inline SORT with USING/GIVING not auto-detected | Manually flag to Phase 1 |
-| Nested COPY REPLACING chains | Multi-level REPLACING may lose trace | REPLACING Registry tracks up to 3 levels |
-| IMS segment hierarchy flattening | Complex IMS DBD may lose parent-child relations | `phases/16-data-model-merge.md` |
+### 输出质量度量
+- 定义迁移后代码的 KPI：编译通过率、测试覆盖率、圈复杂度变化。
+- 生成质量报告并与基线对比。
 
-### Roadmap (Planned)
-- [ ] **Phase 21**: gRPC API generation from COBOL LINK/XCTL patterns
-- [ ] **Phase 22**: GraphQL schema generation for complex BMS browse screens
-- [ ] **Phase 23**: Event-driven architecture migration (COBOL CICS START → Kafka events)
-- [ ] **Reference**: COBOL Report Writer (RW) → JasperReports mapping
-- [ ] **Reference**: COBOL DEBUGGING declaratives → Java AOP aspect patterns
-- [ ] **Tooling**: Automated EBCDIC→UTF-8 pre-conversion script
-- [ ] **Tooling**: Sample COBOL test dataset for skill validation
-- [ ] **Integration**: VS Code / Eclipse plugin for Phase execution dashboard
+## 参考文档
 
-## Exception Handling
+以下参考文档位于 `references/` 目录，提供详细的技术映射和最佳实践：
 
-| Feature Not Found | Action |
-|-------------------|--------|
-| No DB2 code (no EXEC SQL) | Skip DB2 analysis |
-| No IMS code (no EXEC DLI) | Skip IMS analysis |
-| No MQ code (no MQGET/MQPUT) | Skip MQ analysis |
-| No BMS files | Skip BMS→REST mapping |
-| No JCL files | Skip JCL→Batch mapping |
-| No COMP-3 fields | Skip COMP-3 section |
+- `assembler-replacement.md`：汇编代码替换指南
+- `cobol-intrinsic-functions.md`：COBOL 内建函数映射
+- `cobol-to-java-mappings.md`：COBOL 到 Java 的类型/语句映射
+- `complex-copybook-guide.md`：复杂 Copybook 处理
+- `ebcdic-conversion-toolchain.md`：EBCDIC 转换工具链
+- `golden-examples.md`：黄金示例
+- `observability-standards.md`：可观测性标准
+- `production-patterns.md`：生产模式
+- `quality-checklist.md`：质量检查清单
 
-## Precision Standards
+## 使用方式
 
-Every phase output is evaluated against precision requirements. Key standards:
+1. 配置方言和输入格式（参见 `phases/04-copybook.md` 中的预处理步骤）。
+2. 运行增量分析，生成调用图和依赖矩阵。
+3. 按阶段顺序执行迁移，每个阶段输出中间产物供下一阶段使用。
+4. 在关键阶段后运行自动化回归测试，验证正确性。
+5. 最终通过 CI/CD 流水线部署至目标环境。
 
-| Deliverable | Minimum Precision |
-|-------------|------------------|
-| Entity Specification | Complete class code with ALL fields, annotations, business methods |
-| Repository | Complete interface with ALL methods, @Lock, @Query, Pageable |
-| Service | Complete class with ALL methods, constructor injection, @Transactional |
-| DTO | Complete Request/Response with Bean Validation from COBOL IF rules |
-| Flyway Scripts | Complete V1+V2+V3: all tables, FKs, indexes, seed data |
-| Test Matrix | ≥3 test cases per program with golden baseline |
+## 限制与注意事项
 
-## Cross-Validation Rules
+- 对于极度复杂的嵌套 Copybook（深度 > 20），建议人工拆分。
+- 动态调用无法完全自动解析，需结合运行时追踪或人工标注。
+- 迁移后的性能需通过基准测试验证，必要时进行调优。
+- 敏感数据在分析过程中应使用脱敏环境或加密存储。
 
-After Phase 8, verify consistency across all documents:
+## 版本历史
 
-1. **Entity-VSAM**: Every Entity field matches VSAM/COPYBOOK — no invented fields
-2. **BMS-DTO**: Every UNPROT field → Request DTO; every PROT field → Response DTO
-3. **Program-Service**: Every COBOL program has a corresponding Service class
-4. **Repository-IO**: Every VSAM READ/WRITE has a Repository method
-5. **API-Screen**: Every BMS screen has at least one REST endpoint
-6. **Exception-Error**: Every error condition has exception type + HTTP status
-
-## Context Window Management
-
-### Token Budget Guidelines
-
-| Scenario | Approximate Tokens | Strategy |
-|----------|-------------------|----------|
-| Small project (<10 .cbl files) | ~15K-30K | Single session OK |
-| Medium project (10-50 .cbl) | ~50K-150K | Phase-based execution with checkpoints |
-| Large project (50+ .cbl) | ~200K+ | Module-based chunking, state files mandatory |
-
-### Loading Strategy
-
-| Phase | Load Full | Load Compact | Process |
-|-------|-----------|-------------|---------|
-| 1-4 | Source files being analyzed | SKILL.md + current phase doc | Read only relevant .cbl/.cpy files |
-| 5 (Logic) | One .cbl at a time | `_kb-reference.md` + mappings | NEVER load all .cbl at once |
-| 6-7 | Phase 1-5 summaries | `_context-index.md` | Summarize, don't load full docs |
-| 8-9 | One deliverable at a time | `_kb-reference.md` + golden examples | Generate from analysis docs only |
-
-## Getting Started (First-Time Use)
-
-1. **Prepare your COBOL source directory** — Ensure all .cbl/.cpy/.bms/.jcl files are in one directory
-2. **Invoke the skill** — Provide the source directory path
-3. **Stage 1 runs** — The skill analyzes all files through Phase 7
-4. **Review at checkpoints** — At CP-1 through CP-4, review generated documents
-5. **Say "continue"** — Stage 2 generates complete Java specifications (Phase 8-9)
-6. **Review CP-5** — Verify Java code completeness
-7. **(Optional) Mode=full** — Extended phases for CI/CD, deployment, compliance
-
-Example:
-```
-User: "分析这个COBOL项目: C:\projects\legacy-bank-cobol\source"
-→ Skill runs Phases 1-7, pauses at CP-1
-User: "继续" (or "continue")
-→ Skill resumes Stage 2, generates Phase 8-9
-```
+- 2.0.0：新增增量分析、调用图、方言支持、动态调用处理、回归测试、安全扫描、并行处理、断点续传、输入标准化、质量度量。
+- 1.0.0：初始版本，覆盖基本迁移阶段。
