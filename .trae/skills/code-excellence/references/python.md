@@ -1,117 +1,164 @@
-# Python Best Practices (3.12+)
+# Python Best Practices (3.12+) — Expert Level
 
 ## Purpose
 
-This reference encodes **Python‑specific** best practices that, combined with
-the parent `code-excellence` skill, guide AI to produce production‑grade,
-idiomatic Python code.
+This reference encodes **Python‑specific expert practices** that, combined with
+the parent `code-excellence` skill and its pattern catalog, guide AI to produce
+production‑grade, idiomatic Python code.
 
 ---
 
 ## Python Language Idioms (3.12+)
 
-- **Follow PEP 8** — 4 spaces for indentation, `snake_case` for functions and variables, `PascalCase` for classes.
-- **`dataclasses` for data containers** — `@dataclass(frozen=True) class Point: x: int; y: int` reduces boilerplate and guarantees immutability.
-- **Type hints everywhere** — annotate function signatures, return types, and complex variables. Run `mypy` or `pyright` in CI with strict mode.
-- **New type syntax (3.12+)** — `list[int]`, `dict[str, User]`, `tuple[int, ...]` without importing from `typing`.
-- **`Self` type (3.11+)** — `def clone(self) -> Self: ...` for fluent APIs and factory methods.
-- **`@override` (3.12+)** — explicitly declare method overrides. IDE warns if the base method changes or is removed.
-- **`match` / `case` (3.10+)** — structural pattern matching for dispatching on complex shapes.
-- **`pathlib`** — `Path("data") / "file.txt"` is cleaner and cross‑platform. Never use `os.path`.
-- **`f-strings`** — `f"User {name} has {count} items"` is concise, fast, and supports `=` debugging: `f"{count=}"`.
-- **Context managers (`with`)** — for files, locks, DB connections. Write custom ones with `contextlib.contextmanager` or `__enter__`/`__exit__`.
+- **PEP 8** — 4 spaces, `snake_case`, `PascalCase`.
+- **dataclasses** — `@dataclass(frozen=True)` for immutable data carriers.
+- **Type hints everywhere** — `mypy`/`pyright` strict mode in CI.
+- **New type syntax (3.12+)** — `list[int]`, `dict[str, User]` directly, no `typing` import.
+- **Self type (3.11+)** — `def clone(self) -> Self: ...`
+- **@override (3.12+)** — explicit override declarations.
+- **match/case** — structural pattern matching.
+- **pathlib** — never `os.path`. `Path("data") / "file.txt"`.
+- **f-strings** — `f"User {name} has {count} items"`. Debug: `f"{count=}"` → `count=42`.
+- **Context managers** — `with` for files, locks, DB connections.
 
 ---
 
-## Python 3.11+ Features
+## Performance & Memory Expertise
 
-- **`tomllib`** — built‑in TOML parser, no third‑party dependency needed to read `pyproject.toml`.
-- **`ExceptionGroup` / `except*`** — aggregate multiple concurrent exceptions and handle them structurally.
-- **`LiteralString`** — type that only accepts literal strings, preventing SQL injection in type‑checked query builders.
-- **`TaskGroup`** (3.11+) — structured async concurrency, better than raw `asyncio.gather` with `return_exceptions=True`.
+### The GIL Reality
+- CPython's GIL prevents true parallel CPU execution. Multi‑threading helps ONLY for I/O‑bound work.
+- For CPU‑bound parallelism, use `multiprocessing` or `concurrent.futures.ProcessPoolExecutor`.
+- Python 3.13+ introduces experimental `--disable-gil` builds. Check `sys._is_gil_enabled()`.
 
----
+### Memory Patterns
+```python
+# Generators over lists — especially for large data
+def read_logs(path: Path):
+    with open(path) as f:
+        for line in f:          # lazy iteration, one line in memory at a time
+            yield parse(line)
 
-## Project Structure
-
-```
-├── src/
-│   └── mypackage/
-│       ├── __init__.py
-│       ├── core.py
-│       ├── services.py
-│       └── models.py
-├── tests/
-│   ├── __init__.py
-│   ├── test_core.py
-│   └── conftest.py
-├── pyproject.toml
-├── README.md
-└── .env.example
+# slots reduce per‑instance memory
+class Point:
+    __slots__ = ('x', 'y')      # no __dict__, ~50% memory savings
+    def __init__(self, x: float, y: float): ...
 ```
 
-- **`pyproject.toml`** — the single source of truth for dependencies, build configuration, tool settings (`[tool.pytest]`, `[tool.mypy]`, `[tool.ruff]`).
-- **Define entry points**:
-```toml
-[project.scripts]
-mycli = "mypackage.cli:main"
+### Profiling
+```bash
+python -m cProfile -s cumtime script.py     # function-level profiling
+py-spy top -- python script.py              # live sampling profiler
+memray run script.py                         # memory allocation profiler
 ```
-- **Virtual environments** — use `uv` or `venv`. Never install dependencies globally.
-- **Lock file** — commit `uv.lock` or `requirements/*.txt` with pinned versions.
 
 ---
 
-## Async / Await
+## Async/Await — Expert Patterns
 
-- `async def` / `await` for I/O‑bound work — network calls, DB queries, file I/O.
-- `asyncio.gather` for concurrent tasks. Use `TaskGroup` (3.11+) for structured concurrency.
-- **Never mix sync and async** — don't call `asyncio.run()` inside an async function. Keep the boundary at the application entry point.
-- **`httpx` for async HTTP** — supports both sync and async clients with a unified API.
-- **ASGI** (`uvicorn` + FastAPI/Starlette) for production async web apps.
+### Structured Concurrency with TaskGroup (3.11+)
+```python
+async with asyncio.TaskGroup() as tg:
+    user_task = tg.create_task(fetch_user(1))
+    order_task = tg.create_task(fetch_orders(1))
+# If either fails, the other is cancelled automatically.
+result = UserWithOrders(user_task.result(), order_task.result())
+```
+
+### Semaphore for Rate Limiting
+```python
+sem = asyncio.Semaphore(10)  # max 10 concurrent
+async with sem:
+    await call_external_api(url)
+```
 
 ---
 
-## Error Handling
+## Pydantic v2 — Data Validation
 
-- **Catch specific exceptions** — never bare `except:`. Catch `ValueError`, `KeyError`, `OSError`.
-- **Exception chaining** — `raise ValueError("Invalid ID") from original_exception` preserves the traceback chain.
-- **Custom exceptions** — subclass `Exception` for business errors. Keep the hierarchy shallow.
-- Use `try` / `except` / `else` / `finally` — `else` runs only when no exception occurred.
+```python
+from pydantic import BaseModel, Field, field_validator
+
+class CreateOrderRequest(BaseModel):
+    model_config = {"extra": "forbid"}  # reject unknown fields
+    user_id: int = Field(gt=0)
+    items: list[OrderItem]
+    total: Decimal = Field(max_digits=10, decimal_places=2)
+
+    @field_validator("items")
+    @classmethod
+    def not_empty(cls, v): assert len(v) > 0; return v
+```
 
 ---
 
-## Testing
+## Testing — Expert Level
 
-- **`pytest`** — the standard. Fixtures in `conftest.py` for shared setup.
-- **`@pytest.mark.parametrize`** for table‑driven tests.
-- **`pytest-cov`** for coverage reports.
-- **`unittest.mock`** or `pytest-mock` for mocking external dependencies.
-- **Test behaviour, not implementation** — through public APIs. Avoid mocking internal helper functions.
+### pytest with fixtures and parametrize
+```python
+@pytest.fixture
+def sample_order(): return Order(id=1, items=[Item(price=100)])
+
+@pytest.mark.parametrize("quantity,expected", [(1, 100), (5, 450), (10, 800)])
+def test_bulk_discount(sample_order, quantity, expected):
+    assert calculate(sample_order, quantity) == expected
+```
+
+### Property-based Testing (Hypothesis)
+```python
+from hypothesis import given, strategies as st
+
+@given(st.lists(st.integers(min_value=1, max_value=1000), min_size=1))
+def test_sum_is_positive(items):
+    assert sum(items) > 0
+# Generates hundreds of random lists automatically
+```
+
+### Timezone‑Safe Testing
+```python
+import zoneinfo
+# Never use datetime.now() without tz. Always:
+now = datetime.now(tz=zoneinfo.ZoneInfo("UTC"))
+```
 
 ---
 
 ## Production Patterns
 
-- **Structured logging** — `structlog` emits JSON logs with correlation IDs.
-- **Configuration** — `pydantic-settings` loads environment variables into typed, validated models.
-- **Health checks** — `/health` (FastAPI / Flask). Include readiness checks for critical external services.
-- **Graceful shutdown** — handle `SIGTERM`, drain in‑flight requests.
-- **`uv` as package manager** — faster than pip, with lockfile support.
+### FastAPI with Dependency Injection
+```python
+async def get_db():  # dependency
+    async with AsyncSessionLocal() as session:
+        yield session
 
----
+@router.get("/orders/{id}")
+async def get_order(id: int, db=Depends(get_db)):
+    return (await db.get(Order, id)).to_dto()
+```
 
-## Web Frameworks
+### Structured Logging
+```python
+import structlog
+logger = structlog.get_logger()
+logger.info("order.created", order_id=id, amount=total, trace_id=trace_id)
+```
 
-| Framework | When to use |
-|-----------|-------------|
-| **FastAPI** | New APIs. Async native, auto OpenAPI docs, leverages type hints for validation & serialisation. Preferred for new projects. |
-| **Django** | Full‑featured applications needing admin, ORM, auth, and batteries. Follow the Django way (fat models, thin views). |
-| **Flask** | Small services or maximum control. Use Blueprints for modularity. |
+### Configuration with pydantic-settings
+```python
+from pydantic_settings import BaseSettings
+
+class Settings(BaseSettings):
+    database_url: str
+    redis_url: str
+    api_key: str
+
+settings = Settings()  # reads from env vars automatically
+```
 
 ---
 
 ## How to Use This Reference
 
-1. Apply `code-excellence` first.
-2. Use this reference for Python‑specific idioms and project choices.
-3. Refer to "Effective Python" (Brett Slatkin, 3rd edition) and PEP 8 for deeper understanding.
+1. Apply `code-excellence` SKILL.md for the operation pipeline.
+2. Consult `decision-trees.md` for design choices.
+3. Use this reference for Python‑specific expert implementation.
+4. For deeper dives: "Effective Python" (Slatkin, 3rd edition), "Fluent Python" (Ramalho, 2nd edition).

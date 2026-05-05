@@ -1,215 +1,297 @@
-# Spring Boot Best Practices (3.2+)
+# Spring Boot Best Practices (3.2+) — Expert Level
 
 ## Purpose
 
-This reference encodes **Spring‑Boot‑3.2+** best practices applicable to both
-Java and Kotlin projects. Apply `code-excellence` first, then your language
+This reference encodes **Spring‑Boot‑3.2+ expert practices** applicable to both
+Java and Kotlin projects. Apply `code-excellence` SKILL.md first, then your language
 reference (`java.md` or `kotlin.md`), then this reference.
 
 ---
 
 ## Dependency Injection
 
-- **Constructor injection only** — dependencies are explicit, support `final` / `val` fields, and simplify unit testing.
-- In Java, with a single constructor, `@Autowired` is optional.
-- In Kotlin, a single constructor is auto‑wired: `class OrderService(private val repo: OrderRepository)`.
+- **Constructor injection only** — dependencies explicit, support `final`/`val`, simplify testing.
+- Single-constructor classes auto‑wire without `@Autowired`.
 
 ```java
-// Java
 @Service
 public class OrderService {
     private final OrderRepository repo;
-    public OrderService(OrderRepository repo) { this.repo = repo; }
+    private final PaymentGateway gateway;
+    public OrderService(OrderRepository repo, PaymentGateway gateway) {
+        this.repo = repo;
+        this.gateway = gateway;
+    }
 }
-```
-
-```kotlin
-// Kotlin
-@Service
-class OrderService(private val repo: OrderRepository)
 ```
 
 ---
 
 ## Configuration
 
-- **`@ConfigurationProperties`** over `@Value` — type‑safe, testable, and groups related config.
+- **`@ConfigurationProperties`** over `@Value`. Use records (Java) or data classes (Kotlin):
 
 ```java
 @ConfigurationProperties(prefix = "app.payment")
-public record PaymentProperties(String gateway, Duration timeout) {}
+public record PaymentProperties(String gateway, Duration timeout, int maxRetries) {}
 ```
 
-```kotlin
-@ConfigurationProperties(prefix = "app.payment")
-data class PaymentProperties(val gateway: String, val timeout: Duration)
-```
-
-- Enable with `@EnableConfigurationProperties(PaymentProperties.class)` or `@ConfigurationPropertiesScan`.
+- Validate at startup with `@Validated` + Bean Validation annotations on the properties class. A misconfigured app should fail fast, not fail at 3am.
 
 ---
 
-## Bean Declaration
+## Bean Lifecycle Expertise
 
-- Prefer **Java / Kotlin configuration** (`@Configuration` + `@Bean`) over XML.
-- Use `@ComponentScan` sparingly in large projects — explicit wiring is easier to debug.
+**Post-processor awareness**: `BeanPostProcessor` runs for every bean. Custom processors without `@Order` or `implements Ordered` have undefined ordering. When your `@PostConstruct` fails mysteriously or your proxy doesn't work, a post-processor ordering conflict is the #1 suspect.
 
----
+**Proxy limitation**: Spring AOP uses JDK dynamic proxies (by interface) or CGLIB (by subclass). Methods called internally (`this.method()`) bypass the proxy. Private methods CANNOT be proxied.
 
-## Transaction Management
+```java
+// WRONG: internal call bypasses @Transactional proxy
+public void outer() { inner(); }
+@Transactional
+public void inner() { ... }
 
-- `@Transactional` on **service methods**, never on controllers or repositories.
-- Be aware of **self‑invocation**: calling a `@Transactional` method from within the same class bypasses the proxy. Extract to a separate bean if needed.
-- `@Transactional(readOnly = true)` on query methods for Hibernate optimisations.
-
----
-
-## Virtual Threads (Java 21)
-
-```yaml
-# application.yml
-spring:
-  threads:
-    virtual:
-      enabled: true
+// RIGHT: inject self (or move transactional method to separate bean)
+@Service
+public class SelfAwareService {
+    @Lazy @Autowired private SelfAwareService self;
+    public void outer() { self.inner(); }
+    @Transactional
+    public void inner() { ... }
+}
 ```
-- Spring Boot 3.2+ auto‑configures virtual threads for Tomcat, Jetty, `@Async`, and task executors.
-- Best for I/O‑heavy workloads. Leave CPU‑bound tasks on platform threads.
+
+---
+
+## Transaction Management — Deep Dive
+
+### Isolation Levels
+
+| Level | Behavior | Use Case |
+|-------|----------|----------|
+| `READ_COMMITTED` | Prevents dirty reads (default for most DBs) | General purpose. Use unless you have a specific reason otherwise. |
+| `REPEATABLE_READ` | Prevents non‑repeatable reads. MySQL default. | When you must see the same snapshot throughout the transaction. |
+| `SERIALIZABLE` | Full isolation. Slowest. | Financial ledger consistency. Rarely needed. |
+
+```java
+@Transactional(isolation = Isolation.REPEATABLE_READ)
+public void transfer(Long from, Long to, Money amount) {
+    var src = accountRepo.findById(from).orElseThrow();
+    var dst = accountRepo.findById(to).orElseThrow();
+    src.debit(amount);
+    dst.credit(amount);
+    accountRepo.saveAll(List.of(src, dst));
+}
+```
+
+### Propagation Traps
+
+- `REQUIRES_NEW`: The inner transaction COMMITS before the outer. If the outer rolls back, the inner remains committed. Valid ONLY for audit logs and outbox events.
+- `MANDATORY`: Fails if no existing transaction. Use to enforce that a method is always called within a transactional context.
 
 ---
 
 ## HTTP Clients
 
-- **RestClient** (Spring Boot 3.2+) — modern, fluent synchronous HTTP client. Replaces `RestTemplate` for new code.
+### RestClient (3.2+ — replaces RestTemplate)
 
 ```java
-var client = RestClient.create();
-var result = client.get()
-    .uri("https://api.example.com/users/{id}", id)
+var client = RestClient.builder()
+    .baseUrl("https://api.example.com")
+    .defaultHeader("X-API-Key", apiKey)
+    .requestFactory(new JdkClientHttpRequestFactory()) // Java 21 HttpClient
+    .build();
+
+User user = client.get()
+    .uri("/users/{id}", id)
     .retrieve()
+    .onStatus(s -> s.value() == 404, (req, resp) -> { throw new UserNotFoundException(id); })
     .body(User.class);
 ```
 
-- **`@HttpExchange`** (Spring 6+) — declarative HTTP interfaces:
-
+### @HttpExchange (Spring 6+)
 ```java
 @HttpExchange("/users")
 interface UserClient {
     @GetExchange("/{id}")
     User getById(@PathVariable Long id);
+
+    @PostExchange
+    User create(@RequestBody CreateUserRequest req);
+}
+```
+- Interface-only. Runtime proxy generated by `HttpServiceProxyFactory`.
+
+---
+
+## JPA / Hibernate 6.x Expert Notes
+
+### Fetch Strategy Decision
+
+```
+Is the association ALWAYS needed when loading the entity?
+├── YES → Can it be eagerly loaded with a single JOIN?
+│   ├── YES → @ManyToOne + @MapsId (shared PK — the ONLY safe EAGER case)
+│   └── NO  → LAZY + use @EntityGraph or JOIN FETCH per query
+└── NO  → ALWAYS LAZY (default)
+```
+
+### Bulk Operations
+```java
+// Avoid loading entities just to update one field
+// WRONG: loads 10000 entities into persistence context
+orderRepo.findByStatus(PENDING).forEach(o -> { o.cancel(); });
+
+// RIGHT: bulk JPQL
+int count = orderRepo.cancelAllByStatus(PENDING);
+// @Modifying @Query("UPDATE Order SET status = 'CANCELLED' WHERE status = 'PENDING'")
+```
+Bulk `UPDATE`/`DELETE` bypasses the persistence context. Invalidate cache after.
+
+### Projections
+```java
+interface OrderSummary {
+    Long getId();
+    String getStatus();
+    @Value("#{target.total.amount}") BigDecimal getTotal();
+}
+
+List<OrderSummary> findByStatus(Status status); // Only SELECTs needed columns
+```
+
+---
+
+## Connection Pool Tuning (HikariCP)
+
+```yaml
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 10       # Formula: CPU * 2 + disk_spindles
+      minimum-idle: 5             # Keep warm connections ready
+      idle-timeout: 600000        # 10 min — close idle connections
+      max-lifetime: 1800000       # 30 min — Max connection age
+      connection-timeout: 30000   # 30s — How long to wait for connection
+      leak-detection-threshold: 10000  # 10s — Log warning if held longer
+      keepalive-time: 30000       # Keep connections alive
+```
+
+**The formula**: `poolSize = (coreCount * 2) + effectiveSpindleCount`. SSD = 1 spindle. For a typical 8‑core server: 8*2+1 = 17. But start at 10 and measure — pooling too many connections wastes database resources.
+
+---
+
+## Caching Beyond @Cacheable
+
+### Multi-Tier Cache Strategy
+```java
+// L1: Caffeine (local, sub-ms latency, bounded memory)
+Cache<User> localCache = Caffeine.newBuilder()
+    .maximumSize(10_000)
+    .expireAfterWrite(Duration.ofMinutes(1))
+    .recordStats()
+    .build();
+
+// L2: Redis (distributed, shared across instances)
+// Use @Cacheable with RedisCacheManager for shared data
+// Invalidation strategy: delete from Redis on write, local caches
+// pick up fresh data on their natural expiry (eventual consistency)
+```
+
+**Cache invalidation**: Delete, never update. Updating cache risks inconsistency with source of truth.
+
+---
+
+## Circuit Breaker (Resilience4j)
+
+```java
+@Service
+public class ResilientPaymentService {
+    private final CircuitBreaker breaker;
+    private final PaymentGateway gateway;
+    private final Retry retry;
+
+    public PaymentResult charge(ChargeRequest req) {
+        return Try.of(breaker.decorateSupplier(() -> gateway.charge(req)))
+            .recover(CallNotPermittedException.class,
+                e -> PaymentResult.unavailable("Payment service temporarily unavailable"))
+            .get();
+    }
 }
 ```
 
----
-
-## Exception Handling
-
-- Use **`@ControllerAdvice`** + `@ExceptionHandler` for a global error handling layer.
-- Return a consistent error body:
-
-```json
-{ "error": "NOT_FOUND", "message": "User 42 not found", "timestamp": "2026-01-01T00:00:00Z" }
+**Configure**:
+```yaml
+resilience4j:
+  circuitbreaker:
+    instances:
+      payment:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+  retry:
+    instances:
+      payment:
+        max-attempts: 3
+        wait-duration: 500ms
+        exponential-backoff-multiplier: 2
 ```
 
-- Map domain exceptions to HTTP status codes in the advice layer, not in controllers.
-
 ---
 
-## Validation
-
-- **Bean Validation** annotations (`@NotNull`, `@Size`, `@Email`) on DTOs.
-- Validate at the controller layer with `@Valid` (or `@Validated`):
+## API Versioning
 
 ```java
-@PostMapping("/users")
-public UserDto create(@Valid @RequestBody CreateUserRequest request) { ... }
-```
-- Do **not** duplicate validation logic in services — the controller layer is the boundary.
+// Strategy 1: URI path versioning — simplest, most visible
+@RestController
+@RequestMapping("/api/v2/orders")
+public class OrderControllerV2 { ... }
 
----
+// Strategy 2: Content negotiation (Accept header) — cleaner URLs
+@GetMapping(path = "/orders", produces = "application/vnd.company.v2+json")
 
-## JPA / Hibernate (6.x)
-
-Spring Boot 3.x ships Hibernate 6.x. Key implications:
-
-- **Prefer `@Query` with JPQL** over derived query methods for non‑trivial queries — intent is explicit.
-- **Avoid `FetchType.EAGER`** — use `LAZY` and fetch associations explicitly with `JOIN FETCH` or `@EntityGraph`.
-- **`@BatchSize` or `@Fetch(SUBSELECT)`** to mitigate N+1 when lazy loading is unavoidable.
-- **DTO projections** — interface‑based or constructor‑expression projections. Never return full entities to the presentation layer.
-- **`@Version` for optimistic locking** on concurrently‑updated entities.
-- **Flyway / Liquibase for schema migration** — never use `ddl-auto: update` in production.
-
-**Kotlin‑specific Hibernate notes**:
-- Use **regular classes**, not data classes for `@Entity`. Data class `equals`/`hashCode` includes all properties, which breaks Hibernate proxies. Override `equals`/`hashCode` based on `@Id`.
-- `lateinit var` for lazy‑loaded mandatory associations.
-
----
-
-## Security (Spring Security 6.x)
-
-- **Method security** — `@PreAuthorize`, `@PostAuthorize` in the service layer for fine‑grained access control.
-- **Never hard‑code secrets** — `application.yml` placeholders resolved from environment variables or a vault.
-- **CSRF protection** — enable for state‑changing endpoints. Disable only for truly stateless APIs (JWT).
-- **BCrypt / Argon2** for password hashing. Never store plain‑text passwords.
-
----
-
-## Testing
-
-**Test slices** — prefer narrow, fast tests over heavy `@SpringBootTest`:
-- `@WebMvcTest` — controller layer, MockMvc.
-- `@DataJpaTest` — repository layer, auto‑configured in‑memory DB or Testcontainers.
-- `@JsonTest`, `@RestClientTest` — serialisation / HTTP client in isolation.
-
-**Tools**:
-- **JUnit 5** with `@Nested` for structured test organisation.
-- **AssertJ** (Java) / **Kotest assertions** (Kotlin) for fluent assertions.
-- **Mockito** (Java) / **MockK** (Kotlin) for mocking.
-- **Testcontainers** for integration tests requiring real infrastructure.
-
-```java
-@Testcontainers
-@DataJpaTest
-class OrderRepositoryTest {
-    @Container
-    static PostgreSQLContainer<?> db = new PostgreSQLContainer<>("postgres:16");
-    // tests use real PostgreSQL
-}
+// Strategy 3: Request parameter — easiest to test via curl
+@GetMapping(path = "/orders", params = "version=2")
 ```
 
----
-
-## Production Patterns
-
-- **Actuator** — expose `/health`, `/metrics`, `/info`. Secure behind a separate port or authentication.
-- **Structured logging** — Logback JSON encoder or Logstash encoder. Include `traceId` and `spanId` in every log line.
-- **Micrometer** for metrics — export to Prometheus, Datadog, or CloudWatch.
-- **Graceful shutdown** — `server.shutdown=graceful` with a reasonable timeout period.
-- **Health checks** — custom `HealthIndicator` implementations for critical external dependencies.
+**Recommendation**: For public APIs, use URI path versioning (`/v2/`). For internal microservices, prefer content negotiation or feature flags over versioning — you control both ends.
 
 ---
 
-## Package Structure
+## Graceful Shutdown Details
 
-**Package‑by‑feature**, not by technical layer:
+```yaml
+server:
+  shutdown: graceful
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+```
+- After SIGTERM: stop accepting new requests → finish in‑flight requests (up to `timeout`) → shutdown Spring context.
+- Health check should return `OUT_OF_SERVICE` during shutdown so load balancer drains traffic.
+
+---
+
+## Package Structure — Package-by-Feature
 
 ```
 com.example.order
-├── Order.java            (entity / domain)
+├── Order.java
 ├── OrderRepository.java
 ├── OrderService.java
 ├── OrderController.java
 ├── OrderDto.java
-└── OrderMapper.java
+├── OrderMapper.java
+└── OrderModuleConfiguration.java  // @Configuration for this feature
 ```
-
-Avoid top‑level `controllers/`, `services/`, `repositories/` directories — they scatter related code and hurt navigability as the project grows.
+Feature modules should own their configuration. No monolithic `@Configuration` class that wires the entire application.
 
 ---
 
 ## How to Use This Reference
 
-1. Apply `code-excellence` first.
+1. Apply `code-excellence` SKILL.md for the operation pipeline.
 2. Apply your language reference (`java.md` or `kotlin.md`).
-3. Use this reference for Spring Boot specifics.
-4. For deeper understanding, refer to the official Spring Boot 3.x reference documentation.
+3. Use this reference for Spring Boot expert-level specifics.
+4. For deeper dives: Spring Boot 3.x reference docs, "High-Performance Java Persistence" (Vlad Mihalcea).

@@ -1,104 +1,190 @@
-# Kotlin Best Practices
+# Kotlin Best Practices — Expert Level
 
 ## Purpose
 
-This reference encodes **Kotlin‑specific** best practices that, combined with
-the parent `code-excellence` skill, guide AI to produce production‑grade,
-idiomatic Kotlin code. For Spring Boot framework guidance, see `springboot.md`.
+This reference encodes **Kotlin‑specific expert practices** that, combined with
+the parent `code-excellence` skill and its pattern catalog, guide AI to produce
+production‑grade, idiomatic Kotlin code. For Spring Boot framework guidance, see `springboot.md`.
 
 ---
 
 ## Kotlin Language Idioms
 
-### Data Classes for DTOs & Value Objects
+### Data Classes
 ```kotlin
 data class User(val id: Long, val name: String)
 ```
-- Auto‑generates `equals`, `hashCode`, `toString`, and `copy`.
-- Do **not** use data classes for JPA entities — Hibernate proxies break `equals`/`hashCode`. Use regular classes and override `equals`/`hashCode` based on `@Id`.
-
-### val over var
-- Prefer immutability. Use `var` only when mutation is unavoidable.
-- `val` means read‑only reference, not deeply immutable — but it signals intent.
+- `equals`, `hashCode`, `toString`, `copy` — auto‑generated.
+- Do **not** use for JPA `@Entity`. Use regular classes and override `equals`/`hashCode` based on `@Id`.
 
 ### Null Safety
 ```kotlin
-val length = name?.length ?: 0              // safe call + elvis
-user!!.address                               // avoid unless absolutely certain
+val length = name?.length ?: 0
+user?.let { saveToDatabase(it) }
+// user!!.address — avoid. Crashes with NPE instead of a proper error.
 ```
-- Use `?.`, `?:`, and `let` for null‑safe chains. Avoid `!!` — it crashes where a proper error would serve better.
-- Never return `null` from a function that should always produce a value. Use `sealed class Result<T>` instead.
 
-### Extension Functions
-```kotlin
-fun String.isValidEmail(): Boolean = this.contains("@") && this.contains(".")
-```
-- Add behaviour to existing types without inheritance.
-- Keep extension functions focused and discoverable. Don't abuse them to hide complexity.
-
-### Sealed Classes & Interfaces
+### Sealed Classes & when
 ```kotlin
 sealed class Result<out T> {
     data class Success<T>(val data: T) : Result<T>()
     data class Error(val message: String) : Result<Nothing>()
 }
-```
-- Model restricted hierarchies. Combined with exhaustive `when`, guarantees all cases handled at compile time.
 
-### when Expression
-```kotlin
 val description = when (result) {
     is Result.Success -> "Got: ${result.data}"
-    is Result.Error -> "Failed: ${result.message}"
-}
+    is Result.Error   -> "Failed: ${result.message}"
+} // Exhaustive: adding a variant → compile error in every when
 ```
-- Exhaustive `when` with sealed classes forces handling of every branch.
-- No `else` needed when all branches are covered — future additions cause compile errors.
 
 ### Scope Functions
 ```kotlin
-user?.let { saveToDatabase(it) }            // null‑safe transformation
-val config = AppConfig().apply { ... }      // initialise and return self
+user?.let { repo.save(it) }           // null‑safe transform
+val config = AppConfig().apply { ... } // configure and return self
+val result = obj.run { compute() }     // compute from context
 ```
-- `let` — transform a nullable. `apply` — configure an object. `run` / `with` — compute a result.
-- Avoid deep nesting. If scope functions create a pyramid, extract named functions.
-
-### Collections API
-```kotlin
-val names = users.filter { it.isActive }.map { it.name }
-val grouped = users.groupBy { it.department }
-```
-- Use sequences (`asSequence()`) for large, multi‑step transformations to avoid intermediate collections.
-
-### Coroutines
-```kotlin
-suspend fun fetchUser(id: Long): User = withContext(Dispatchers.IO) { ... }
-
-// Structured concurrency
-coroutineScope {
-    val user = async { fetchUser(1) }
-    val order = async { fetchOrders(1) }
-    UserWithOrders(user.await(), order.await())
-}
-```
-- Use `suspend` functions for async, non‑blocking code.
-- **Never use `GlobalScope`**. Use `coroutineScope` or `supervisorScope` for structured concurrency.
-- `runBlocking` only at the application boundary (tests, `main`).
-- Use `Dispatchers.IO` for blocking I/O, `Dispatchers.Default` for CPU‑intensive work.
+- `let` = transform, `apply` = configure, `run`/`with` = compute.
+- Avoid deep nesting. Extract named functions past 2 levels.
 
 ---
 
-## Testing
+## Coroutines — Expert Depth
 
-- **Kotest** — Kotlin‑native testing with `StringSpec`, `ShouldSpec`, `DescribeSpec`. Or stick with **JUnit 5**.
-- **MockK** — `mockk<T>()`, `every { ... } returns ...`, `verify { ... }`. Supports coroutines, extension functions, and object mocking natively.
-- **Test behaviour, not implementation** — test through public APIs, not internal `private` functions.
+### Structured Concurrency
+```kotlin
+suspend fun loadUserWithOrders(id: Long) = coroutineScope {
+    val user = async { userRepo.findById(id) }
+    val orders = async { orderRepo.findByUserId(id) }
+    UserWithOrders(user.await(), orders.await())
+}
+// If either async fails, coroutineScope cancels the other automatically.
+// No orphaned coroutines. No leaked resources.
+```
+
+### Dispatcher Selection
+```kotlin
+withContext(Dispatchers.IO) { ... }       // Blocking I/O (DB, files, network)
+withContext(Dispatchers.Default) { ... }  // CPU‑intensive work
+// NEVER: GlobalScope.launch — uncontrolled lifecycle, impossible to cancel
+// NEVER: runBlocking inside a suspend function — blocks the thread
+```
+
+### SupervisorScope vs coroutineScope
+```kotlin
+// coroutineScope: one child fails → ALL siblings cancelled
+// supervisorScope: one child fails → siblings continue
+supervisorScope {
+    val analytics = async { trackEvent(e) }   // failure here...
+    val critical = async { processPayment(p) } // ...does NOT cancel this
+}
+```
+
+### Flow for Reactive Streams
+```kotlin
+flow { emit(loadPage(1)); emit(loadPage(2)) }
+    .flatMapMerge { page -> flow { emit(process(page)) } }
+    .catch { e -> log.error("Pipeline failed", e) }
+    .flowOn(Dispatchers.Default)
+    .collect { ... }
+```
+- Use `SharedFlow` for multicasting events (replaces `BroadcastChannel`).
+- Use `StateFlow` for observable state (replaces `LiveData` outside Android).
+
+### Coroutine Testing
+```kotlin
+@Test
+fun `loads user and orders concurrently`() = runTest {
+    val result = service.loadUserWithOrders(1)
+    assertEquals("Alice", result.user.name)
+    assertEquals(3, result.orders.size)
+    // runTest auto‑skips delays, controls virtual time
+}
+```
+
+---
+
+## K2 Compiler (Kotlin 2.0+)
+
+- **K2 is the new default** in Kotlin 2.0+. 2x faster compilation, better type inference.
+- **Migration**: Enable `kotlin.experimental.tryK2=true` in 1.9.x, go full K2 in 2.0.
+- **Breaking change**: Some implicit type coercions that worked in K1 are errors in K2. Test before upgrading.
+
+### data object (Kotlin 1.9+)
+```kotlin
+data object Idle : ConnectionState  // toString() returns "Idle" automatically
+```
+
+### entries (Kotlin 1.9+)
+```kotlin
+enum class Status { PENDING, ACTIVE, CLOSED }
+Status.entries  // replaces Status.values() — returns a List, not an Array
+```
+
+---
+
+## Inline (Value) Classes
+```kotlin
+@JvmInline
+value class UserId(val value: Long)
+
+fun findUser(id: UserId): User = ...
+// At runtime: just a Long. Zero allocation overhead.
+// Use for type‑safe IDs, Money, Email — any single‑field wrapper.
+```
+
+---
+
+## Kotlin + JPA Specifics
+
+### Entity Definition
+```kotlin
+@Entity
+class Order(
+    @Id @GeneratedValue var id: Long = 0,
+    var status: String,
+    @OneToMany(mappedBy = "order", fetch = LAZY)
+    var items: MutableList<OrderItem> = mutableListOf()
+) {
+    // Regular class, NOT data class. Override equals/hashCode on @Id.
+    override fun equals(other: Any?): Boolean = /* compare by id */
+    override fun hashCode(): Int = id.hashCode()
+
+    // Domain behavior lives here
+    fun addItem(item: OrderItem) { items.add(item); item.order = this }
+}
+```
+
+### Extensions for DTO Mapping
+```kotlin
+fun Order.toDto() = OrderDto(id = id, status = status,
+    items = items.map { it.toDto() })
+```
+
+---
+
+## Testing — Expert Tools
+
+```kotlin
+// Kotest — Kotlin-native testing
+class OrderServiceTest : StringSpec({
+    "should calculate total with discount" {
+        val order = Order(items = listOf(Item(price = 100), Item(price = 200)))
+        order.total shouldBe Money(270) // 10% discount applied
+    }
+})
+
+// MockK — coroutine-aware mocking
+val repo = mockk<OrderRepository>()
+coEvery { repo.findById(1) } returns Order(id = 1)
+coVerify { repo.findById(1) }
+```
 
 ---
 
 ## How to Use This Reference
 
-1. Apply `code-excellence` first for universal design principles.
-2. Use this reference for Kotlin‑specific idioms and syntax choices.
-3. If using Spring Boot, also consult `springboot.md`.
-4. For deeper understanding, refer to "Kotlin in Action" and the official Kotlin documentation.
+1. Apply `code-excellence` SKILL.md for the operation pipeline.
+2. Consult `decision-trees.md` for design choices.
+3. Use this reference for Kotlin‑specific implementation.
+4. If using Spring Boot, also consult `springboot.md`.
+5. For deeper dives: "Kotlin in Action", official Kotlin coroutines guide.
