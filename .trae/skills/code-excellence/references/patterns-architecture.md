@@ -353,6 +353,292 @@ com.example
 
 ---
 
+## Pattern: Event Schema Evolution
+
+**Use when**: Your system uses event-driven architecture with Kafka, Pulsar, or Kinesis, and you need to evolve event schemas without breaking consumers or producers.
+
+### Avro/Protobuf Compatibility Rules
+
+Schema registries enforce three compatibility levels. Choose one per topic/stream and never change it without a migration plan.
+
+| Compatibility | Definition | Producer | Consumer | When to Use |
+|--------------|-----------|----------|----------|-------------|
+| **Backward** | New schema can read data written by old schema | Can upgrade first | Must upgrade first | Most common — consumers read old events with new code |
+| **Forward** | Old schema can read data written by new schema | Must upgrade first | Can upgrade first | When producers roll out faster than consumers |
+| **Full** | Both backward and forward | Any order | Any order | Ideal but restrictive — requires defaults on all new fields |
+
+**Rule**: Default to **Backward** compatibility. It allows consumer-first deployment: deploy new consumer code, then deploy new producer code.
+
+```avro
+// Schema v1 — initial order event
+{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.example.events",
+  "fields": [
+    { "name": "orderId", "type": "string" },
+    { "name": "amount", "type": "double" },
+    { "name": "currency", "type": "string" }
+  ]
+}
+
+// Schema v2 — BACKWARD compatible (new optional field with default)
+// Old consumers ignore "customerId". New consumers read old events and get default null.
+{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.example.events",
+  "fields": [
+    { "name": "orderId", "type": "string" },
+    { "name": "amount", "type": "double" },
+    { "name": "currency", "type": "string" },
+    { "name": "customerId", "type": ["null", "string"], "default": null }
+  ]
+}
+
+// Schema v3 — NOT backward compatible (new required field without default)
+// Old consumers fail to read events written with v3. NEVER do this on a live topic.
+{
+  "type": "record",
+  "name": "OrderCreated",
+  "namespace": "com.example.events",
+  "fields": [
+    { "name": "orderId", "type": "string" },
+    { "name": "amount", "type": "double" },
+    { "name": "currency", "type": "string" },
+    { "name": "customerId", "type": "string" }  // FAILS: no default
+  ]
+}
+```
+
+**Expert note**: Avro's compatibility check is binary: it compares the new schema against the *latest registered* schema by default. Enable `BACKWARD_TRANSITIVE` to validate against *all* previous schema versions — essential for topics with long retention where consumers may lag by multiple versions.
+
+```java
+// Confluent Schema Registry client — register with explicit compatibility
+var schemaRegistryClient = new CachedSchemaRegistryClient("http://schema-registry:8081", 100);
+
+// Register backward-compatible schema
+var parser = new Schema.Parser();
+var schemaV2 = parser.parse("""
+    {"type":"record","name":"OrderCreated","namespace":"com.example.events",
+     "fields":[
+       {"name":"orderId","type":"string"},
+       {"name":"amount","type":"double"},
+       {"name":"currency","type":"string"},
+       {"name":"customerId","type":["null","string"],"default":null}
+     ]}
+    """);
+
+// This throws SchemaRegistryException if incompatible
+schemaRegistryClient.register("order-events-value", schemaV2);
+
+// Verify compatibility explicitly before registering
+boolean isCompatible = schemaRegistryClient.testCompatibility(
+    "order-events-value", schemaV2);
+if (!isCompatible) {
+    throw new IllegalStateException("Schema breaks compatibility — abort deployment");
+}
+```
+
+### Schema Registry Usage Patterns
+
+**Confluent Schema Registry**
+
+```java
+// Producer with AvroSerializer — schema auto-registered on first send
+Properties props = new Properties();
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, KafkaAvroSerializer.class);
+props.put("schema.registry.url", "http://schema-registry:8081");
+// CRITICAL: Prevent auto-registration of breaking changes in production
+props.put("auto.register.schemas", false);
+props.put("use.latest.version", true); // Use latest registered schema
+
+KafkaProducer<String, OrderCreated> producer = new KafkaProducer<>(props);
+```
+
+**AWS Glue Schema Registry**
+
+```java
+// GlueSchemaRegistryKafkaSerializer — same pattern, different backend
+Properties props = new Properties();
+props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka:9092");
+props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+    GlueSchemaRegistryKafkaSerializer.class.getName());
+props.put(AWSSchemaRegistryConstants.AWS_REGION, "us-east-1");
+props.put(AWSSchemaRegistryConstants.REGISTRY_NAME, "production-events");
+props.put(AWSSchemaRegistryConstants.SCHEMA_NAME, "OrderCreated");
+props.put(AWSSchemaRegistryConstants.COMPATIBILITY_SETTING,
+    Compatibility.BACKWARD.name()); // Enforced at registry level
+
+KafkaProducer<String, OrderCreated> producer = new KafkaProducer<>(props);
+```
+
+**Rule**: Always set `auto.register.schemas=false` in production. Schema registration must be an explicit CI/CD step with compatibility checks, not a runtime side effect.
+
+### Backward-Compatible Field Change Strategies
+
+| Change | Safe? | Strategy | Example |
+|--------|-------|----------|---------|
+| **Add field** | Yes | Add with `default` value (or union with null) | `"default": null` |
+| **Deprecate field** | Yes | Stop writing, keep in schema, document deprecated | `@Deprecated` in generated code |
+| **Rename field** | No (alone) | Use aliases in Avro, or add new + deprecate old | `"aliases": ["oldName"]` |
+| **Change type** | No | Add new field with new type, deprecate old | `amountDecimal` replaces `amount: double` |
+| **Remove field** | No | Deprecate first, remove only after ALL consumers upgraded | Plan 2+ release cycles |
+
+```avro
+// Renaming with alias — old consumers reading old data still work
+{
+  "name": "customerIdentifier",
+  "type": "string",
+  "aliases": ["customerId"]  // Avro resolves "customerId" to this field
+}
+```
+
+```java
+// Deprecation strategy in generated code + consumer logic
+@Deprecated
+public CharSequence getLegacyStatusCode() { ... }
+
+public CharSequence getStatus() { ... }
+
+// Consumer handles both during transition period
+public OrderStatus parseStatus(OrderCreatedEvent event) {
+    if (event.getStatus() != null) {
+        return OrderStatus.valueOf(event.getStatus().toString());
+    }
+    // Fallback to deprecated field for old events
+    return legacyStatusMap.get(event.getLegacyStatusCode().toString());
+}
+```
+
+**Expert note**: The Expansion-Contract pattern applies to schemas too. Phase 1: add new field (expand). Phase 2: migrate all producers to write new field. Phase 3: remove old field (contract). Never compress phases on high-volume topics.
+
+### Event Catalog Management
+
+An Event Catalog is the single source of truth for event discovery, ownership, and contracts. Without it, teams duplicate events, break contracts unknowingly, and lose track of consumers.
+
+**Required metadata per event**:
+
+```yaml
+# event-catalog/order-created.yaml
+name: OrderCreated
+namespace: com.example.orders
+owner: team-orders@example.com
+schemaVersion: "2.1.0"
+compatibility: BACKWARD
+topic: order-events
+partitionKey: orderId
+
+consumers:
+  - team-payments@example.com
+  - team-analytics@example.com
+  - team-fulfillment@example.com
+
+changelog:
+  - version: "1.0.0"
+    date: 2025-01-15
+    changes: Initial schema
+  - version: "2.0.0"
+    date: 2025-04-10
+    changes: Added customerId field (nullable)
+  - version: "2.1.0"
+    date: 2025-06-20
+    changes: Deprecated legacyStatusCode, added status enum
+
+deprecatedFields:
+  - name: legacyStatusCode
+    deprecatedSince: "2.1.0"
+    removalPlanned: "2025-12-01"
+```
+
+**Rule**: Every event type MUST have an owner team and a documented consumer list. The owner approves all schema changes and notifies consumers before deployment.
+
+**Documentation standards**:
+- AsyncAPI specification for every async API (events, WebSockets)
+- Example payload for every schema version
+- Error scenarios: what happens if a required field is malformed
+- Retry semantics: at-least-once, exactly-once, or at-most-once
+
+```java
+// AsyncAPI-driven code generation (Spring Cloud Contract style)
+// The AsyncAPI spec becomes the contract test
+@ContractTest
+public class OrderCreatedContractTest {
+    @Test
+    public void orderCreatedEventMatchesAsyncApiSchema() {
+        var event = OrderCreated.newBuilder()
+            .setOrderId("ORD-123")
+            .setAmount(99.99)
+            .setCurrency("USD")
+            .setCustomerId("CUST-456")
+            .build();
+
+        // Validates against the AsyncAPI schema registered in the catalog
+        AsyncApiValidator.assertValid("order-created", event.toString());
+    }
+}
+```
+
+### Common Schema Evolution Anti-Patterns
+
+**Anti-Pattern 1: Breaking changes without versioning**
+
+```avro
+// WRONG: Changing type in-place without version bump
+// v1: { "name": "amount", "type": "double" }
+// v2 (ILLEGAL): { "name": "amount", "type": "string" }  // Breaks ALL consumers
+```
+
+**Fix**: Add a new field (`amountDecimal: string`), deprecate old, remove after migration.
+
+**Anti-Pattern 2: Incompatible type changes via union tricks**
+
+```avro
+// WRONG: Union order matters in Avro. This is NOT backward compatible.
+// Old: { "name": "value", "type": "long" }
+// New: { "name": "value", "type": ["null", "long", "string"] }  // FAILS
+```
+
+**Fix**: Avro readers use the schema's union index. Adding types before existing ones shifts indices and corrupts deserialization. Only append new types to the END of unions.
+
+**Anti-Pattern 3: Missing default values on new fields**
+
+```avro
+// WRONG: New required field without default — old consumers cannot read new events
+{ "name": "taxAmount", "type": "double" }  // FAILS backward compatibility
+```
+
+**Fix**: Always provide defaults. If no sensible default exists, use a union with null and default to null.
+
+```avro
+// CORRECT
+{ "name": "taxAmount", "type": ["null", "double"], "default": null }
+```
+
+**Anti-Pattern 4: Silent schema auto-registration in production**
+
+```java
+// WRONG: Default auto.register.schemas=true lets any producer push breaking changes
+props.put("auto.register.schemas", true);  // DANGEROUS in production
+```
+
+**Fix**: Disable auto-registration. Use CI/CD pipelines with `maven-avro-plugin` or `gradle-avro-plugin` to register schemas explicitly after compatibility checks pass.
+
+**Anti-Pattern 5: Removing a field before all consumers upgrade**
+
+```avro
+// WRONG: Removing "legacyStatusCode" while team-erp still reads it
+{ "name": "status", "type": "string" }
+// legacyStatusCode removed — team-erp consumer crashes on deserialization
+```
+
+**Fix**: Maintain a consumer lag dashboard. Remove fields only when consumer offsets for ALL consumer groups have passed the last event containing the old field, OR after a published deprecation timeline (minimum 2 release cycles).
+
+---
+
 ## Quick Architecture Checklist
 
 Before approving system design:

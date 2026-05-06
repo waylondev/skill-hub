@@ -338,6 +338,702 @@ public PaymentResult charge(CreatePaymentRequest request) {
 
 ---
 
+## Pattern: SAST Integration in CI/CD
+
+**Use when**: Every commit and pull request must be scanned for vulnerabilities before reaching production. SAST (Static Application Security Testing) analyzes source code without execution.
+
+### SonarQube — Quality Gate Enforcement
+
+```yaml
+# .github/workflows/sast-sonarqube.yml
+name: SAST — SonarQube
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # required for blame/lineage
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+
+      - name: Build and analyze
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw verify sonar:sonar \
+            -Dsonar.projectKey=myorg_myapp \
+            -Dsonar.host.url=${{ vars.SONAR_HOST }} \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+```
+
+**Quality Gate rules (minimum)**:
+- New issues (blocker/critical) = 0
+- Code coverage on new code ≥ 80%
+- Duplicated lines on new code ≤ 3%
+- Security rating on new code = A
+
+### CodeQL — GitHub-Native Semantic Analysis
+
+```yaml
+# .github/workflows/sast-codeql.yml
+name: SAST — CodeQL
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 9 * * 1'  # weekly deep scan
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java
+          queries: security-extended,security-and-quality
+          config: |
+            paths-ignore:
+              - '**/test/**'
+              - '**/generated/**'
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java"
+```
+
+### Semgrep — Fast Lightweight Scanning
+
+```yaml
+# .github/workflows/sast-semgrep.yml
+name: SAST — Semgrep
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: |
+          semgrep ci \
+            --config=auto \
+            --config=p/owasp-top-ten \
+            --config=p/cwe-top-25 \
+            --json --output=semgrep-results.json
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep-results.json
+```
+
+**SAST layering strategy**:
+| Layer | Tool | Trigger | Purpose |
+|-------|------|---------|---------|
+| L1 | Semgrep | Every PR | Fast feedback (< 2 min), blocks obvious issues |
+| L2 | CodeQL | Every PR + weekly | Deep semantic analysis, CWE coverage |
+| L3 | SonarQube | Every push | Quality gate, technical debt tracking, coverage |
+
+---
+
+## Pattern: DAST Automation
+
+**Use when**: The running application must be tested for vulnerabilities from the outside (runtime behavior, auth bypass, misconfigurations). DAST (Dynamic Application Security Testing) requires a deployed instance.
+
+### OWASP ZAP — Baseline Scan in CI
+
+```yaml
+# .github/workflows/dast-zap.yml
+name: DAST — OWASP ZAP Baseline
+on:
+  deployment_status:
+    types: [success]  # trigger after staging deploy
+
+jobs:
+  zap-baseline:
+    runs-on: ubuntu-latest
+    if: github.event.deployment.environment == 'staging'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ vars.STAGING_URL }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'  # include passive scan alerts
+          issue_title: 'ZAP Baseline Scan'
+          fail_action: true   # fail build on HIGH risk
+
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report
+          path: report_*.html
+```
+
+```
+# .zap/rules.tsv
+# format: pluginId  alert  threshold  strength  tag
+40012   Cross Site Scripting (Reflected)  HIGH  DEFAULT  xss
+40014   Cross Site Scripting (Persistent)  HIGH  DEFAULT  xss
+40018   SQL Injection  HIGH  DEFAULT  sqli
+90022   Application Error Disclosure  MEDIUM  DEFAULT  info
+```
+
+### OWASP ZAP — Authenticated Scan (API)
+
+```yaml
+# .github/workflows/dast-zap-authenticated.yml
+name: DAST — ZAP Authenticated API Scan
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'  # nightly against staging
+
+jobs:
+  zap-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch access token
+        id: token
+        run: |
+          TOKEN=$(curl -s -X POST ${{ vars.STAGING_URL }}/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"${{ secrets.DAST_USER }}","password":"${{ secrets.DAST_PASS }}"}' \
+            | jq -r '.accessToken')
+          echo "token=$TOKEN" >> $GITHUB_OUTPUT
+
+      - name: ZAP API Scan
+        uses: zaproxy/action-api-scan@v0.7.0
+        with:
+          target: ${{ vars.STAGING_URL }}/api/openapi.json
+          format: openapi
+          cmd_options: >
+            -config replacer.full_list\(0\).description=auth
+            -config replacer.full_list\(0\).enabled=true
+            -config replacer.full_list\(0\).matchtype=REQ_HEADER
+            -config replacer.full_list\(0\).matchstr=Authorization
+            -config replacer.full_list\(0\).regex=false
+            -config replacer.full_list\(0\).replacement=Bearer ${{ steps.token.outputs.token }}
+```
+
+### Burp Suite Enterprise — Scheduled Scanning
+
+```java
+// Burp Enterprise REST client for CI integration
+@Component
+public class BurpEnterpriseClient {
+    private final WebClient client;
+
+    public BurpEnterpriseClient(@Value("${burp.url}") String baseUrl,
+                                @Value("${burp.api-key}") String apiKey) {
+        this.client = WebClient.builder()
+            .baseUrl(baseUrl)
+            .defaultHeader("Authorization", apiKey)
+            .build();
+    }
+
+    public String startScan(String siteId, String scanConfigurationId) {
+        return client.post()
+            .uri("/api/v1.0/scans")
+            .bodyValue(Map.of(
+                "site_id", siteId,
+                "scan_configuration_ids", List.of(scanConfigurationId),
+                "schedule", Map.of("start_date", Instant.now().toString())
+            ))
+            .retrieve()
+            .bodyToMono(String.class)
+            .block();
+    }
+
+    public ScanStatus getStatus(String scanId) {
+        return client.get()
+            .uri("/api/v1.0/scans/{id}", scanId)
+            .retrieve()
+            .bodyToMono(ScanStatus.class)
+            .block();
+    }
+
+    public boolean hasCriticalFindings(String scanId) {
+        var status = getStatus(scanId);
+        return status.issueCounts().getOrDefault("critical", 0) > 0
+            || status.issueCounts().getOrDefault("high", 0) > 0;
+    }
+}
+```
+
+**DAST execution model**:
+| Stage | Target | Tool | Auth | Frequency |
+|-------|--------|------|------|-----------|
+| Pre-prod | Staging | ZAP Baseline | None | Every deploy |
+| Pre-prod | Staging | ZAP API Scan | Bearer token | Every deploy |
+| Production | Prod (read-only) | Burp Enterprise | Session cookie | Weekly |
+| Production | Prod (critical paths) | Burp Enterprise | Service account | Daily |
+
+---
+
+## Pattern: Supply Chain Security
+
+**Use when**: Dependencies, build artifacts, and container images must be traceable, verifiable, and tamper-proof from source to runtime.
+
+### SBOM Generation — Syft + CycloneDX
+
+```yaml
+# .github/workflows/supply-chain.yml
+name: Supply Chain — SBOM & Sign
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # for Sigstore OIDC
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SBOM (Java)
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+
+      - name: Generate SBOM (Container)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ghcr.io/myorg/myapp:${{ github.ref_name }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            sbom.cyclonedx.json
+            sbom.spdx.json
+```
+
+```java
+// Runtime SBOM validation — reject images without provenance
+@Component
+public class SbomVerifier {
+    private final RestClient client;
+
+    public boolean verifyProvenance(String imageUri, String expectedDigest) {
+        var sbom = client.get()
+            .uri("https://sbom.internal/api/v1/sbom?image={image}", imageUri)
+            .retrieve()
+            .body(SbomDocument.class);
+
+        if (sbom == null || !sbom.matchesDigest(expectedDigest)) {
+            throw new SupplyChainException("No SBOM or digest mismatch for " + imageUri);
+        }
+        return true;
+    }
+}
+```
+
+### Artifact Signing — Sigstore/Cosign
+
+```yaml
+# .github/workflows/sign.yml
+name: Sign Artifacts
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # OIDC for Sigstore
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Build and push image
+        id: build
+        run: |
+          docker build -t ghcr.io/myorg/myapp:${{ github.ref_name }} .
+          docker push ghcr.io/myorg/myapp:${{ github.ref_name }}
+          echo "digest=$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/myorg/myapp:${{ github.ref_name }})" >> $GITHUB_OUTPUT
+
+      - name: Sign image with Cosign (keyless)
+        run: |
+          cosign sign --yes \
+            ${{ steps.build.outputs.digest }}
+
+      - name: Verify signature
+        run: |
+          cosign verify \
+            --certificate-identity-regexp='https://github.com/myorg/myapp/.github/workflows/.*' \
+            --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
+            ${{ steps.build.outputs.digest }}
+```
+
+```java
+// Runtime verification — Kubernetes admission controller pattern
+@Component
+public class CosignVerifier {
+    public boolean verifyImage(String imageWithDigest) {
+        var process = new ProcessBuilder(
+            "cosign", "verify",
+            "--certificate-identity-regexp", "https://github.com/myorg/.*",
+            "--certificate-oidc-issuer", "https://token.actions.githubusercontent.com",
+            imageWithDigest
+        ).redirectErrorStream(true).start();
+
+        try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            var output = reader.lines().collect(Collectors.joining("\n"));
+            return process.waitFor() == 0 && output.contains("Verified OK");
+        } catch (IOException | InterruptedException e) {
+            throw new SupplyChainException("Cosign verification failed", e);
+        }
+    }
+}
+```
+
+### Dependency Update Automation — Dependabot & Renovate
+
+```yaml
+# .github/dependabot.yml
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "myorg/security-team"
+    labels:
+      - "dependencies"
+      - "security"
+    ignore:
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      spring-patch:
+        patterns:
+          - "org.springframework.*"
+        update-types: ["patch"]
+```
+
+```json
+// renovate.json — advanced grouping and auto-merge for patches
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 9am on Monday"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["patch"],
+      "matchCurrentVersion": ">= 1.0.0",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchPackagePatterns": ["^org.springframework.boot"],
+      "groupName": "Spring Boot ecosystem",
+      "matchUpdateTypes": ["minor", "patch"]
+    },
+    {
+      "matchPackagePatterns": ["^com.fasterxml.jackson"],
+      "groupName": "Jackson libraries",
+      "schedule": ["at any time"]
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security-critical"]
+  }
+}
+```
+
+**Supply chain defense layers**:
+| Layer | Control | Tool |
+|-------|---------|------|
+| Source | Signed commits, branch protection | GPG, GitHub rulesets |
+| Dependencies | Automated updates, vulnerability scanning | Dependabot, Renovate, OWASP DC |
+| Build | Reproducible builds, pinned actions | Maven locked versions, commit-SHA actions |
+| Artifact | SBOM generation, artifact signing | Syft, Cosign, Notary |
+| Deployment | Image signature verification, admission control | Kyverno, OPA/Gatekeeper |
+
+---
+
+## Pattern: Secret Management
+
+**Use when**: Applications need credentials, API keys, certificates, or encryption keys without exposing them in source code, environment files, or logs.
+
+### HashiCorp Vault — Dynamic Secrets & Lease
+
+```java
+@Configuration
+public class VaultConfig {
+
+    @Bean
+    public VaultTemplate vaultTemplate(VaultEndpoint endpoint,
+                                       ClientAuthentication authentication) {
+        return new VaultTemplate(endpoint, authentication);
+    }
+
+    @Bean
+    public ClientAuthentication kubernetesAuth() {
+        // Kubernetes auth: pod service account → Vault identity
+        var properties = new KubernetesAuthenticationOptions.KubernetesAuthenticationOptionsBuilder()
+            .role("myapp-role")
+            .jwtSupplier(new KubernetesServiceAccountTokenFile())
+            .build();
+        return new KubernetesAuthentication(properties, restOperations());
+    }
+}
+
+@Service
+public class DatabaseCredentialService {
+    private final VaultTemplate vault;
+
+    public DatabaseCredentials rotateCredentials() {
+        // Dynamic secret: Vault generates short-lived DB credentials
+        var response = vault.read("database/creds/myapp-readwrite");
+        var username = response.getData().get("username");
+        var password = response.getData().get("password");
+        var leaseDuration = response.getLeaseDuration(); // e.g., 1 hour
+
+        return new DatabaseCredentials(username, password, leaseDuration);
+    }
+
+    @Scheduled(fixedRate = 30 * 60 * 1000) // rotate before expiry
+    public void renewLease() {
+        vault.doWithSession(rest -> {
+            rest.postForObject("/sys/leases/renew",
+                Map.of("lease_id", currentLeaseId), Map.class);
+            return null;
+        });
+    }
+}
+```
+
+```hcl
+# Vault policy: myapp-policy.hcl
+path "secret/data/myapp/*" {
+  capabilities = ["read"]
+}
+
+path "database/creds/myapp-readwrite" {
+  capabilities = ["read"]
+}
+
+path "transit/decrypt/myapp" {
+  capabilities = ["update"]
+}
+
+path "transit/encrypt/myapp" {
+  capabilities = ["update"]
+}
+```
+
+### AWS Secrets Manager — Rotation with Lambda
+
+```java
+@Component
+public class AwsSecretManagerClient {
+    private final SecretsManagerClient client;
+
+    public AwsSecretManagerClient() {
+        this.client = SecretsManagerClient.builder()
+            .region(Region.of(System.getenv("AWS_REGION")))
+            .build();
+    }
+
+    public String getSecret(String secretName) {
+        var request = GetSecretValueRequest.builder().secretId(secretName).build();
+        return client.getSecretValue(request).secretString();
+    }
+
+    public DatabaseCredentials getDatabaseCredentials() {
+        var json = getSecret("prod/myapp/database");
+        return new ObjectMapper().readValue(json, DatabaseCredentials.class);
+    }
+}
+```
+
+```yaml
+# AWS CloudFormation: Secret + automatic rotation
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  DatabaseSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: prod/myapp/database
+      Description: RDS master credentials
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "dbadmin"}'
+        GenerateStringKey: password
+        PasswordLength: 32
+        ExcludeCharacters: '"@/\'
+
+  SecretRotationSchedule:
+    Type: AWS::SecretsManager::RotationSchedule
+    Properties:
+      SecretId: !Ref DatabaseSecret
+      RotationLambdaARN: !GetAtt RotationLambda.Arn
+      RotationRules:
+        AutomaticallyAfterDays: 30
+
+  RotationLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: java21
+      Handler: com.myapp.rotation.SecretRotationHandler
+      Code: s3://myapp-lambda-artifacts/rotation-1.0.0.jar
+      Environment:
+        Variables:
+          SECRETS_MANAGER_ENDPOINT: https://secretsmanager.${AWS::Region}.amazonaws.com
+```
+
+### Kubernetes External Secrets Operator (ESO)
+
+```yaml
+# ExternalSecret: syncs Vault secret into K8s Secret
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: myapp-database-credentials
+  namespace: production
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    name: myapp-db-secret
+    creationPolicy: Owner
+    template:
+      type: Opaque
+      data:
+        DB_HOST: "{{ .db_host }}"
+        DB_USER: "{{ .db_user }}"
+        DB_PASS: "{{ .db_pass }}"
+  data:
+    - secretKey: db_host
+      remoteRef:
+        key: secret/data/myapp/database
+        property: host
+    - secretKey: db_user
+      remoteRef:
+        key: secret/data/myapp/database
+        property: username
+    - secretKey: db_pass
+      remoteRef:
+        key: secret/data/myapp/database
+        property: password
+---
+# ClusterSecretStore: Vault connection
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: vault-backend
+spec:
+  provider:
+    vault:
+      server: https://vault.internal:8200
+      path: secret
+      version: v2
+      auth:
+        kubernetes:
+          mountPath: kubernetes
+          role: external-secrets
+          serviceAccountRef:
+            name: external-secrets-sa
+            namespace: external-secrets
+```
+
+```java
+// Spring Boot consumes the synced K8s Secret as properties
+@Configuration
+public class DataSourceConfig {
+
+    @Bean
+    public DataSource dataSource(
+            @Value("${DB_HOST}") String host,
+            @Value("${DB_USER}") String user,
+            @Value("${DB_PASS}") String pass) {
+        return DataSourceBuilder.create()
+            .url("jdbc:postgresql://" + host + ":5432/myapp")
+            .username(user)
+            .password(pass)
+            .build();
+    }
+}
+```
+
+### Secret Management Best Practices
+
+| Practice | Implementation | Anti-Pattern |
+|----------|---------------|--------------|
+| **Never commit secrets** | Pre-commit hooks (`detect-secrets`, `gitleaks`) | Hardcoded keys in `application.yml` |
+| **Inject at runtime** | Vault agent, ESO, AWS Secrets Manager | `.env` files in Docker images |
+| **Rotate automatically** | Vault dynamic secrets, AWS rotation Lambda | Static credentials shared across environments |
+| **Scope by environment** | Separate Vault namespaces / AWS accounts | Same secret used in dev/staging/prod |
+| **Audit access** | Vault audit logs, CloudTrail for Secrets Manager | No logging of who read which secret |
+| **Encrypt in transit & at rest** | TLS 1.3 to Vault, envelope encryption | Plaintext secret storage in etcd |
+| **Fail closed** | App crashes if secret unavailable | Default fallback to empty/insecure credentials |
+
+---
+
 ## Quick Security Checklist
 
 Before merging ANY code:

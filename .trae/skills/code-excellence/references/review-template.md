@@ -15,6 +15,8 @@ follow this template exactly. Each section has a specific focus and produces act
    - **Issue**: what is wrong
    - **Severity**: CRITICAL / WARNING / SUGGESTION
    - **Fix**: concrete recommendation
+3. Execute Section 7 (RIPER-5 REFLECT) for self-calibration before finalizing
+4. Output MUST follow the Structured Output Format in Section 8
 
 ---
 
@@ -81,6 +83,17 @@ Scan for each anti-pattern in `anti-patterns.md`:
 | AP-14: Global Mutable State (Python) | ☐ | | |
 | AP-15: Bare Except (Python) | ☐ | | |
 | AP-16: Data Class Entity (Kotlin) | ☐ | | |
+| AP-17: Long-Running Transaction | ☐ | | |
+| AP-18: Distributed Lock Not Released | ☐ | | |
+| AP-19: Cache Avalanche/Breakdown/Penetration | ☐ | | |
+| AP-20: Logging Sensitive Data | ☐ | | |
+| AP-21: Missing Timeout on External Call | ☐ | | |
+| AP-22: Circular Dependency | ☐ | | |
+| AP-23: God Method (>60 lines) | ☐ | | |
+| AP-24: Deep Inheritance Hierarchy | ☐ | | |
+| AP-25: Non-Atomic Multi-Step Mutation | ☐ | | |
+| AP-26: Pagination Without Upper Bound | ☐ | | |
+| AP-27: Untrusted Data Passed to Dangerous Sink | ☐ | | |
 
 ---
 
@@ -151,10 +164,79 @@ Scan for each anti-pattern in `anti-patterns.md`:
 
 ---
 
+## Section 7: RIPER-5 REFLECT Phase
+
+After completing sections 1-6, perform a structured reflection before finalizing the review.
+
+### Assumption Verification
+- [ ] What assumptions did I make about the codebase? Are they valid?
+- [ ] Did I assume the author had access to context I have? (e.g., `context-branching.md` profile)
+- [ ] Did I miss any implicit requirements not stated in the PR description?
+
+### Decision Review
+- [ ] Would I make the same architectural decisions if I wrote this code?
+- [ ] Are my recommendations consistent with `decision-trees.md` and `patterns.md`?
+- [ ] Am I suggesting over-engineering for the current context? (e.g., enterprise patterns for MVP)
+- [ ] Did I consider the cost of my recommendations vs. the benefit?
+
+### Improvement Opportunities
+- [ ] What did I learn from this review that I can apply to future reviews?
+- [ ] Are there systemic issues (repeated anti-patterns) that need team-wide attention?
+- [ ] Should any findings be escalated to ADR or architecture discussion?
+
+---
+
+## Structured Output Format (MANDATORY)
+
+All code reviews MUST follow this exact structured format. No free-form paragraphs.
+
+```
+## Code Review: [Component Name]
+
+### Executive Summary
+[2-3 sentences summarizing overall quality and key concerns]
+
+### Critical Issues (🔴 Blocker — must fix before merge)
+| # | ID | Location | Issue | Fix |
+|---|----|----------|-------|-----|
+| 1 | [AP-3] | `OrderService.java:42` | Swallowed exception without rethrow or recovery. Order proceeds as unpaid. | `throw new PaymentFailedException(...)` |
+
+### Major Issues (🟡 Important — should fix)
+| # | ID | Location | Issue | Fix |
+|---|----|----------|-------|-----|
+| 1 | [AP-5] | `OrderController.java:28` | N+1: stream calls `paymentRepo.findByOrderId()` per iteration. | Batch fetch or JOIN FETCH. |
+
+### Minor Issues (🔵 Nice-to-have)
+| # | Location | Issue | Fix |
+|---|----------|-------|-----|
+| 1 | `OrderService.java:15` | `validateOrder()` embedded in `create()`. | Extract to dedicated method. |
+
+### Positive Observations (✅ Good Work)
+- [ ] Clean separation between controller and service layers
+- [ ] Comprehensive error handling with typed exceptions
+- [ ] Good use of `decision-trees.md` DT-4 (Exception vs Result)
+
+### Recommendations
+[Strategic suggestions for improvement, refactoring opportunities, or future considerations]
+
+### Review Confidence
+[High / Medium / Low] — based on context available and code complexity
+
+### Estimated Risk Level
+[Low / Medium / High / Critical] — overall risk assessment of merging
+
+### Approval Status
+- [ ] ✅ Approve (ready to merge)
+- [ ] 🔄 Request Changes (address critical/major issues)
+- [ ] 💬 Comment (feedback provided, no blocking issues)
+```
+
+---
+
 ## Review Decision
 
 ```
-APPROVED — No CRITICAL issues, ≤ 2 WARNINGs, all SUGGESTIONS noted
+APPROVED    — No CRITICAL issues, ≤ 2 WARNINGs, all SUGGESTIONS noted
 CONDITIONAL — WARNINGs exist but non-blocking, SUGGESTIONS accepted
-REJECTED   — CRITICAL issues exist, or too many WARNINGs
+REJECTED    — CRITICAL issues exist, or too many WARNINGs
 ```

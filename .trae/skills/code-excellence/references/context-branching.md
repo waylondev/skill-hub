@@ -169,6 +169,185 @@ Always determine the context profile FIRST, then apply the appropriate variant.
 3. **Apply the context-appropriate variant**, not the generic advice
 4. **When the context changes** (e.g., MVP graduates to Scale-Up), revisit decisions
 
+---
+
+## New Context Profiles
+
+### Profile 5: AI/ML Project
+- **Priority**: Reproducibility > experiment velocity > scalability
+- **Team**: Data scientists + ML engineers + platform engineers
+- **Lifespan**: Models retrained frequently; pipelines evolve continuously
+
+#### Characteristics
+- Experiment-driven development: most features start as notebooks
+- Heavy data dependencies: training data, feature stores, model artifacts
+- GPU resource constraints: training is expensive; inference must be cost-efficient
+- Model versioning: every deployed model must be traceable to training run
+- Reproducibility: same code + same data + same hyperparameters = same model
+- Regulatory sensitivity: model fairness, explainability, data privacy
+
+#### Architectural Implications
+- Separate training and serving pipelines; never train in production
+- Feature store (online + offline) ensures training/serving consistency
+- Model registry tracks lineage: code version → data version → hyperparameters → metrics → artifact
+- A/B testing infrastructure for model comparison
+- Data versioning (DVC, LakeFS) alongside code versioning
+
+#### Code Style Shifts
+- Python-first for model code; Java/Go for serving infrastructure
+- Configuration-driven: hyperparameters, model architectures, data splits in YAML/JSON
+- Notebook code must be refactored into tested modules before production
+- Defensive data handling: schema validation, drift detection, outlier handling
+
+#### Quality Gate Differences
+| Gate | AI/ML Standard |
+|------|---------------|
+| Test Coverage | 80%+ for serving code; 60%+ for training pipelines |
+| Model Testing | Unit tests for feature engineering; integration tests for inference; shadow testing for new models |
+| Data Quality | Great Expectations / dbt tests on input data; anomaly detection on features |
+| Performance | Inference latency p99 < 100ms; throughput benchmarks per model version |
+| Fairness | Bias metrics (demographic parity, equalized odds) within thresholds |
+
+#### Anti-Patterns to Watch For
+- **Training-serving skew**: different feature computation in training vs inference
+- **Data leakage**: test data contaminating training through temporal or ID leakage
+- **Undocumented experiments**: notebooks without version control or parameter logging
+- **Model bloat**: deploying oversized models without quantization or distillation
+- **No monitoring**: deployed model with no drift detection or performance tracking
+
+---
+
+### Profile 6: Frontend Project
+- **Priority**: User experience > developer experience > bundle size
+- **Team**: Frontend engineers, UX designers, product managers
+- **Lifespan**: Months to years; frequent UI iterations
+
+#### Characteristics
+- User-facing: every pixel affects conversion and satisfaction
+- Build-time complexity: bundling, transpilation, tree-shaking, code splitting
+- Runtime environment: diverse browsers, devices, network conditions
+- State complexity: local UI state, server state, global app state, URL state
+- Accessibility: legal requirement in many jurisdictions
+
+#### Architectural Implications
+- Component architecture: atomic design, compound components, or headless UI
+- State management decision tree: Local → Context → Zustand → Redux → React Query
+- Rendering strategy: CSR vs SSR vs SSG vs ISR — choose based on content freshness and SEO needs
+- Asset optimization: images (WebP/AVIF), fonts (subset), icons (SVG sprite)
+- Build pipeline: Vite/Webpack/Rspack with bundle analysis budgets
+
+#### Code Style Shifts
+- TypeScript strict mode: `strictNullChecks`, `noImplicitAny`, `noUncheckedIndexedAccess`
+- Component design: single responsibility, explicit props, composition over inheritance
+- Hooks discipline: custom hooks for reusable logic; no logic in JSX
+- CSS architecture: design tokens, utility-first (Tailwind) or CSS Modules
+
+#### Quality Gate Differences
+| Gate | Frontend Standard |
+|------|------------------|
+| Test Coverage | 70%+ unit (React Testing Library); 80%+ critical user flows (E2E) |
+| Accessibility | WCAG 2.1 AA compliance; axe-core automated checks; keyboard navigation tested |
+| Performance | Lighthouse score ≥ 90; Core Web Vitals (LCP < 2.5s, FID < 100ms, CLS < 0.1) |
+| Bundle Size | Budget enforced in CI; main chunk < 200KB gzipped |
+| Browser Support | Last 2 versions + evergreen; polyfills only for critical features |
+
+#### Anti-Patterns to Watch For
+- **Prop drilling**: passing props through 3+ component layers instead of context or state management
+- **Excessive re-renders**: missing `memo`, `useMemo`, `useCallback` on expensive components
+- **Any types**: `any` in TypeScript defeats the purpose; use `unknown` with type guards
+- **Inline styles**: mixing CSS-in-JS with inline styles creates specificity chaos
+- **Ignoring cleanup**: `useEffect` without cleanup causes memory leaks and stale subscriptions
+
+---
+
+### Profile 7: Mobile Project
+- **Priority**: Offline functionality > battery efficiency > startup time
+- **Team**: Mobile engineers, backend-for-frontend developers, QA
+- **Lifespan**: Years; app store release cycles slow iteration
+
+#### Characteristics
+- Device constraints: limited memory, battery, storage, CPU
+- Network variability: offline-first is not optional
+- Platform gatekeepers: App Store / Play Store review processes
+- Native capabilities: camera, GPS, push notifications, biometric auth
+- Update friction: users may skip updates; backward compatibility matters
+
+#### Architectural Implications
+- Offline-first: local database (SQLite/Room/Core Data) syncs with backend
+- State sync: conflict resolution (last-write-wins vs CRDT vs custom merge)
+- Push notification strategy: FCM/APNs with fallback polling
+- Battery optimization: batch network requests, reduce GPS polling, defer background work
+- Code sharing: React Native/Flutter for cross-platform; native modules for platform-specific features
+
+#### Code Style Shifts
+- Platform idioms: follow iOS Human Interface Guidelines / Material Design
+- Navigation: declarative (React Navigation, Flutter Navigator 2.0) with deep linking
+- State management: Redux/MobX/Zustand (React Native); BLoC/Riverpod (Flutter)
+- Error handling: user-friendly messages; retry with exponential backoff; offline indicators
+
+#### Quality Gate Differences
+| Gate | Mobile Standard |
+|------|----------------|
+| Test Coverage | 70%+ unit; 60%+ integration; critical flows covered by E2E (Maestro/Detox) |
+| Performance | Cold start < 2s; memory usage < 150MB; battery drain < 5% per hour of active use |
+| Offline | Core flows work offline; sync queue handles conflicts gracefully |
+| Accessibility | Screen reader support; dynamic type; high contrast mode |
+| Store Compliance | No private API usage; privacy manifest (iOS); data safety declaration (Android) |
+
+#### Anti-Patterns to Watch For
+- **Synchronous network on main thread**: blocks UI; always use async patterns
+- **Storing sensitive data insecurely**: use Keychain/Keystore; never plain UserDefaults/SharedPreferences
+- **Ignoring app lifecycle**: background/foreground transitions must pause/resume resources
+- **Hardcoded API URLs**: use build configuration for environment switching
+- **No crash reporting**: unhandled exceptions must be captured (Firebase Crashlytics, Sentry)
+
+---
+
+## Updated Branching Tables (Including New Contexts)
+
+### Testing Depth (Extended)
+
+| Context | Unit Test Coverage | Integration Test Strategy | E2E Tests |
+|---------|-------------------|--------------------------|-----------|
+| Startup MVP | Critical paths only (~40%) | Manual or none | Smoke test only |
+| Scale-Up | Core domain 80%+ | Key integrations: Testcontainers | Critical user journeys |
+| Enterprise | 90%+ branch coverage | Every external integration | Full regression suite |
+| Critical Infra | 95%+ with mutation testing | Chaos engineering + fault injection | Continuous synthetic monitoring |
+| AI/ML | 80%+ serving; 60%+ training | Model inference integration; data pipeline validation | Shadow testing; A/B test validation |
+| Frontend | 70%+ unit (RTL) | API mocking (MSW); component testing | Critical user flows (Playwright/Cypress) |
+| Mobile | 70%+ unit | API mocking; sync logic testing | Critical flows (Maestro/Detox) |
+
+### Deployment Frequency (Extended)
+
+| Context | Cadence | Strategy |
+|---------|---------|----------|
+| Startup MVP | Multiple times daily | Trunk-based. Feature flags optional. |
+| Scale-Up | Daily to weekly | Trunk-based with feature flags. CI/CD pipeline. |
+| Enterprise | Weekly to monthly | Staged rollout. Change advisory board. Full regression. |
+| Critical Infra | Monthly to quarterly | Canary → blue/green → full rollout. Extensive pre-prod validation. |
+| AI/ML | Weekly model updates; daily pipeline fixes | Canary model rollout. Automated rollback on metric degradation. |
+| Frontend | Daily to weekly | Vercel/Netlify preview deployments. Visual regression checks. |
+| Mobile | Bi-weekly to monthly | TestFlight/Internal Testing → staged rollout → full release. |
+
+---
+
+## How to Use Context Branching
+
+1. **Classify the project** into one of the seven profiles (Startup MVP / Scale-Up / Enterprise / Critical Infra / AI/ML / Frontend / Mobile)
+2. **For each design decision**, consult the relevant branching table above
+3. **Apply the context-appropriate variant**, not the generic advice
+4. **When the context changes** (e.g., MVP graduates to Scale-Up), revisit decisions
+
 **Do NOT apply enterprise patterns to a startup MVP.** The right code for Stripe's payment
 engine is wrong for your weekend project. Context is not an excuse — it's the primary
 determinant of what "good code" means.
+
+## Quick Checklist
+
+- [ ] Project context identified (MVP / Scale-Up / Enterprise / Critical Infra / AI/ML / Frontend / Mobile)
+- [ ] Testing depth aligned with context
+- [ ] Error handling strategy appropriate for criticality
+- [ ] Deployment frequency matches team size and risk tolerance
+- [ ] Architecture decisions (monolith, database, caching) fit current scale
+- [ ] Context-specific anti-patterns reviewed
+- [ ] Plan for context evolution documented (when to upgrade patterns)

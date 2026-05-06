@@ -280,6 +280,445 @@ def test_end_date_after_start(date1, date2):
 
 ---
 
+## Pattern: Chaos Engineering
+
+**Use when**: You operate distributed systems where partial failures are inevitable and need to verify resilience before production incidents occur.
+
+**Rule**: Start in non-production, define a steady-state hypothesis, run the smallest blast-radius experiment first, and always have an abort condition.
+
+### Chaos Monkey (Netflix) — Instance Termination
+
+```java
+@ChaosExperiment
+@DisplayName("when catalog-service instance is terminated, requests fallback to cache")
+void whenInstanceTerminated_requestsFallbackToCache() {
+    // Given: steady state with warm cache
+    var steadyState = catalogService.getProduct("SKU-1");
+    assertThat(steadyState).isPresent();
+    cacheManager.warm("SKU-1", steadyState.get());
+
+    // When: terminate one catalog-service instance
+    chaosMonkey.terminateInstance("catalog-service", 1);
+
+    // Then: requests still succeed via cache fallback
+    await().atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(() -> {
+            var fallback = catalogService.getProduct("SKU-1");
+            assertThat(fallback).isPresent();
+            assertThat(metrics.getCacheHits("catalog")).isGreaterThan(0);
+        });
+}
+```
+
+### Gremlin — CPU Attack Template (YAML)
+
+```yaml
+apiVersion: gremlin.com/v1
+kind: Attack
+metadata:
+  name: catalog-service-cpu-stress
+  labels:
+    app: catalog-service
+    env: staging
+spec:
+  type: cpu
+  command:
+    length: 120
+    amount: 80
+    percent: 50
+  targets:
+    selector:
+      - label: "app=catalog-service"
+  abortConditions:
+    - metric: p99Latency
+      threshold: 2000ms
+      operator: greaterThan
+    - metric: errorRate
+      threshold: 5%
+      operator: greaterThan
+```
+
+### Litmus — Pod Delete Experiment (Kubernetes)
+
+```yaml
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: order-service-pod-delete
+  namespace: chaos
+spec:
+  appinfo:
+    appns: 'default'
+    applabel: 'app=order-service'
+    appkind: 'deployment'
+  annotationCheck: 'true'
+  engineState: 'active'
+  chaosServiceAccount: litmus-admin
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            - name: TOTAL_CHAOS_DURATION
+              value: '30'
+            - name: CHAOS_INTERVAL
+              value: '10'
+            - name: FORCE
+              value: 'false'
+            - name: PODS_AFFECTED_PERC
+              value: '33'
+          probe:
+            - name: "order-health-check"
+              type: "httpProbe"
+              mode: "Continuous"
+              runProperties:
+                probeTimeout: '5s'
+                retry: 2
+                interval: '5s'
+                probePollingInterval: '2s'
+              httpProbe/inputs:
+                url: "http://order-service.default.svc.cluster.local:8080/actuator/health"
+                insecureSkipVerify: false
+                method:
+                  get:
+                    criteria: "=="
+                    responseCode: "200"
+```
+
+**Expert note**: Run chaos experiments during business hours with the team on-call. The goal is to learn, not to surprise. Document every unexpected behaviour as a new regression test.
+
+---
+
+## Pattern: Fault Injection Testing
+
+**Use when**: You need to validate how a service behaves under specific infrastructure faults — network latency, dependency downtime, disk exhaustion, or connection pool saturation.
+
+**Rule**: Inject faults at the infrastructure or transport layer, never by modifying application code under test. Measure recovery time (MTTR) and degradation boundaries.
+
+### Network Latency Injection (Java + Toxiproxy)
+
+```java
+@Testcontainers
+class NetworkLatencyFaultInjectionTest {
+
+    @Container
+    static ToxiproxyContainer toxiproxy = new ToxiproxyContainer("ghcr.io/shopify/toxiproxy:2.5.0");
+
+    @Test
+    @DisplayName("when payment-gateway latency exceeds 3s, circuit breaker opens")
+    void whenLatencyExceedsThreshold_circuitBreakerOpens() {
+        var proxy = toxiproxy.getProxy(paymentGatewayHost, 8080);
+        proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, 3500);
+
+        var order = OrderFixtures.createConfirmedOrder();
+
+        assertThatThrownBy(() -> orderService.charge(order))
+            .isInstanceOf(CircuitBreakerOpenException.class);
+
+        assertThat(circuitBreaker.state()).isEqualTo(State.OPEN);
+    }
+}
+```
+
+### Service Downtime Injection (Java + Testcontainers)
+
+```java
+@Test
+@DisplayName("when inventory-service is down, order creation returns 503 with retry-after header")
+void whenInventoryServiceDown_orderReturns503WithRetryAfter() {
+    // Given: inventory container is paused (simulating network partition)
+    inventoryContainer.getDockerClient().pauseContainerCmd(inventoryContainer.getContainerId()).exec();
+
+    // When
+    var response = restTemplate.postForEntity("/orders", orderRequest, ErrorResponse.class);
+
+    // Then
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).isEqualTo("30");
+
+    // Cleanup
+    inventoryContainer.getDockerClient().unpauseContainerCmd(inventoryContainer.getContainerId()).exec();
+}
+```
+
+### Resource Exhaustion — Connection Pool Saturation
+
+```java
+@Test
+@DisplayName("when connection pool is exhausted, new requests are queued and eventually timeout")
+void whenConnectionPoolExhausted_requestsAreQueuedAndTimeout() {
+    var config = new HikariConfig();
+    config.setMaximumPoolSize(2);
+    config.setConnectionTimeout(1000);
+    var dataSource = new HikariDataSource(config);
+
+    // Exhaust the pool
+    var connections = IntStream.range(0, 2)
+        .mapToObj(i -> dataSource.getConnection())
+        .toList();
+
+    // Attempt a third connection
+    assertThatThrownBy(() -> dataSource.getConnection())
+        .isInstanceOf(SQLException.class)
+        .hasMessageContaining("connection timeout");
+
+    connections.forEach(Connection::close);
+}
+```
+
+### Disk Failure Simulation (Linux /tmp mount)
+
+```yaml
+# docker-compose.fault.yml for local disk-full simulation
+version: "3.8"
+services:
+  order-service:
+    image: order-service:latest
+    volumes:
+      - type: tmpfs
+        target: /data
+        tmpfs:
+          size: 10M
+    environment:
+      - STORAGE_PATH=/data
+    # Fill the disk inside the container:
+    # dd if=/dev/zero of=/data/fill bs=1M count=11
+```
+
+**Expert note**: Fault injection tests must be idempotent and clean up injected faults in `@AfterEach` or `finally` blocks. A left-over toxic proxy or paused container will poison the next test run.
+
+---
+
+## Pattern: Consumer-Driven Contract Testing (Pact)
+
+**Use when**: Multiple services communicate via HTTP/ messaging APIs and you want to prevent breaking changes without expensive integration test suites.
+
+**Rule**: The consumer defines the contract; the provider verifies it. Never share contracts via email or chat — use a Pact Broker.
+
+### Consumer Test (Java + JUnit 5)
+
+```java
+@PactTestFor(providerName = "inventory-service")
+class InventoryServiceConsumerPactTest {
+
+    @Pact(consumer = "order-service")
+    RequestResponsePact reserveStockPact(PactDslWithProvider builder) {
+        return builder
+            .given("product SKU-1 exists with stock 100")
+            .uponReceiving("reserve stock for SKU-1")
+            .path("/inventory/reserve")
+            .method("POST")
+            .headers("Content-Type", "application/json")
+            .body(new PactDslJsonBody()
+                .stringType("sku", "SKU-1")
+                .integerType("quantity", 5))
+            .willRespondWith()
+            .status(200)
+            .body(new PactDslJsonBody()
+                .stringType("reservationId", "RES-123")
+                .integerType("reservedQuantity", 5)
+                .stringType("status", "CONFIRMED"))
+            .toPact();
+    }
+
+    @Test
+    @PactTestFor(pactMethod = "reserveStockPact")
+    void reserveStock_returnsReservationDetails(MockServer mockServer) {
+        var client = new InventoryClient(mockServer.getUrl());
+        var response = client.reserveStock("SKU-1", 5);
+
+        assertThat(response.reservationId()).isNotBlank();
+        assertThat(response.status()).isEqualTo("CONFIRMED");
+    }
+}
+```
+
+### Provider Verification (Java + JUnit 5 + Spring)
+
+```java
+@Provider("inventory-service")
+@PactBroker(url = "https://pact-broker.internal", authentication = @PactBrokerAuth(token = "${PACT_TOKEN}"))
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+class InventoryServiceProviderVerificationTest {
+
+    @TestTemplate
+    @ExtendWith(PactVerificationInvocationContextProvider.class)
+    void pactVerificationTestTemplate(PactVerificationContext context) {
+        context.verifyInteraction();
+    }
+
+    @BeforeEach
+    void before(PactVerificationContext context) {
+        context.setTarget(new HttpTestTarget("localhost", 8080));
+    }
+
+    @State("product SKU-1 exists with stock 100")
+    void sku1ExistsWithStock() {
+        inventoryRepository.save(new Stock("SKU-1", 100));
+    }
+}
+```
+
+### CI Pipeline — Pact Broker Can-I-Deploy Gate
+
+```yaml
+# .github/workflows/contract-verify.yml
+name: Contract Verification
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  consumer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run consumer Pact tests
+        run: ./mvnw test -pl order-service -Dtest="*PactTest"
+      - name: Publish pacts
+        run: |
+          ./mvnw pact:publish -pl order-service \
+            -Dpact.broker.url=$PACT_BROKER_URL \
+            -Dpact.broker.token=$PACT_TOKEN \
+            -Dpact.consumer.appVersion=${{ github.sha }} \
+            -Dpact.consumer.branch=${{ github.ref_name }}
+
+  provider:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify provider against pacts
+        run: ./mvnw test -pl inventory-service -Dtest="*ProviderVerificationTest"
+      - name: Can I deploy?
+        run: |
+          docker run --rm pactfoundation/pact-cli \
+            broker can-i-deploy \
+            --pact-broker-base-url $PACT_BROKER_URL \
+            --pact-broker-token $PACT_TOKEN \
+            --pacticipant inventory-service \
+            --version ${{ github.sha }} \
+            --to-environment staging
+```
+
+**Expert note**: A passing contract test does NOT guarantee the provider behaves correctly — it only guarantees the consumer's expectations are met. Always pair contract tests with provider-side state management (`@State` methods) to ensure realistic data.
+
+---
+
+## Pattern: Visual Regression Testing
+
+**Use when**: Your application has a UI whose pixel-perfect rendering is critical — design systems, checkout flows, dashboards — and CSS or component changes frequently cause unintended layout shifts.
+
+**Rule**: Baseline images must be generated on the same browser engine, OS, and viewport size. Never approve visual diffs without human review.
+
+### Percy + Selenium (Java)
+
+```java
+class CheckoutPageVisualTest {
+
+    WebDriver driver;
+    Percy percy;
+
+    @BeforeEach
+    void setUp() {
+        driver = new ChromeDriver();
+        percy = new Percy(driver);
+    }
+
+    @Test
+    @DisplayName("checkout page renders correctly on desktop")
+    void checkoutPage_rendersCorrectlyOnDesktop() {
+        driver.manage().window().setSize(new Dimension(1280, 720));
+        driver.get("http://localhost:3000/checkout");
+
+        percy.snapshot("Checkout Page - Desktop", List.of(
+            new Percy.SnapshotOptions.Builder()
+                .widths(List.of(1280, 1440))
+                .minHeight(1024)
+                .build()
+        ));
+    }
+
+    @Test
+    @DisplayName("checkout page renders correctly on mobile")
+    void checkoutPage_rendersCorrectlyOnMobile() {
+        driver.manage().window().setSize(new Dimension(375, 812));
+        driver.get("http://localhost:3000/checkout");
+
+        percy.snapshot("Checkout Page - Mobile", List.of(
+            new Percy.SnapshotOptions.Builder()
+                .widths(List.of(375, 414))
+                .build()
+        ));
+    }
+
+    @AfterEach
+    void tearDown() {
+        driver.quit();
+    }
+}
+```
+
+### Chromatic + Storybook (CI Integration)
+
+```yaml
+# .github/workflows/visual-regression.yml
+name: Visual Regression
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  chromatic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Storybook
+        run: npm run build-storybook
+
+      - name: Publish to Chromatic
+        uses: chromaui/action@latest
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          storybookBuildDir: storybook-static
+          exitOnceUploaded: true
+          onlyChanged: true
+```
+
+### Baseline Approval Workflow
+
+```yaml
+# .percy.yml
+version: 2
+snapshot:
+  widths: [375, 1280]
+  minHeight: 1024
+  percyCSS: |
+    /* Hide dynamic content like timestamps */
+    .timestamp { display: none !important; }
+discovery:
+  allowedHostnames:
+    - cdn.example.com
+  networkIdleTimeout: 150
+```
+
+**Expert note**: Visual regression is expensive and flaky when tests include dynamic data (timestamps, random IDs, ads). Use `percyCSS` or data-testids to stabilise the DOM before snapshotting. Treat visual diffs as code reviews — never auto-approve.
+
+---
+
 ## Quick Checklist: Is This a Good Test?
 
 - [ ] Does it test BEHAVIOUR, not implementation?
