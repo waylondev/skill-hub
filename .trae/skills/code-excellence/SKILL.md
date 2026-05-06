@@ -12,19 +12,22 @@ Use it as follows:
 
 ### Generation Pipeline
 ```
-User Request → [context-branching.md] → Determine context profile
-             → [ddd.md]               → Identify bounded contexts & aggregates (if domain-heavy)
-             → [Meta-Prompting]       → Activate appropriate meta-tags
-             → [decision-trees.md]    → Identify applicable patterns
-             → [api-design.md]        → Design API contracts (if API-facing)
-             → [design-principles.md] → Apply core principles
-             → [patterns.md] /        → Select implementation template
+User Request → [context-branching.md]       → Determine context profile
+             → [ddd.md]                     → Identify bounded contexts & aggregates (if domain-heavy)
+             → [event-driven-architecture.md] → Event/Message design (if async)
+             → [decision-trees.md]          → Identify applicable patterns
+             → [api-design.md]              → Design API contracts (if API-facing)
+             → [design-principles.md]       → Apply core principles
+             → [database-design.md]         → Data access patterns
+             → [patterns.md] /              → Select implementation template
                 [patterns-crud.md] /
                 [patterns-architecture.md]
-             → [anti-patterns.md]     → Avoid known traps
-             → [security-patterns.md] → Apply security by design
-             → [lang-ref]             → Apply language idioms
-             → [Pre-Generation Checklist] → Quality gate before output
+             → [resilience-patterns.md]     → Apply resilience (circuit breaker, timeout, retry)
+             → [anti-patterns.md]           → Avoid known traps
+             → [security-patterns.md]       → Apply security by design
+             → [performance-optimization.md] → Performance checks (cache, batching, serialization)
+             → [lang-ref]                   → Apply language idioms
+             → [pre-generation-checklist.md] → Quality gate before output
              → Generate code
 ```
 
@@ -34,6 +37,7 @@ Generated Code → [review-template.md]   → Structured review
               → [anti-patterns.md]      → Scan for anti-patterns
               → [decision-trees.md]     → Verify decisions match context
               → [security-patterns.md]  → Security review
+              → [resilience-patterns.md] → Verify timeout/retry/circuit-breaker configs
               → [RIPER-5 REFLECT]       → Final validation
               → Flag issues or approve
 ```
@@ -43,13 +47,14 @@ Generated Code → [review-template.md]   → Structured review
 Legacy/Target Code → [anti-patterns.md]           → Identify root cause
                    → [decision-trees.md]          → Choose target pattern
                    → [patterns-architecture.md]   → Architecture restructuring
-                   → Apply Strangler Fig for safe migration
+                   → Apply Strangler Fig / Branch by Abstraction / Feature Toggle for safe migration
 ```
 
 ### Debugging Pipeline
 ```
 Production Issue → [anti-patterns.md]     → Symptom → Root Cause matching
                 → [security-patterns.md]  → Rule out security incidents first
+                → [resilience-patterns.md] → Check circuit breaker state, timeout configs, retry storms
                 → [decision-trees.md]     → Verify original architectural decisions
                 → Fix + add regression test
 ```
@@ -58,105 +63,47 @@ Production Issue → [anti-patterns.md]     → Symptom → Root Cause matching
 
 ## Meta-Prompting Guidelines
 
-Activate these meta-tags based on task complexity to control AI behavior and output quality.
+Activate these meta-tags based on task complexity. Full definitions and examples: `references/meta-prompting.md`.
 
-### `<persistence>` — Autonomous Completion
-**Use when**: Multi-step tasks, complex implementations, or any task where premature termination would leave work incomplete.
-- Continue working until the user's query is completely resolved
-- Never stop when encountering uncertainty — research or deduce
-- Do not ask for confirmation — make informed assumptions and document them
-
-### `<exploration>` — Thorough Investigation
-**Use when**: Unfamiliar codebase, ambiguous requirements, or before any significant implementation.
-- Never guess — always use tools to read files and gather information
-- Decompose requests into explicit requirements, unclear areas, and hidden assumptions
-- Map the scope: identify relevant codebase regions, files, functions, libraries
-- Check dependencies: frameworks, APIs, config files, data formats, versioning
-- Define the output contract: exact deliverables, expected outputs, tests passing
-
-### `<self_reflection>` — Internal Quality Calibration
-**Use when**: Generating critical code (core services, security-sensitive, high-traffic paths).
-- Create an internal quality rubric with 7 categories
-- Evaluate the solution internally against the rubric
-- If not hitting top marks across all categories, iterate and improve
-
-### `<reasoning_effort>` — Cognitive Depth Control
-**Use when**: Tasks vary in complexity; scale reasoning to match.
-- **Low**: Quick responses, simple tasks
-- **Medium**: Balanced thinking for moderate complexity (default)
-- **High**: Code reviews, complex refactoring, performance optimization, system design
-
-### `<code_editing_rules>` — Structured Implementation
-**Use when**: Frontend projects or when UI/UX consistency is critical.
-- Subsections: `<guiding_principles>`, `<frontend_stack_defaults>`, `<ui_ux_best_practices>`
-
-Full meta-tag examples and templates: see `references/meta-prompting.md`
+| Meta-Tag | Purpose | When to Activate |
+|----------|---------|------------------|
+| `<persistence>` | Autonomous completion — never stop on uncertainty | Multi-step tasks, complex implementations |
+| `<exploration>` | Thorough investigation — never guess | Unfamiliar codebase, ambiguous requirements |
+| `<self_reflection>` | Internal 7-dimension quality rubric scoring | Core services, security-sensitive, high-traffic paths |
+| `<reasoning_effort>` | Cognitive depth: low / medium / high | Scale to task complexity (high for reviews/refactoring) |
+| `<code_editing_rules>` | Structured frontend implementation guidelines | Frontend projects, UI/UX-sensitive work |
 
 ---
 
 ## Pre-Generation Checklist
 
-Apply this checklist **before** generating code. It replaces the post-generation self-calibration rubric with proactive quality gates.
-
-### P0 — Must Pass
-- [ ] Input validated at boundary? (C1)
-- [ ] All error paths handled? (C2 — no silent failures)
-- [ ] Security by default? (C6 — parameterized queries, no secrets in logs)
-- [ ] Method length ≤ 60 lines? (C8)
-- [ ] Atomicity guaranteed? (C9 — all-or-nothing mutations)
-
-### P1 — Context-Dependent
-- [ ] Idempotency addressed for state-changing ops? (C10) — *Skip for read-only ops*
-- [ ] Observability built-in? (C11 — metrics, structured logs, traces) — *Skip for MVP context*
-- [ ] Configuration externalized? (C12 — no hardcoded values)
-- [ ] Backward compatibility? (C13) — *Skip for greenfield/internal APIs*
-- [ ] Dependencies minimal? (C15 — prefer stdlib)
-
-### P2 — Documentation
-- [ ] Non-obvious decisions commented with "why"? (C4)
-- [ ] ADR for architectural decisions? (C14)
-- [ ] Tests included? (C3 — happy path + error path + edge case)
-
-Detailed scoring rules and thresholds: see `references/pre-generation-checklist.md`
+Apply **before** output. Core gate: C1 (boundary validation), C2 (no silent failures), C6 (security), C8 (≤ 60 lines), C9 (atomicity).
+Full checklist with P0/P1/P2 tiers: `references/pre-generation-checklist.md`.
 
 ---
 
 ## Generation Constraints (MANDATORY)
 
 These constraints are the difference between "working code" and "production-ready code".
+Detailed definitions, violation examples, and enforcement strategies: `references/generation-constraints.md`.
 
-| # | Constraint | Detail Reference |
-|---|-----------|-----------------|
-| C1 | **Input Validation at Boundary** | `design-principles.md` §8 (Fail Fast) |
-| C2 | **No Silent Failures** | `anti-patterns.md` AP-3 |
-| C3 | **Always Include Tests** | `testing-patterns.md` |
-| C4 | **Explain Non-Obvious Decisions** | `patterns-architecture.md` ADR |
-| C5 | **No Simplified "Demo" Code** | — |
-| C6 | **Security by Default** | `security-patterns.md` |
-| C7 | **Resource Cleanup** | `design-principles.md` §5 (Atomicity) |
-| C8 | **Method Length ≤ 60 lines** | `design-principles.md` §4 |
-| C9 | **Atomicity Guarantee** | `design-principles.md` §5 |
-| C10 | **Idempotency** | `design-principles.md` §6 |
-| C11 | **Observability Built-in** | `cloud-native.md` §7 |
-| C12 | **Configuration Externalization** | `cloud-native.md` §4 |
-| C13 | **Backward Compatibility** | `api-design.md` §Versioning |
-| C14 | **Documentation Sync** | `patterns-architecture.md` ADR |
-| C15 | **Dependency Minimalism** | `design-principles.md` §3 |
-
-Detailed constraint definitions and enforcement strategies: see `references/generation-constraints.md`
-
----
-
-## PCTF Framework (Persona-Context-Task-Format)
-
-Use this structured prompt engineering framework for consistent, high-quality outputs.
-
-| Element | Question to Answer | Example |
-|---------|--------------------|---------|
-| **P**ersona | Who is generating? | "Expert Java architect with 15 years of fintech experience" |
-| **C**ontext | What constraints and environment? | "Production banking system, Spring Boot 3.2, PostgreSQL, must pass SOC2 audit" |
-| **T**ask | What exactly needs to be done? | "Implement idempotent payment endpoint with Saga orchestration" |
-| **F**ormat | What is the output structure? | "Return: Controller → Service → Repository with tests" |
+| # | Constraint |
+|---|-----------|
+| C1 | **Input Validation at Boundary** — validate at system entry, never propagate bad data |
+| C2 | **No Silent Failures** — every error path either recovers or fails observably |
+| C3 | **Always Include Tests** — happy path + error path + edge case |
+| C4 | **Explain Non-Obvious Decisions** — comment "why", not "what" |
+| C5 | **No Simplified "Demo" Code** — production patterns only |
+| C6 | **Security by Default** — parameterized queries, no secrets in logs, least privilege |
+| C7 | **Resource Cleanup** — deterministic close/finalize, try-with-resources |
+| C8 | **Method Length ≤ 60 lines** — single level of abstraction per method |
+| C9 | **Atomicity Guarantee** — all-or-nothing mutations, no partial state |
+| C10 | **Idempotency** — POST/PATCH/Payment protected by idempotency key |
+| C11 | **Observability Built-in** — metrics, structured logs, traces on critical paths |
+| C12 | **Configuration Externalization** — no hardcoded values, env-driven |
+| C13 | **Backward Compatibility** — API changes preserve N-1 compatibility |
+| C14 | **Documentation Sync** — ADR for architectural decisions, OpenAPI annotations |
+| C15 | **Dependency Minimalism** — prefer stdlib, justify every new dependency |
 
 ---
 
@@ -178,13 +125,19 @@ The difference between correct code and expert code is knowing:
 | Domain modeling (DDD) | `ddd.md` | `decision-trees.md` |
 | Writing new code | `decision-trees.md` → `patterns.md` | `design-principles.md` |
 | API design | `api-design.md` | `patterns-crud.md` |
+| Database design | `database-design.md` | `patterns-architecture.md` |
+| Event-driven architecture | `event-driven-architecture.md` | `ddd.md` |
+| Resilience (circuit breaker, timeout, retry) | `resilience-patterns.md` | `design-principles.md` |
+| Performance optimization | `performance-optimization.md` | `cloud-native.md` |
 | Reviewing code | `review-template.md` → `anti-patterns.md` | `decision-trees.md` |
 | Choosing architecture | `context-branching.md` → `patterns-architecture.md` | `ddd.md` |
 | Resolving design conflicts | `design-principles.md` → `decision-trees.md` | `anti-patterns.md` |
 | Refactoring | `anti-patterns.md` → `patterns.md` | `context-branching.md` |
-| Debugging | `anti-patterns.md` → `security-patterns.md` | `decision-trees.md` |
+| Debugging | `anti-patterns.md` → `security-patterns.md` | `resilience-patterns.md` |
 | Writing tests | `testing-patterns.md` | `context-branching.md` |
 | Security review | `security-patterns.md` | `anti-patterns.md` |
+| Prompt engineering | `meta-prompting.md` | `context-branching.md` |
+| Before/After examples | `examples.md` | `patterns.md` |
 | Language/framework specifics | `java.md` / `kotlin.md` / `golang.md` / `python.md` / `springboot.md` | — |
 | Cloud-native deployment | `cloud-native.md` | `patterns-architecture.md` |
 | Frontend development | `frontend-excellence.md` | `patterns.md` |
@@ -203,13 +156,21 @@ The difference between correct code and expert code is knowing:
 | `decision-trees.md` | 20 signal-driven decision trees for design choices |
 | `ddd.md` | Domain-Driven Design: aggregates, value objects, domain events, repositories |
 | `api-design.md` | REST/gRPC/GraphQL design, versioning, pagination, error responses |
+| `database-design.md` | Index strategy, read/write splitting, connection pooling, query optimization, Flyway |
 | `patterns.md` | 16 reusable patterns with multi-language implementations |
 | `patterns-crud.md` | Production-grade CRUD controller/service/repository stacks |
 | `patterns-architecture.md` | Architect-level patterns (ADR, C4, Bounded Context, Multi-Tenancy, Event Schema) |
 | `anti-patterns.md` | 27 wrong-code examples with root cause + expert fix |
+| `resilience-patterns.md` | Circuit Breaker, Bulkhead, Retry+Backoff+Jitter, Rate Limiting, Load Shedding, Timeout Propagation |
+| `event-driven-architecture.md` | Event Sourcing, CQRS, Message Ordering, Dead Letter Queue, Exactly-Once vs At-Least-Once |
+| `performance-optimization.md` | Caching tiers (L1/L2/L3), batch vs stream, async patterns, serialization trade-offs |
 | `security-patterns.md` | OWASP mapping, JWT lifecycle, RBAC/ABAC, audit logging, SAST/DAST |
 | `testing-patterns.md` | Given-When-Then, table-driven, property-based, contract testing, chaos engineering |
 | `review-template.md` | Structured 6-section code review template |
+| `meta-prompting.md` | Meta-tags (`<persistence>`, `<exploration>`, `<self_reflection>`, etc.) + PCTF Framework |
+| `examples.md` | 5 Before/After transformation examples demonstrating SKILL principles in action |
+| `generation-constraints.md` | C1-C15 detailed definitions, violation examples, enforcement strategies |
+| `pre-generation-checklist.md` | P0/P1/P2 quality gates with scoring rules and thresholds |
 | `cloud-native.md` | Kubernetes, containerization, health probes, ConfigMap/Secret management |
 | `frontend-excellence.md` | TypeScript/React/Vue code quality, component design, state management |
 | `data-engineering.md` | CDC (Debezium), data pipelines, ETL/ELT, data consistency, schema evolution |
@@ -217,8 +178,6 @@ The difference between correct code and expert code is knowing:
 | `compliance-governance.md` | GDPR, code governance, API governance, audit logging, compliance automation |
 | `java.md` / `kotlin.md` / `golang.md` / `python.md` | Language-specific expert practices |
 | `springboot.md` | Spring Boot 3.2+ expert practices (DI, transactions, cache, resilience) |
-
-Before/After transformation examples: see `references/examples.md`
 
 ---
 
