@@ -9,7 +9,7 @@ follow this template exactly. Each section has a specific focus and produces act
 
 ## How to Use
 
-1. Run through sections 1-5 in order
+1. Run through sections 1-6 in order
 2. For each checkmark that FAILS, write a specific finding with:
    - **Location**: file + line number
    - **Issue**: what is wrong
@@ -117,6 +117,18 @@ Scan for each anti-pattern in `anti-patterns.md`:
 - [ ] Tests are independent? (order of test execution doesn't matter)
 - [ ] Tests use realistic data? (not `test`/`foo`/`bar` everywhere)
 - [ ] Tests cover the error handling paths? (not just success)
+
+---
+
+## Section 6: Security Review
+
+- [ ] Run through Quick Security Checklist in `security-patterns.md`
+- [ ] JWT tokens properly managed? (short expiry, refresh rotation, secure storage)
+- [ ] RBAC/ABAC authorization at service layer? (not just controller guard)
+- [ ] Audit trail exists for all data mutations?
+- [ ] Rate limiting on critical endpoints? (auth, payment, API mutations)
+- [ ] OWASP Top 10 risks addressed? (injection, XSS, broken access control)
+- [ ] Defense in depth applied? (all 7 layers validated)
 
 ---
 

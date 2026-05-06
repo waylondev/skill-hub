@@ -602,6 +602,542 @@ class Order(
 
 ---
 
+## AP-17: Long-Running Transaction
+
+**Symptom**: A single database transaction that spans I/O calls, user interactions, or long computations.
+
+### ❌ Wrong
+```java
+@Transactional
+public void processBatch(List<Order> orders) {
+    for (var order : orders) {
+        orderRepo.save(order);
+        paymentGateway.charge(order); // 500ms network call INSIDE transaction
+        emailService.sendConfirmation(order); // another 200ms
+    }
+} // Transaction open for minutes with 1000 orders — connection held, locks held, VACUUM blocked
+```
+
+### Root Cause
+Database transactions acquire locks and hold connections. The longer they run, the more they block everyone else. External calls (HTTP, email, file I/O) inside transactions are the #1 cause of production deadlocks and connection pool exhaustion.
+
+### ✅ Expert Fix
+```java
+// 1. Load data outside transaction (read-only is fine)
+var orders = orderRepo.findPendingBatch(1000);
+
+// 2. Process each order atomically
+for (var order : orders) {
+    transactionalProcessor.process(order); // internal: short tx, commits immediately
+    // After commit → external calls are safe
+    paymentGateway.charge(order);   // outside transaction
+    emailService.sendConfirmation(order); // outside transaction
+}
+```
+
+**Golden rule**: A transaction should be shorter than a coffee break. If it lasts longer than 1 second, reconsider the boundary.
+
+---
+
+## AP-18: Distributed Lock Not Released
+
+**Symptom**: Acquiring a distributed lock (Redis, ZooKeeper) without guaranteed release on failure.
+
+### ❌ Wrong
+```java
+public void processOrder(Long id) {
+    var lock = redis.acquire("lock:order:" + id, Duration.ofSeconds(30));
+    // If JVM crashes here — lock held for 30 seconds, nobody else can process
+    doWork(id);
+    redis.release(lock); // May never execute
+}
+```
+
+### Root Cause
+Distributed locks must have automatic expiry. If the lock holder crashes before release, the lock must expire on its own. Manual release without expiry = permanent lock on crash.
+
+### ✅ Expert Fix
+```java
+// Redisson — automatic lease renewal + TTL expiry
+var lock = redisson.getFairLock("lock:order:" + id);
+try {
+    if (lock.tryLock(2, 30, TimeUnit.SECONDS)) { // wait 2s, hold max 30s
+        doWork(id);
+    }
+} finally {
+    if (lock.isHeldByCurrentThread()) {
+        lock.unlock();
+    }
+}
+// If process crashes, Redis key expires after 30s automatically.
+
+// Alternative: SET NX with TTL
+var ok = redis.set("lock:order:" + id, instanceId, "NX", "EX", 30);
+if (ok) {
+    try { doWork(id); }
+    finally { if (redis.get("lock:order:" + id).equals(instanceId)) redis.del("lock:order:" + id); }
+}
+```
+
+---
+
+## AP-19: Cache Avalanche/Breakdown/Penetration
+
+**Symptom**: Cache patterns that collapse under specific failure modes.
+
+### ❌ Wrong — Three Cache Disasters
+```java
+// Disaster 1: Cache Avalanche — all keys expire at the same time
+cache.set("product:" + id, data, Duration.ofHours(1));
+// 100,000 keys expire simultaneously → DB crushed by 100,000 concurrent misses
+
+// Disaster 2: Cache Breakdown — hot key expires during peak
+cache.set("hot-promotion", data, Duration.ofMinutes(5));
+// Hot item cache expires → ALL traffic hits DB for this one key → DB collapses
+
+// Disaster 3: Cache Penetration — querying non-existent data
+// Attackers query ghost IDs: 999999, 999998, 999997...
+// Each query misses cache → hits DB → DB overloaded by useless queries
+```
+
+### ✅ Expert Fix
+```java
+// Fix 1: Random jitter on TTL — no simultaneous expiry
+var baseTtl = Duration.ofHours(1);
+var jitter = Duration.ofSeconds(random.nextInt(600)); // 0-10 min random offset
+cache.set(key, data, baseTtl.plus(jitter));
+
+// Fix 2: Hot key mutex — only one thread rebuilds the cache
+public Product getHotProduct(String key) {
+    var cached = cache.get(key);
+    if (cached != null) return cached;
+
+    // Only ONE thread acquires the rebuild lock
+    var lock = cache.acquireLock("rebuild:" + key, Duration.ofSeconds(5));
+    if (lock) {
+        try {
+            cached = db.query(key);
+            cache.set(key, cached, Duration.ofMinutes(5).plus(Duration.ofSeconds(random.nextInt(60))));
+            return cached;
+        } finally { cache.releaseLock("rebuild:" + key); }
+    }
+
+    // Other threads: wait briefly, retry cache, or return stale
+    sleep(50);
+    cached = cache.get(key);
+    if (cached != null) return cached;
+    return getStaleValue(key); // better than crashing
+}
+
+// Fix 3: Bloom filter for non-existent keys — reject before hitting DB
+if (!bloomFilter.mightContain(id)) {
+    return null; // definitely does NOT exist — skip DB
+}
+// For genuinely non-existent keys: cache a NULL marker with short TTL
+cache.set("user:" + id, NullMarker.INSTANCE, Duration.ofMinutes(1));
+```
+
+---
+
+## AP-20: Logging Sensitive Data
+
+**Symptom**: Secrets, passwords, or PII accidentally leaked through logging or serialization.
+
+### ❌ Wrong
+```java
+log.info("Processing payment: {}", paymentRequest);
+// paymentRequest.toString() includes credit card number, CVV
+
+log.info("User authenticated: {}", user);
+// user.toString() includes hashed password, API tokens
+
+log.info("Request: {}", request);
+// Real client IP, phone numbers, ID numbers logged as INFO
+```
+
+### Root Cause
+`toString()` on domain objects often includes everything. Structured logging of entire objects is dangerous unless you explicitly control what gets logged.
+
+### ✅ Expert Fix
+```java
+// 1. Exclude sensitive fields from toString()
+public record CreatePaymentRequest(
+    Long orderId,
+    @JsonIgnore @ToStringExclude String cardNumber,
+    @JsonIgnore @ToStringExclude String cvv
+) {}
+
+// 2. Log only what you need
+log.info("Processing payment for order {}", req.orderId());
+// NOT: log.info("Processing payment: {}", req);
+
+// 3. Mask sensitive data before logging
+public String maskCard(String card) {
+    return card.substring(0, 4) + "****" + card.substring(card.length() - 4);
+}
+
+// 4. Separate audit log (PII OK, secured) from operational log (no PII)
+auditLog.info("User {} accessed payment for order {}", userId, orderId); // secured storage
+appLog.info("Order {} payment processed", orderId); // no user info
+```
+
+---
+
+## AP-21: Missing Timeout on External Call
+
+**Symptom**: External HTTP/database/message calls without timeout — thread hangs forever.
+
+### ❌ Wrong
+```java
+var client = HttpClient.newHttpClient(); // DEFAULT: infinite timeout
+client.send(request, BodyHandlers.ofString()); // thread blocked forever if service hangs
+
+RestTemplate rest = new RestTemplate(); // DEFAULT: infinite timeout
+rest.getForEntity("http://slow-service/api", String.class);
+```
+
+### Root Cause
+Every external call can hang (network partition, service GC pause, deadlock). Without a timeout, the calling thread joins the zombie army, eventually exhausting the thread pool or connection pool.
+
+### ✅ Expert Fix
+```java
+// Java 11+ HttpClient — always set connect + request timeout
+var client = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(3))    // TCP handshake timeout
+    .build();
+
+client.send(request, BodyHandlers.ofString(),
+    HttpResponse.BodyHandlers.ofString(),
+    HttpRequest.newBuilder().timeout(Duration.ofSeconds(5)).build()
+);
+
+// RestTemplate with timeout
+var factory = new SimpleClientHttpRequestFactory();
+factory.setConnectTimeout(Duration.ofSeconds(3));
+factory.setReadTimeout(Duration.ofSeconds(5));
+var rest = new RestTemplate(factory);
+
+// Spring Boot RestClient (3.2+)
+var client = RestClient.builder()
+    .requestFactory(new JdkClientHttpRequestFactory(
+        HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build()
+    ))
+    .build();
+```
+
+---
+
+## AP-22: Circular Dependency
+
+**Symptom**: Two or more classes depend on each other, creating a dependency cycle.
+
+### ❌ Wrong
+```java
+@Service
+public class OrderService {
+    private final PaymentService paymentService; // OrderService → PaymentService
+
+    public void process(Order order) { paymentService.charge(order); }
+}
+
+@Service
+public class PaymentService {
+    private final OrderService orderService; // PaymentService → OrderService
+
+    public void charge(Order order) { orderService.updateStatus(order, PAID); }
+} // Circular dependency — untestable, hard to reason about, breaks on refactoring
+```
+
+### Root Cause
+Circular dependencies hide a missing abstraction. Neither service truly owns the flow — they're locked in a death grip.
+
+### ✅ Expert Fix
+```java
+// Option A: Extract the orchestration into a third service
+@Service
+public class OrderCheckoutOrchestrator {
+    private final OrderService orderService;
+    private final PaymentService paymentService;
+
+    public void checkout(Long orderId) {
+        var order = orderService.get(orderId);
+        paymentService.charge(order);
+        orderService.markAsPaid(orderId);
+        // Flow direction: Orchestrator → OrderService, Orchestrator → PaymentService
+        // No cycle. Single responsibility: checkout flow.
+    }
+}
+
+// Option B: Use events to break the cycle
+@Service
+public class PaymentService {
+    private final ApplicationEventPublisher events;
+
+    public void charge(Order order) {
+        gateway.charge(order);
+        events.publish(new PaymentCompletedEvent(order.id())); // fire and forget
+    }
+}
+// OrderService listens, no back-dependency
+```
+
+---
+
+## AP-23: God Method (Long Method)
+
+**Symptom**: A single method exceeding 60 lines, mixing multiple levels of abstraction.
+
+### ❌ Wrong
+```java
+public OrderResult checkout(CheckoutRequest req) {
+    // 10 lines: validate cart
+    if (req.cart() == null) throw ...;
+    for (var item : req.cart()) { if (item.quantity() <= 0) throw ...; }
+
+    // 15 lines: calculate total + discount
+    var total = req.cart().stream().map(...).reduce(...);
+    if (req.hasPromoCode()) {
+        var promo = promoRepo.findActive(req.promoCode());
+        total = total.subtract(promo.discount(total));
+    }
+
+    // 20 lines: payment processing
+    var paymentReq = new PaymentRequest(total, req.paymentMethod());
+    var response = paymentGateway.charge(paymentReq);
+    if (!response.isSuccess()) { ... }
+
+    // 10 lines: create order
+    var order = new Order(req.userId(), req.cart(), total);
+    orderRepo.save(order);
+
+    // 10 lines: send notifications
+    emailService.sendConfirmation(order);
+    smsService.send(order.user().phone(), "Order confirmed");
+
+    // 5 lines: build response
+    return new OrderResult(order.id(), total, response.transactionId());
+} // 70+ lines, four levels of abstraction
+```
+
+### Root Cause
+Long methods violate the "single level of abstraction" principle. They are hard to test (which branch does this line belong to?), hard to debug (which part failed?), and impossible to reuse.
+
+### ✅ Expert Fix
+```java
+// Each method at ONE level of abstraction, ~5-15 lines each
+public OrderResult checkout(CheckoutRequest req) {
+    validateCart(req);
+    var pricing = calculatePricing(req);
+    var payment = capturePayment(req, pricing);
+    var order = createOrder(req, pricing, payment);
+    notifyCustomer(order);
+    return buildResult(order, payment);
+}
+
+private void validateCart(CheckoutRequest req) {
+    if (req.cart() == null || req.cart().isEmpty())
+        throw new InvalidCartException("Cart is empty");
+    for (var item : req.cart()) {
+        if (item.quantity() <= 0)
+            throw new InvalidCartException("Invalid quantity for " + item.sku());
+    }
+}
+
+private Pricing calculatePricing(CheckoutRequest req) {
+    var subtotal = pricingEngine.calculate(req.cart());
+    return req.promoCode() != null
+        ? discountEngine.apply(subtotal, req.promoCode())
+        : new Pricing(subtotal, Money.ZERO, subtotal);
+}
+```
+
+---
+
+## AP-24: Deep Inheritance Hierarchy
+
+**Symptom**: Inheritance chains 3+ levels deep, creating rigid and fragile class structures.
+
+### ❌ Wrong
+```java
+class Entity { protected Long id; protected LocalDateTime createdAt; }
+class AuditableEntity extends Entity { protected String createdBy; protected String updatedBy; }
+class VersionedEntity extends AuditableEntity { protected Long version; }
+class SoftDeletableEntity extends VersionedEntity { protected boolean deleted; }
+class Order extends SoftDeletableEntity { /* finally, business logic */ }
+// 4 levels of inheritance just to compose orthogonal concerns
+```
+
+### Root Cause
+Deep inheritance chains force orthogonal concerns (auditing, versioning, soft-delete) into a linear hierarchy. The Fragile Base Class Problem: changing any ancestor class potentially breaks every descendant.
+
+### ✅ Expert Fix
+```java
+// Composition — each concern is a separate collaborator
+class Order {
+    private final OrderId id;
+    private final AuditInfo audit;      // composition
+    private final Version version;      // composition
+    private SoftDeleteStatus deleted;   // composition
+    // Order owns ALL behavior; no fragile base class
+}
+
+// Each concern is its own, reusable component
+record AuditInfo(String createdBy, String updatedBy, Instant createdAt, Instant updatedAt) {}
+record Version(long value) {}
+enum SoftDeleteStatus { ACTIVE, DELETED }
+
+// Cross-cutting concerns via AOP or decorators where needed
+@Auditable
+@Versioned
+public class Order { /* pure business logic */ }
+```
+
+---
+
+## AP-25: Non-Atomic Multi-Step Mutation
+
+**Symptom**: A multi-step state change where individual steps can succeed or fail independently, leaving the system in a partial state.
+
+### ❌ Wrong
+```java
+// Step 1: write to primary DB (succeeds)
+userRepo.save(user);
+
+// Step 2: write to cache (fails — network blip)
+cache.set("user:" + user.id(), user, Duration.ofMinutes(10));
+
+// Step 3: sync to search index (fails — ES overloaded)
+searchIndex.index(user);
+
+// Result: DB has the user, but cache has stale data, search is missing the user.
+// Three different views of reality. Fixing this requires manual reconciliation.
+```
+
+### Root Cause
+Without an atomicity strategy, partial failure leaves the system in an inconsistent state. Each downstream system sees a different version of truth, and no single place records what actually happened vs what should have happened.
+
+### ✅ Expert Fix
+```java
+// Strategy 1: DB as single source of truth + async eventual consistency
+@Transactional
+public void updateUser(User user) {
+    userRepo.save(user); // the ONLY synchronous step
+
+    // Publish event — downstream consumers will eventually sync
+    outboxRepo.save(new OutboxEvent("UserUpdated", new UserUpdatedPayload(user.id())));
+    // Cache invalidation + search reindex happen asynchronously.
+    // If any fails, retry from outbox. Eventual consistency guaranteed.
+}
+
+// Strategy 2: Saga with compensating actions
+public void updateUser(User user, Cache cache, SearchIndex index) {
+    try {
+        userRepo.save(user);
+        try {
+            index.index(user);
+        } catch (Exception e) {
+            // index failed → compensate by reverting? No!
+            // Instead, log + retry async. Don't roll back the DB.
+            outbox.record(UserIndexed(user.id()), "pending");
+        }
+        try { cache.delete("user:" + user.id()); }
+        catch (Exception e) { metrics.cacheOpFailure.increment(); }
+        // Cache miss = slower, but correct (reads from DB)
+    }
+    // The system is always consistent from the DB's perspective.
+    // Cache and search are eventually consistent.
+}
+```
+
+---
+
+## AP-26: Pagination Without Upper Bound
+
+**Symptom**: API pagination parameters accepting arbitrarily large page sizes.
+
+### ❌ Wrong
+```java
+@GetMapping("/orders")
+public Page<Order> list(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "20") int size) {
+    return orderService.list(PageRequest.of(page, size));
+    // Attacker: ?page=0&size=10000000 → DB OOM, app OOM, GC death spiral
+}
+```
+
+### Root Cause
+Unbounded pagination is a DoS vector. Loading 10 million rows into memory will OOM the service. Even if the DB survives, serializing the response will exhaust heap.
+
+### ✅ Expert Fix
+```java
+@GetMapping("/orders")
+public Page<Order> list(@RequestParam(defaultValue = "0") @Min(0) int page,
+                        @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
+    return orderService.list(PageRequest.of(page, size));
+    // Max 100 per page. Attacker needs 100,000 requests to get 10M records.
+    // This is now rate-limited, not memory-exploded.
+}
+
+// For truly large datasets — use cursor-based pagination (no offset)
+@GetMapping("/orders/cursor")
+public CursorPage<Order> listCursor(
+    @RequestParam(required = false) String cursor, // base64 encoded last ID
+    @RequestParam(defaultValue = "50") @Max(200) int limit
+) {
+    return orderService.listAfter(cursor, limit);
+    // WHERE id > :lastId ORDER BY id LIMIT :limit
+    // Consistent across inserts/deletes. No skipped or duplicated rows.
+}
+```
+
+---
+
+## AP-27: Untrusted Data Passed to Dangerous Sink
+
+**Symptom**: User-controlled input passed to SQL strings, OS commands, HTML output, or deserialization without sanitization.
+
+### ❌ Wrong
+```java
+// SQL Injection
+String query = "SELECT * FROM orders WHERE user_id = " + request.getParameter("userId");
+jdbc.execute(query); // ?userId=1 OR 1=1 → dumps all orders
+
+// OS Command Injection
+Runtime.exec("ping " + host); // host = "; rm -rf /" → catastrophe
+
+// XSS
+return "<div>Welcome, " + userName + "</div>"; // userName = "<script>stealCookies()</script>"
+
+// Insecure Deserialization
+var obj = deserialize(request.getBody()); // attacker crafts malicious serialized object → RCE
+```
+
+### Root Cause
+Mixing data with code is the fundamental security sin. User data must NEVER be concatenated into commands, queries, or markup. The boundary between "code" and "data" must be absolute.
+
+### ✅ Expert Fix
+```java
+// SQL: Parameterized queries ONLY
+jdbc.query("SELECT * FROM orders WHERE user_id = ?", userId);
+// ORM: Use named parameters, never string concatenation
+orderRepo.findByUserId(userId); // Spring Data JPA — safe by default
+
+// OS: Avoid Runtime.exec entirely. Use ProcessBuilder with separate args.
+var pb = new ProcessBuilder("ping", "-c", "3", validatedHost);
+// Or better: no shell at all. Java's InetAddress for ping.
+
+// XSS: Escape ALL user content in output
+// Server-side rendering: use template engine auto-escaping (Thymeleaf, etc.)
+// API: return raw data, let the SPA framework (React/Vue) handle escaping
+
+// Deserialization: NEVER deserialize untrusted data
+// Use formats that ONLY carry data: JSON (Jackson), Protobuf, Avro
+// If you MUST use Java serialization: whitelist allowed classes
+ObjectInputFilter.Config.createFilter("com.example.*;!*");
+```
+
+---
+
 ## Quick Scan Checklist
 
 When reviewing generated code, check for these signals:
@@ -622,3 +1158,14 @@ When reviewing generated code, check for these signals:
 - [ ] Any Python module-level mutable variable? → **Global Mutable State (AP-14)**
 - [ ] Any Python `except:` without specific exception? → **Bare Except (AP-15)**
 - [ ] Any Kotlin `data class` with `@Entity`? → **Data Class Entity (AP-16)**
+- [ ] Any transaction containing external I/O? → **Long-Running Transaction (AP-17)**
+- [ ] Any distributed lock without automatic expiry? → **Lock Not Released (AP-18)**
+- [ ] Any cache with uniform TTL or missing hot-key protection? → **Cache Disaster (AP-19)**
+- [ ] Any `log.info(entireObject)` on sensitive objects? → **Logging Secrets (AP-20)**
+- [ ] Any external call without explicit timeout? → **Missing Timeout (AP-21)**
+- [ ] Any A → B and B → A dependency pair? → **Circular Dependency (AP-22)**
+- [ ] Any method > 60 lines? → **God Method (AP-23)**
+- [ ] Any inheritance chain > 3 levels? → **Deep Inheritance (AP-24)**
+- [ ] Any multi-step mutation without Saga or outbox? → **Non-Atomic Mutation (AP-25)**
+- [ ] Any pagination without @Max on page size? → **Unbounded Pagination (AP-26)**
+- [ ] Any string concatenation for SQL / OS command / HTML? → **Injection (AP-27)**
