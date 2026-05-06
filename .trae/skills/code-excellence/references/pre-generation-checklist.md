@@ -9,6 +9,36 @@ Architecture gates are checked FIRST — if any gate fails, redesign before proc
 
 ---
 
+## Execution Protocol
+
+The checklist is executed in THREE phases:
+
+### Phase 1: Gate Declaration (BEFORE generating code)
+
+AI MUST output the Gate Declaration block (see `architectural-gates.md` format) declaring:
+- Context profile (G0)
+- Layer boundaries (G1)
+- TOCTOU prevention strategy (G2)
+- Idempotency strategy (G3)
+- Security entry points (G4)
+- Aggregate invariant enforcement (G5)
+- Projection query strategy (G6)
+- Config externalization mechanism (G7)
+
+**This is a commitment — the generated code MUST match the declaration.**
+
+### Phase 2: Code Generation
+
+Generate code according to the declared gates. If the design changes during generation, update the declaration.
+
+### Phase 3: Post-Generation Review (AFTER generating code)
+
+AI MUST scan its own output and output the Post-Generation Review block, checking each gate against the actual code:
+- ✓ means the gate is satisfied
+- ✗ means the gate is violated — AI MUST fix the violating code and re-review
+
+---
+
 ## Architecture Gate Audit (MUST PASS BEFORE P0)
 
 | Gate | Check | Tool |
