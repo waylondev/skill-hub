@@ -28,6 +28,9 @@ User Request → [context-branching.md]       → Determine context profile
              → [performance-optimization.md] → Performance checks (cache, batching, serialization)
              → [capacity-planning.md]     → Verify capacity estimates (Little's Law, scaling strategy)
              → [cost-optimization.md]     → Cost efficiency checks (right-sizing, tiering, sampling)
+             → [observability-patterns.md] → SLI/SLO targets, tracing, structured logging
+             → [auth-patterns.md]         → OAuth2/OIDC, token lifecycle, zero-trust
+             → [cicd-patterns.md]         → Deployment strategy, pipeline design, artifact mgmt
              → [lang-ref]                 → Apply language idioms
              → [pre-generation-checklist.md] → Quality gate before output
              → Generate code
@@ -39,7 +42,9 @@ Generated Code → [review-template.md]   → Structured review
               → [anti-patterns.md]      → Scan for anti-patterns
               → [decision-trees.md]     → Verify decisions match context
               → [security-patterns.md]  → Security review
+              → [auth-patterns.md]      → Auth flow correctness, token lifecycle
               → [resilience-patterns.md] → Verify timeout/retry/circuit-breaker configs
+              → [observability-patterns.md] → Verify SLI/SLO alignment, tracing coverage
               → [collaboration-patterns.md] → Verify review checklist (C1-C15 alignment)
               → [RIPER-5 REFLECT]       → Final validation
               → Flag issues or approve
@@ -146,6 +151,10 @@ The difference between correct code and expert code is knowing:
 | Cost optimization (FinOps) | `cost-optimization.md` | `capacity-planning.md` |
 | Safe refactoring (zero-downtime) | `refactoring-patterns.md` | `patterns-architecture.md` |
 | Team collaboration & Git strategy | `collaboration-patterns.md` | `review-template.md` |
+| CI/CD pipeline design | `cicd-patterns.md` | `cloud-native.md` |
+| Observability & SLOs | `observability-patterns.md` | `performance-optimization.md` |
+| API lifecycle & versioning | `api-lifecycle.md` | `api-design.md` |
+| Auth & identity (OAuth2/OIDC) | `auth-patterns.md` | `security-patterns.md` |
 | Reviewing code | `review-template.md` → `anti-patterns.md` | `decision-trees.md` |
 | Choosing architecture | `context-branching.md` → `patterns-architecture.md` | `ddd.md` |
 | Resolving design conflicts | `design-principles.md` → `decision-trees.md` | `anti-patterns.md` |
@@ -197,6 +206,10 @@ The difference between correct code and expert code is knowing:
 | `collaboration-patterns.md` | Git branching strategy, Conventional Commits, Code Review workflow, ADR lifecycle, Postmortems |
 | `capacity-planning.md` | Load estimation (Little's Law), horizontal/vertical scaling, HPA tuning, DB sharding, rate limiting |
 | `cost-optimization.md` | Resource right-sizing, spot instances, data transfer costs, storage tiering, observability sampling |
+| `cicd-patterns.md` | Deployment strategy, pipeline templates, artifact management (SBOM), feature-flag release, DB migrations in CI |
+| `observability-patterns.md` | SLI/SLO/SLA design, dashboard architecture, alerting strategy, distributed tracing, structured logging |
+| `api-lifecycle.md` | API versioning, deprecation lifecycle (Sunset header), gateway patterns, contract testing (Pact), OpenAPI docs-as-code |
+| `auth-patterns.md` | OAuth2/OIDC architecture, token lifecycle & rotation, RBAC/ABAC, SSO/SAML federation, zero-trust architecture |
 | `java.md` / `kotlin.md` / `golang.md` / `python.md` | Language-specific expert practices |
 | `springboot.md` | Spring Boot 3.2+ expert practices (DI, transactions, cache, resilience) |
 
