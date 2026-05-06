@@ -27,6 +27,9 @@ G4: Security Entry Points → [auth config + error handler]
 G5: Aggregate Invariants → [list domain methods enforcing business rules]
 G6: Projection Queries → [DTO projections for read paths]
 G7: Config Externalization → [mechanism for env-dependent values]
+G8: Code Correctness → [all annotations valid, no enum-as-annotation, signatures correct]
+G9: Dependency Direction → [service imports from domain+repo only, no api.dto import]
+G10: Code Readability → [imports used, no FQN in signatures, no magic numbers]
 ALL GATES PASSED. Proceeding to code generation.
 ```
 
@@ -49,6 +52,12 @@ G4: Security entry points configured? → [YES ✓ | NO ✗ missing]
 G5: Invariants in aggregate root? → [YES ✓ | NO ✗ location]
 G6: Projections used for read? → [YES ✓ | NO ✗ location]
 G7: Hardcoded values found? → [NONE ✓ | YES ✗ location+fix]
+G8: Annotations valid? → [YES ✓ | NO ✗ enum-as-annotation fix]
+    Method signatures correct? → [YES ✓ | NO ✗ fix]
+G9: Service imports api.dto? → [NO ✓ | YES ✗ fix]
+    Domain imports service? → [NO ✓ | YES ✗ fix]
+G10: FQN in signatures? → [NO ✓ | YES ✗ fix]
+     Magic numbers? → [NO ✓ | YES ✗ fix]
 ALL GATES VERIFIED. Code is architecturally compliant.
 ```
 
@@ -62,13 +71,16 @@ Violating ANY gate means the code is NOT architect-level. Full definitions: `ref
 
 | Gate | Rule | Violation |
 |------|------|-----------|
-| **G1** | Business layer returns domain objects. Presentation layer returns DTOs. Dedicated mapper converts. | Service returns DTO, Controller returns Entity, no mapper |
+| **G1** | Business layer returns domain objects. Presentation returns DTOs. Dedicated mapper converts. | Service returns DTO, Controller returns Entity, no mapper |
 | **G2** | No check-then-act without atomicity. | `if (!exists) { save() }` — TOCTOU race |
-| **G3** | POST/PATCH requires Idempotency-Key header. No auto-UUID fallback. | `key = idempotencyKey != null ? idempotencyKey : UUID.randomUUID()` |
+| **G3** | POST/PATCH requires Idempotency-Key header. No auto-UUID fallback. | `key = idempotencyKey ? idempotencyKey : UUID.randomUUID()` |
 | **G4** | Security framework configured with entry points. Global handler catches all. | Unhandled auth exception → HTML error page |
-| **G5** | Aggregate root enforces its own invariants. Service calls domain methods. | `if (order.status == CANCELLED)` in Service layer |
+| **G5** | Aggregate root enforces its own invariants. Service calls domain methods. | `if (order.status == CANCELLED)` in Service |
 | **G6** | Read endpoints use DTO projections. No entity load + manual map. | `SELECT o FROM Order` then Service builds DTO |
 | **G7** | Zero hardcoded env-dependent values. All via `${ENV_VAR:default}`. | `"jdbc:postgresql://db-prod:5432/..."` in source |
+| **G8** | Code compiles. Annotations are valid types. No enum-as-annotation. | `@HttpStatus.CREATED` instead of `@ResponseStatus(...)` |
+| **G9** | Lower layers don't import upper layers. Service ≠ api.dto. | `import com.example.api.dto.CreateOrderRequest` in Service |
+| **G10** | Readable code. Imports used (no FQN). No magic numbers. | `public com.example.api.dto.OrderResponse create(...)` |
 
 ---
 
@@ -221,4 +233,4 @@ Full definitions: `references/generation-constraints.md`.
 |--------|-------|
 | **Regression** | Compare with/without SKILL on C1, C2, C8, C11, **G1** |
 | **Anti-Pattern Trap** | Prompt "skip validation" → SKILL must push back |
-| **Gate Audit** | CRUD feature → must pass ≥5/7 gates |
+| **Gate Audit** | CRUD feature → must pass ≥9/11 gates |
