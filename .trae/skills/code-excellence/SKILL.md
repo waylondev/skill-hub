@@ -26,7 +26,9 @@ User Request → [context-branching.md]       → Determine context profile
              → [anti-patterns.md]           → Avoid known traps
              → [security-patterns.md]       → Apply security by design
              → [performance-optimization.md] → Performance checks (cache, batching, serialization)
-             → [lang-ref]                   → Apply language idioms
+             → [capacity-planning.md]     → Verify capacity estimates (Little's Law, scaling strategy)
+             → [cost-optimization.md]     → Cost efficiency checks (right-sizing, tiering, sampling)
+             → [lang-ref]                 → Apply language idioms
              → [pre-generation-checklist.md] → Quality gate before output
              → Generate code
 ```
@@ -38,6 +40,7 @@ Generated Code → [review-template.md]   → Structured review
               → [decision-trees.md]     → Verify decisions match context
               → [security-patterns.md]  → Security review
               → [resilience-patterns.md] → Verify timeout/retry/circuit-breaker configs
+              → [collaboration-patterns.md] → Verify review checklist (C1-C15 alignment)
               → [RIPER-5 REFLECT]       → Final validation
               → Flag issues or approve
 ```
@@ -47,7 +50,9 @@ Generated Code → [review-template.md]   → Structured review
 Legacy/Target Code → [anti-patterns.md]           → Identify root cause
                    → [decision-trees.md]          → Choose target pattern
                    → [patterns-architecture.md]   → Architecture restructuring
-                   → Apply Strangler Fig / Branch by Abstraction / Feature Toggle for safe migration
+                   → [refactoring-patterns.md]    → Apply safe migration pattern:
+                       Strangler Fig / Branch by Abstraction / Feature Toggle /
+                       Parallel Change (Expand-Contract) / Dark Launching
 ```
 
 ### Debugging Pipeline
@@ -57,6 +62,14 @@ Production Issue → [anti-patterns.md]     → Symptom → Root Cause matching
                 → [resilience-patterns.md] → Check circuit breaker state, timeout configs, retry storms
                 → [decision-trees.md]     → Verify original architectural decisions
                 → Fix + add regression test
+```
+
+### Collaboration & Governance Pipeline
+```
+Team Decision → [collaboration-patterns.md] → Git branching strategy, commit conventions
+              → [collaboration-patterns.md] → Code review workflow + review pyramid
+              → [patterns-architecture.md] → ADR lifecycle management
+              → [collaboration-patterns.md] → Postmortem template for incidents
 ```
 
 ---
@@ -129,6 +142,10 @@ The difference between correct code and expert code is knowing:
 | Event-driven architecture | `event-driven-architecture.md` | `ddd.md` |
 | Resilience (circuit breaker, timeout, retry) | `resilience-patterns.md` | `design-principles.md` |
 | Performance optimization | `performance-optimization.md` | `cloud-native.md` |
+| Capacity planning & scaling | `capacity-planning.md` | `cloud-native.md` |
+| Cost optimization (FinOps) | `cost-optimization.md` | `capacity-planning.md` |
+| Safe refactoring (zero-downtime) | `refactoring-patterns.md` | `patterns-architecture.md` |
+| Team collaboration & Git strategy | `collaboration-patterns.md` | `review-template.md` |
 | Reviewing code | `review-template.md` → `anti-patterns.md` | `decision-trees.md` |
 | Choosing architecture | `context-branching.md` → `patterns-architecture.md` | `ddd.md` |
 | Resolving design conflicts | `design-principles.md` → `decision-trees.md` | `anti-patterns.md` |
@@ -176,6 +193,10 @@ The difference between correct code and expert code is knowing:
 | `data-engineering.md` | CDC (Debezium), data pipelines, ETL/ELT, data consistency, schema evolution |
 | `ai-ml-engineering.md` | Model serving, feature stores, A/B testing, MLOps, LLM engineering |
 | `compliance-governance.md` | GDPR, code governance, API governance, audit logging, compliance automation |
+| `refactoring-patterns.md` | Strangler Fig, Branch by Abstraction, Feature Toggle, Parallel Change, Dark Launching |
+| `collaboration-patterns.md` | Git branching strategy, Conventional Commits, Code Review workflow, ADR lifecycle, Postmortems |
+| `capacity-planning.md` | Load estimation (Little's Law), horizontal/vertical scaling, HPA tuning, DB sharding, rate limiting |
+| `cost-optimization.md` | Resource right-sizing, spot instances, data transfer costs, storage tiering, observability sampling |
 | `java.md` / `kotlin.md` / `golang.md` / `python.md` | Language-specific expert practices |
 | `springboot.md` | Spring Boot 3.2+ expert practices (DI, transactions, cache, resilience) |
 
