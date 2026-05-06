@@ -442,7 +442,111 @@ V<version>__<description>.sql
 - MySQL 8.0+: `ALTER TABLE ... ALGORITHM=INPLACE, LOCK=NONE`
 - Strategy: Add column DEFAULT NULL → backfill in batches → add NOT NULL constraint with valid default
 
-**Expert Note**: Never modify an applied migration — Flyway's checksum will fail. Always add a new migration. For destructive changes (DROP COLUMN), use expand-contract: add new column → migrate data → deploy code using new column → remove old column in next release.
+**Expert Note**: Never modify an applied migration — Flyway's checksum will fail. Always add a new migration. For destructive changes (DROP COLUMN), use expand-contract: add new column → backfill in batches → deploy code using new column → remove old column in next release.
+
+---
+
+## DP-6: JPA Value Object Mapping (@Embedded)
+
+**Use when**: Domain contains composite value objects (Money, Address, Period) that logically belong to a single entity but consist of multiple attributes.
+
+### ❌ Wrong — @Column and @Embedded Conflict
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+    @Id private Long id;
+
+    @Column(name = "total_amount")  // WRONG: cannot use @Column on embedded object
+    private Money total;            // JPA doesn't know how to map this — runtime exception
+}
+
+@Embeddable
+public class Money {
+    private BigDecimal amount;
+    private String currency;
+}
+```
+
+### Root Cause
+
+JPA needs explicit instructions on how to map a value object's fields to columns. Without `@Embedded` and `@AttributeOverride`, JPA cannot determine the column names for the value object's internal fields. When the value object's field names don't match the table column names (e.g., `amount` vs `total_amount`), a mapping exception occurs at startup.
+
+### ✅ Expert Fix — @Embedded + @AttributeOverrides
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+    @Id
+    private Long id;
+
+    @Embedded  // Value object — no separate table
+    @AttributeOverrides({
+        @AttributeOverride(name = "amount", column = @Column(name = "total_amount")),
+        @AttributeOverride(name = "currency", column = @Column(name = "total_currency"))
+    })
+    private Money total;  // Value object with multiple columns
+}
+
+@Embeddable
+public class Money {
+    private BigDecimal amount;
+    private String currency;
+
+    // No default constructor needed for @Embeddable (JPA will use reflection)
+    // Business logic stays in value object — no anemic model
+    public Money add(Money other) {
+        if (!this.currency.equals(other.currency))
+            throw new IllegalArgumentException("Cannot add different currencies");
+        return new Money(this.amount.add(other.amount), this.currency);
+    }
+}
+```
+
+### Multiple Embedded Value Objects of Same Type
+
+```java
+@Entity
+@Table(name = "orders")
+public class Order {
+    @Id private Long id;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "amount", column = @Column(name = "subtotal_amount")),
+        @AttributeOverride(name = "currency", column = @Column(name = "subtotal_currency"))
+    })
+    private Money subtotal;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "amount", column = @Column(name = "tax_amount")),
+        @AttributeOverride(name = "currency", column = @Column(name = "tax_currency"))
+    })
+    private Money tax;
+
+    @Embedded
+    @AttributeOverrides({
+        @AttributeOverride(name = "amount", column = @Column(name = "total_amount")),
+        @AttributeOverride(name = "currency", column = @Column(name = "total_currency"))
+    })
+    private Money total;
+}
+```
+
+### @Embeddable vs @Entity — When to Use Which
+
+| Criteria | @Embeddable | @Entity |
+|---|---|---|
+| Has own identity? | No — belongs to parent | Yes — has @Id |
+| Shared across entities? | No — embedded in one entity | Yes — referenced by multiple entities |
+| Lifecycle? | Same as parent — deleted with parent | Independent lifecycle |
+| Queryable independently? | No — must query through parent | Yes — can query directly |
+| Table? | No — columns in parent's table | Yes — own table |
+
+**Expert Note**: Value objects should be immutable. Make fields `private final`, provide no setters, and return new instances for modifications. This prevents accidental mutation and aligns with DDD principles. Use `@Embeddable` for value objects that are conceptually part of the entity, `@Entity` with `@ManyToOne` for independent domain objects.
 
 ---
 

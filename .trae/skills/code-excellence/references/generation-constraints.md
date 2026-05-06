@@ -598,7 +598,7 @@ private Pricing calculatePricing(CheckoutRequest req) {
 
 ---
 
-## C9: Atomicity Guarantee
+## C9: Atomicity Guarantee + TOCTOU Prevention
 
 ### Definition
 
@@ -608,6 +608,8 @@ business flow could have produced. The atomicity boundary depends on the archite
 - **Single database**: use ACID transactions with rollback on any failure.
 - **Distributed systems**: use Saga orchestration with compensating actions, or the Outbox pattern where the DB
   is the single source of truth and downstream systems achieve eventual consistency.
+- **Check-then-act operations**: the check and the act MUST be atomic. TOCTOU (Time-of-Check to Time-of-Use) race
+  conditions cause duplicate creation, overbooking, and data corruption when concurrent requests pass the same check.
 
 ### Applicable Scenarios
 
@@ -617,6 +619,7 @@ business flow could have produced. The atomicity boundary depends on the archite
 | All database write operations spanning multiple tables | Single-table single-row INSERT/UPDATE within one transaction |
 | All distributed workflows (order → payment → inventory) | |
 | All file/config write operations | |
+| All check-then-act patterns (exists? → create, available? → book) | |
 
 ### ❌ Violation Example
 
@@ -629,6 +632,11 @@ public void updateUser(User user) {
     cache.set("user:" + user.id(), user);            // step 2: cache update — fails (network blip)
     searchIndex.index(user);                         // step 3: ES reindex — also fails
     // Result: DB correct, cache stale, search missing user. Three realities.
+}
+
+// TOCTOU: check and create are NOT atomic — concurrent requests both pass check
+if (!orderRepo.existsByIdempotencyKey(key)) {  // CHECK
+    orderRepo.save(new Order(key));            // USE — another thread may have inserted
 }
 ```
 
@@ -656,13 +664,31 @@ public void updateUser(UpdateUserCommand cmd) {
 // After commit: cache and search are stale for at most the polling interval.
 // This is eventual consistency — correct, just slightly delayed.
 // No partial state. No manual reconciliation. No three realities.
+
+// TOCTOU prevention: atomic check-and-create via database constraint
+@Transactional
+public Order createOrder(CreateOrderRequest req) {
+    try {
+        return orderRepo.save(Order.builder()
+            .idempotencyKey(req.idempotencyKey())
+            .userId(req.userId())
+            .build());
+    } catch (DataIntegrityViolationException e) {
+        // Unique constraint on idempotency_key was violated → order already exists
+        return orderRepo.findByIndempotencyKey(req.idempotencyKey())
+            .orElseThrow(() -> new IllegalStateException("Unexpected state"));
+    }
+}
+// Schema MUST enforce: ALTER TABLE orders ADD CONSTRAINT uq_idempotency_key UNIQUE (idempotency_key);
+// Database constraint is the LAST line of defense — application-level check is insufficient under concurrency.
 ```
 
 ### Enforcement Strategy
 
 - **ArchUnit test**: Assert every `@Transactional` method does NOT contain external HTTP calls, message sends without outbox, or file writes.
 - **Integration test**: Each multi-step mutation test must include: (a) full success verification, (b) forced mid-operation failure followed by assertion that all state matches pre-operation baseline.
-- **Code review checklist**: Identify every method that writes to more than one storage system. For each, verify an atomicity strategy exists (transaction, Saga + compensation, or Outbox).
+- **Integration test**: For check-then-act patterns, run concurrent requests and verify exactly-one creation (not zero, not two).
+- **Code review checklist**: Identify every method that writes to more than one storage system. For each, verify an atomicity strategy exists (transaction, Saga + compensation, or Outbox). For every exists?→create pattern, verify database-level unique constraint handles the race.
 
 ---
 

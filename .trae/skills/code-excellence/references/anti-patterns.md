@@ -1092,9 +1092,221 @@ public CursorPage<Order> listCursor(
 
 ---
 
-## AP-27: Untrusted Data Passed to Dangerous Sink
+## AP-28: TOCTOU Race Condition (Time-of-Check to Time-of-Use)
 
-**Symptom**: User-controlled input passed to SQL strings, OS commands, HTML output, or deserialization without sanitization.
+**Symptom**: A condition is checked, then later acted upon — but the state may have changed between check and use.
+
+### ❌ Wrong
+```java
+// Race Condition: concurrent requests both pass the check, both create duplicates
+if (!orderRepo.existsByIdempotencyKey(key)) {  // CHECK — key doesn't exist yet
+    orderRepo.save(new Order(key));            // USE — but another thread just inserted!
+}
+
+// Defensive programming missing — division by zero
+public double calculateDiscountRate(Money discount, Money total) {
+    return discount.amount().doubleValue() / total.amount().doubleValue(); // total=0 → ArithmeticException
+}
+
+// Missing null check on external data
+public String formatAddress(User user) {
+    return user.getAddress().getCity() + ", " + user.getAddress().getState();
+    // getAddress() returns null for new users → NullPointerException
+}
+```
+
+### Root Cause
+
+TOCTOU vulnerabilities occur when a check and subsequent action are not atomic. In concurrent systems, another thread/process can change the state between the check and the use. This is the root cause of duplicate payments, double bookings, and race-condition data corruption.
+
+### ✅ Expert Fix — Atomic Operations
+
+```java
+// Fix 1: Database-level unique constraint + handle constraint violation
+@Transactional
+public Order createOrder(CreateOrderRequest req) {
+    try {
+        return orderRepo.save(Order.builder()
+            .idempotencyKey(req.idempotencyKey())
+            .userId(req.userId())
+            .build());
+    } catch (DataIntegrityViolationException e) {
+        // Unique constraint on idempotency_key was violated — order already exists
+        return orderRepo.findByIndempotencyKey(req.idempotencyKey())
+            .orElseThrow(() -> new IllegalStateException("Unexpected state"));
+    }
+}
+
+// Schema must enforce:
+// ALTER TABLE orders ADD CONSTRAINT uq_idempotency_key UNIQUE (idempotency_key);
+
+// Fix 2: Atomic check-and-create at DB level
+@Query(value = """
+    INSERT INTO orders (idempotency_key, user_id, status)
+    VALUES (:key, :userId, 'PENDING')
+    ON CONFLICT (idempotency_key) DO NOTHING
+    RETURNING *
+    """, nativeQuery = true)
+Optional<Order> findOrCreateByIndempotencyKey(@Param("key") String key,
+                                                @Param("userId") Long userId);
+
+// Fix 3: Optimistic locking for concurrent updates
+@Entity
+public class Order {
+    @Id private Long id;
+    @Version private Long version;  // JPA optimistic locking
+    // On concurrent update: OptimisticLockException — retry or reject
+}
+
+// Defensive programming: guard against zero/null
+public double calculateDiscountRate(Money discount, Money total) {
+    Objects.requireNonNull(discount, "discount must not be null");
+    Objects.requireNonNull(total, "total must not be null");
+    if (total.amount().compareTo(BigDecimal.ZERO) == 0) {
+        return 0.0; // zero total = zero discount rate, not division by zero
+    }
+    return discount.amount().doubleValue() / total.amount().doubleValue();
+}
+
+// Null-safe chaining with Optional
+public String formatAddress(User user) {
+    return Optional.ofNullable(user)
+        .map(User::getAddress)
+        .map(a -> a.getCity() + ", " + a.getState())
+        .orElse("Address not provided");
+}
+```
+
+**Key Principles**:
+1. **Database constraints are the last line of defense** — unique constraints, NOT NULL, foreign keys
+2. **Check-and-act must be atomic** — `INSERT ... ON CONFLICT`, `SELECT ... FOR UPDATE`, distributed locks
+3. **Defensive programming** — validate inputs, handle edge cases, fail fast with clear messages
+
+---
+
+## AP-29: Pagination Without Offset Safety
+
+**Symptom**: Using OFFSET/LIMIT pagination that becomes slow on deep pages.
+
+### ❌ Wrong
+```java
+// OFFSET 1000000, LIMIT 20 — DB scans 1,000,020 rows to return 20
+@Query("SELECT o FROM Order o ORDER BY o.createdAt DESC")
+Page<Order> findOrders(Pageable pageable); // attacker: page=50000&size=20 → OOM
+```
+
+### Root Cause
+
+OFFSET doesn't skip rows efficiently — the database still reads and discards all skipped rows. At deep offsets, this becomes O(n) per query. Additionally, result set changes between pages if data is inserted/deleted during pagination.
+
+### ✅ Expert Fix — Cursor-Based Pagination
+
+```java
+// Cursor pagination — O(log n) via index, consistent across changes
+@Query(value = """
+    SELECT o.* FROM orders o
+    WHERE o.created_at < :cursor
+       OR (o.created_at = :cursor AND o.id < :cursorId)
+    ORDER BY o.created_at DESC, o.id DESC
+    LIMIT :limit
+    """, nativeQuery = true)
+List<Order> findAfterCursor(@Param("cursor") LocalDateTime cursor,
+                            @Param("cursorId") Long cursorId,
+                            @Param("limit") int limit);
+
+// Response includes next cursor for the caller
+public record CursorPage<T>(
+    List<T> items,
+    @Nullable String nextCursor,  // base64 encoded (createdAt, id)
+    boolean hasNextPage
+) {}
+```
+
+**OFFSET vs Cursor Comparison**:
+
+| Metric | OFFSET/LIMIT | Cursor-Based |
+|---|---|---|
+| Deep page performance | O(n) — degrades with page depth | O(log n) — consistent |
+| Consistency during pagination | Skips/duplicates rows if data changes | Consistent — based on last seen row |
+| Total count available | Yes — requires separate COUNT query | No — requires separate query |
+| Best for | Small result sets, admin dashboards | Large datasets, infinite scroll |
+
+---
+
+## AP-30: Missing Circuit Breaker on External Calls
+
+**Symptom**: External service calls without failure isolation — one slow dependency drags down the entire system.
+
+### ❌ Wrong
+```java
+// No circuit breaker — if payment service is slow, all threads block
+public PaymentResult processPayment(Order order) {
+    return paymentGateway.charge(order);  // 10s timeout → thread pool exhaustion under load
+}
+
+// No fallback — service completely unavailable
+public ProductInfo getProduct(Long id) {
+    return catalogService.findById(id); // catalog down → product page returns 500
+}
+```
+
+### Root Cause
+
+Without a circuit breaker, a failing or slow external service causes cascading failures. Threads pile up waiting for timeouts, connection pools exhaust, and the entire application becomes unresponsive.
+
+### ✅ Expert Fix — Resilience4j Circuit Breaker
+
+```java
+@CircuitBreaker(name = "paymentService", fallbackMethod = "paymentFallback")
+@Retry(name = "paymentService")
+@TimeLimiter(name = "paymentService")
+public PaymentResult processPayment(Order order) {
+    return paymentGateway.charge(order);
+}
+
+// Fallback: degrade gracefully instead of failing completely
+public PaymentResult paymentFallback(Order order, Exception e) {
+    log.warn("Payment service unavailable, queuing for retry: {}", e.getMessage());
+    paymentQueue.enqueue(order);  // async retry via message queue
+    return PaymentResult.pending(order.id());  // inform caller it's processing
+}
+
+// Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentService:
+        failureRateThreshold: 50        # open circuit when 50% calls fail
+        slowCallRateThreshold: 80       # also count slow calls (> 2s)
+        slowCallDurationThreshold: 2s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+  retry:
+    instances:
+      paymentService:
+        maxAttempts: 3
+        waitDuration: 500ms
+        retryExceptions:
+          - java.net.SocketTimeoutException
+  timelimiter:
+    instances:
+      paymentService:
+        timeoutDuration: 3s             # fail fast, don't wait forever
+        cancelRunningFuture: true
+```
+
+**Circuit Breaker States**:
+
+| State | Behavior | Transition |
+|---|---|---|
+| CLOSED | Normal operation — requests pass through | → OPEN when failure rate exceeds threshold |
+| OPEN | Requests fail immediately — no calls to external service | → HALF_OPEN after wait duration |
+| HALF_OPEN | Limited test requests to check if service recovered | → CLOSED if test succeeds, → OPEN if fails |
+
+---
+
+## AP-27: Untrusted Data Passed to Dangerous Sink
 
 ### ❌ Wrong
 ```java
@@ -1169,3 +1381,6 @@ When reviewing generated code, check for these signals:
 - [ ] Any multi-step mutation without Saga or outbox? → **Non-Atomic Mutation (AP-25)**
 - [ ] Any pagination without @Max on page size? → **Unbounded Pagination (AP-26)**
 - [ ] Any string concatenation for SQL / OS command / HTML? → **Injection (AP-27)**
+- [ ] Any check-then-act without atomicity? → **TOCTOU Race Condition (AP-28)**
+- [ ] Any OFFSET pagination on tables > 100K rows? → **Deep Offset Pagination (AP-29)**
+- [ ] Any external call without circuit breaker? → **Missing Circuit Breaker (AP-30)**

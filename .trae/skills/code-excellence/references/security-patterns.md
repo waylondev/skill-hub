@@ -215,6 +215,122 @@ public class AuditAspect {
 
 ---
 
+## Pattern: Security Exception Handling
+
+**Use when**: Authentication/authorization failures must return consistent, safe error responses without leaking system internals.
+
+### ❌ Wrong — Leaking Security Details
+
+```java
+// Leaks: which field failed, internal class names, stack traces
+@ExceptionHandler(AccessDeniedException.class)
+public ResponseEntity<String> handleAccessDenied(AccessDeniedException e) {
+    return ResponseEntity.status(403)
+        .body("Access denied for user " + e.getAuthentication().getName()
+            + " trying to access " + e.getAuthentication().getAuthorities()
+            + " — " + e.getMessage());  // stack trace fragment in response
+}
+
+// Inconsistent errors: sometimes JSON, sometimes HTML error page
+// Some errors leak Spring Security's default Whitelabel error page
+```
+
+### Root Cause
+
+Security exceptions contain sensitive information: usernames, roles, attempted resources, internal paths. Returning this data to clients aids attackers in reconnaissance. Additionally, unhandled Spring Security exceptions return HTML error pages instead of JSON, breaking API contracts.
+
+### ✅ Expert Fix — Safe, Consistent Security Error Responses
+
+```java
+// Centralized security exception handler
+@RestControllerAdvice
+public class SecurityExceptionHandler {
+
+    // 401: Not authenticated
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<SecurityError> handleAuthentication(AuthenticationException e) {
+        // Log the REAL details server-side for debugging
+        log.warn("Authentication failed: {}", e.getMessage());
+
+        // Return SAFE response to client
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(new SecurityError(
+                "AUTH_FAILED",
+                "Authentication required. Please provide valid credentials.",
+                Instant.now()
+            ));
+    }
+
+    // 403: Authenticated but no permission
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<SecurityError> handleAccessDenied(AccessDeniedException e) {
+        var currentUser = SecurityContextHolder.getContext().getAuthentication();
+
+        // Audit log: who was denied and for what
+        log.warn("Access denied: user={} roles={} action={}",
+            currentUser != null ? currentUser.getName() : "anonymous",
+            currentUser != null ? currentUser.getAuthorities() : "none",
+            e.getMessage());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(new SecurityError(
+                "ACCESS_DENIED",
+                "You do not have permission to perform this action.",
+                Instant.now()
+            ));
+    }
+
+    // 429: Rate limit exceeded
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<SecurityError> handleRateLimit(RateLimitExceededException e) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+            .header("Retry-After", String.valueOf(e.getRetryAfterSeconds()))
+            .body(new SecurityError(
+                "RATE_LIMITED",
+                "Too many requests. Please retry after " + e.getRetryAfterSeconds() + " seconds.",
+                Instant.now()
+            ));
+    }
+
+    public record SecurityError(String code, String message, Instant timestamp) {}
+}
+
+// Spring Security config: ensure exceptions are handled, not thrown as HTML
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http.exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint((request, response, authException) -> {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.getWriter().write(
+                    "{\"code\":\"AUTH_FAILED\",\"message\":\"Authentication required\"}"
+                );
+            })
+            .accessDeniedHandler((request, response, accessDeniedException) -> {
+                response.setStatus(HttpStatus.FORBIDDEN.value());
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.getWriter().write(
+                    "{\"code\":\"ACCESS_DENIED\",\"message\":\"Insufficient permissions\"}"
+                );
+            })
+        );
+        return http.build();
+    }
+}
+```
+
+**Security Error Response Rules**:
+1. **Never leak**: usernames, roles, internal paths, class names, stack traces, SQL queries
+2. **Always log**: full details server-side with audit trail for security investigation
+3. **Consistent format**: same JSON structure for all security errors
+4. **Actionable message**: tell the caller what to do (e.g., "provide valid credentials") without explaining why it failed
+
+---
+
 ## Pattern: Sensitive Data Encryption
 
 ### Classification → Strategy

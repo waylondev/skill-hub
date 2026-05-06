@@ -53,6 +53,70 @@ Always determine the context profile FIRST, then apply the appropriate variant.
 | Enterprise | Full error taxonomy, i18n messages, audit trail | Structured error codes mapped to RFC 7807 Problem Details |
 | Critical Infra | Every error case enumerated, runbooks attached | Error codes → alert routing → on-call playbook |
 
+### Security Configuration — MVP Degradation
+
+| Context | Authentication | Authorization | Security Headers | HTTPS |
+|---------|---------------|---------------|-----------------|-------|
+| Startup MVP | Basic auth or simple JWT. Can skip OAuth2 complexity. | Role check at controller level with `@PreAuthorize`. | Minimal CSP, no HSTS. Can skip strict-transport-security. | TLS required but can use Let's Encrypt auto-renewal. |
+| Scale-Up | OAuth2/OIDC with authorization server (Keycloak/Auth0). JWT access + refresh tokens. | RBAC at service layer with AOP interceptors. Fail-closed by default. | Full security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options. | TLS 1.2+ enforced. Certificate pinning for mobile clients. |
+| Enterprise | OAuth2/OIDC + MFA. SSO integration with corporate IdP. Session management with revocation. | ABAC with policy engine. Resource-level permissions. Context-aware rules. | Strict CSP with nonce-based script loading. Report-Only mode first, then enforce. | Mutual TLS for service-to-service. HSTS preloaded. |
+| Critical Infra | Hardware-backed authentication (FIDO2/YubiKey). Biometric + password + OTP. Zero-trust architecture. | Continuous authorization — re-evaluated per request with context. Real-time policy updates. | Maximum security posture. CSP + Reporting + Monitoring. Violation alerts to security team. | End-to-end encryption. Client certificates required. Network segmentation. |
+
+### MVP Security Degradation Patterns
+
+When building an MVP, full enterprise security adds friction. Use these **safe degradation patterns** that maintain baseline security without the operational overhead:
+
+```java
+// ❌ Wrong for MVP: Skipping auth entirely
+// No auth → anyone can access everything → data breach
+
+// ✅ Safe MVP: Simple JWT without OAuth2 complexity
+public class SimpleJwtFilter extends OncePerRequestFilter {
+    private final String jwtSecret = System.getenv("JWT_SECRET");  // at minimum, externalized
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain) {
+        var token = extractToken(request);
+        if (token != null && validateToken(token)) {
+            SecurityContextHolder.getContext()
+                .setAuthentication(new JwtAuthentication(parseClaims(token)));
+        }
+        chain.doFilter(request, response);
+    }
+}
+
+// ❌ Wrong for MVP: No input validation
+// @PostMapping("/orders") public Order create(@RequestBody Object req) { ... }
+
+// ✅ Safe MVP: Basic Bean Validation at minimum
+@PostMapping("/orders")
+public Order create(@Valid @RequestBody CreateOrderRequest req) {
+    // At minimum: validate structure, not business rules
+    return orderService.create(req);
+}
+
+// ❌ Wrong for MVP: No error handling at all
+// try { ... } catch (Exception e) { log.error("error", e); }
+
+// ✅ Safe MVP: Fail fast with structured error
+@ExceptionHandler(Exception.class)
+public ResponseEntity<ApiError> handleGlobal(Exception e) {
+    return ResponseEntity.status(500)
+        .body(new ApiError("INTERNAL_ERROR", "An unexpected error occurred"));
+    // No stack trace to client, but log it server-side
+}
+```
+
+**MVP Security Checklist** (minimum acceptable):
+- [ ] Authentication exists — even if simple JWT, no unprotected endpoints
+- [ ] Input validation at API boundary — `@Valid` on all request bodies
+- [ ] No secrets in source code — environment variables at minimum
+- [ ] HTTPS in production — no HTTP-only endpoints serving user data
+- [ ] Error responses don't leak internals — generic 500, detailed server logs
+- [ ] Rate limiting on authentication endpoints — prevent brute force
+
 ### Dependency Injection
 
 | Context | Approach |
