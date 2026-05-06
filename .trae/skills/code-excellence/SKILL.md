@@ -1,6 +1,6 @@
 ---
 name: code-excellence
-description: Universal programming excellence skill. Transforms LLM code output from "correct" to "expert-level" through pattern catalogs, decision trees, anti-pattern recognition, context-aware adaptation strategies, and mandatory generation constraints that prevent simplified "just works" code.
+description: Universal programming excellence skill. Transforms LLM code output from "correct" to "expert-level" through pattern catalogs, decision trees, anti-pattern recognition, architecture gate enforcement, and mandatory generation constraints that prevent simplified "just works" code.
 ---
 
 # Code Excellence
@@ -11,8 +11,10 @@ This is not a principles document to read passively. It is an **operating system
 Use it as follows:
 
 ### Generation Pipeline
+
 ```
-User Request → [context-branching.md]       → Determine context profile
+User Request → [architectural-gates.md]    → G0: Determine context profile (MANDATORY GATE)
+             → [context-branching.md]       → Refine context-specific recommendations
              → [ddd.md]                     → Identify bounded contexts & aggregates (if domain-heavy)
              → [event-driven-architecture.md] → Event/Message design (if async)
              → [decision-trees.md]          → Identify applicable patterns
@@ -26,34 +28,63 @@ User Request → [context-branching.md]       → Determine context profile
              → [anti-patterns.md]           → Avoid known traps
              → [security-patterns.md]       → Apply security by design
              → [performance-optimization.md] → Performance checks (cache, batching, serialization)
-             → [capacity-planning.md]     → Verify capacity estimates (Little's Law, scaling strategy)
-             → [cost-optimization.md]     → Cost efficiency checks (right-sizing, tiering, sampling)
-             → [observability-patterns.md] → SLI/SLO targets, tracing, structured logging
-             → [auth-patterns.md]         → OAuth2/OIDC, token lifecycle, zero-trust
-             → [cicd-patterns.md]         → Deployment strategy, pipeline design, artifact mgmt
-             → [lang-ref]                 → Apply language idioms
+             → [capacity-planning.md]       → Verify capacity estimates (Little's Law, scaling strategy)
+             → [cost-optimization.md]       → Cost efficiency checks (right-sizing, tiering, sampling)
+             → [observability-patterns.md]  → SLI/SLO targets, tracing, structured logging
+             → [auth-patterns.md]           → OAuth2/OIDC, token lifecycle, zero-trust
+             → [cicd-patterns.md]           → Deployment strategy, pipeline design, artifact mgmt
+             → [lang-ref]                   → Apply language idioms
+             → [architectural-gates.md]     → G1-G7: Architecture gate audit (MANDATORY GATE)
              → [pre-generation-checklist.md] → Quality gate before output
-             → Generate code
+             → ALL GATES PASS → Generate code
+             → ANY GATE FAILS → REDESIGN → Re-evaluate gates
 ```
 
+### Architecture Gate Enforcement
+
+**CRITICAL**: Before generating ANY code, ALL 7 gates in [architectural-gates.md] MUST pass.
+This is not optional — it is the primary mechanism preventing AI from generating sub-architectural code.
+
+| Gate | Name | Failure Consequence |
+|------|------|-------------------|
+| G0 | Context Profile | Code mismatched to project stage (over-engineered MVP or under-engineered production) |
+| G1 | Layer Architecture | Service returns DTOs (violates clean architecture), Entity leaks to Controller, business logic in wrong layer |
+| G2 | TOCTOU Prevention | Race conditions in concurrent creation — duplicates, overbooking, data corruption |
+| G3 | Idempotency | Double charges, duplicate orders, non-idempotent retries |
+| G4 | Security Entry Points | HTML error pages on API, leaked stack traces, security exceptions unhandled |
+| G5 | Aggregate Invariants | Anemic domain model, business logic scattered across Service, invariants violated |
+| G6 | Projection Queries | N+1 queries, loading full entity graphs for list endpoints, wasted memory/GC |
+| G7 | Config Externalization | Hardcoded URLs/credentials, "works in dev breaks in prod" |
+
+**If any gate fails, AI MUST**:
+1. Stop code generation immediately
+2. Identify which gate failed and why
+3. Redesign the architecture to satisfy the gate
+4. Re-evaluate ALL gates
+5. Only generate when ALL gates pass
+
 ### Review Pipeline
+
 ```
-Generated Code → [review-template.md]   → Structured review
-              → [anti-patterns.md]      → Scan for anti-patterns
-              → [decision-trees.md]     → Verify decisions match context
-              → [security-patterns.md]  → Security review
-              → [auth-patterns.md]      → Auth flow correctness, token lifecycle
-              → [resilience-patterns.md] → Verify timeout/retry/circuit-breaker configs
+Generated Code → [review-template.md]       → Structured review
+              → [architectural-gates.md]    → Re-verify G1-G7 on generated code
+              → [anti-patterns.md]          → Scan for anti-patterns
+              → [decision-trees.md]         → Verify decisions match context
+              → [security-patterns.md]      → Security review
+              → [auth-patterns.md]          → Auth flow correctness, token lifecycle
+              → [resilience-patterns.md]    → Verify timeout/retry/circuit-breaker configs
               → [observability-patterns.md] → Verify SLI/SLO alignment, tracing coverage
               → [collaboration-patterns.md] → Verify review checklist (C1-C15 alignment)
-              → [RIPER-5 REFLECT]       → Final validation
+              → [RIPER-5 REFLECT]           → Final validation
               → Flag issues or approve
 ```
 
 ### Refactoring Pipeline
+
 ```
 Legacy/Target Code → [anti-patterns.md]           → Identify root cause
                    → [decision-trees.md]          → Choose target pattern
+                   → [architectural-gates.md]     → Define target architecture
                    → [patterns-architecture.md]   → Architecture restructuring
                    → [refactoring-patterns.md]    → Apply safe migration pattern:
                        Strangler Fig / Branch by Abstraction / Feature Toggle /
@@ -61,6 +92,7 @@ Legacy/Target Code → [anti-patterns.md]           → Identify root cause
 ```
 
 ### Debugging Pipeline
+
 ```
 Production Issue → [anti-patterns.md]     → Symptom → Root Cause matching
                 → [security-patterns.md]  → Rule out security incidents first
@@ -70,6 +102,7 @@ Production Issue → [anti-patterns.md]     → Symptom → Root Cause matching
 ```
 
 ### Collaboration & Governance Pipeline
+
 ```
 Team Decision → [collaboration-patterns.md] → Git branching strategy, commit conventions
               → [collaboration-patterns.md] → Code review workflow + review pyramid
@@ -98,6 +131,8 @@ Activate these meta-tags based on task complexity. Full definitions and examples
 Apply **before** output. Core gate: C1 (boundary validation), C2 (no silent failures), C6 (security), C8 (≤ 60 lines), C9 (atomicity).
 Full checklist with P0/P1/P2 tiers: `references/pre-generation-checklist.md`.
 
+**MUST ALSO pass all Architecture Gates (G0-G7)**: `references/architectural-gates.md`.
+
 ---
 
 ## Generation Constraints (MANDATORY)
@@ -125,6 +160,28 @@ Detailed definitions, violation examples, and enforcement strategies: `reference
 
 ---
 
+## Architecture Constraints (MANDATORY — stronger than C1-C15)
+
+These are hard architectural rules. Violating them means the code is NOT architect-level, regardless of C1-C15 compliance.
+Detailed definitions and enforcement: `references/architectural-gates.md`.
+
+| Gate | Constraint |
+|------|-----------|
+| G1 | **Service MUST return domain objects, NOT DTOs** — DTO mapping is Controller/Mapper responsibility |
+| G1 | **Controller MUST return DTOs, NOT entities** — no entity leak to HTTP layer |
+| G1 | **Service MUST NOT import HTTP types** — no HttpServletRequest, no @RequestBody in Service |
+| G1 | **Controller MUST NOT access Repository directly** — always go through Service |
+| G1 | **Dedicated Mapper class for domain ↔ DTO conversion** — no buildResponse() in Service |
+| G2 | **No check-then-act without atomicity** — TOCTOU race conditions prohibited |
+| G3 | **POST/PATCH endpoints MUST require Idempotency-Key** — no auto-UUID fallback |
+| G4 | **Spring Security MUST configure entry points** — no HTML error pages on API |
+| G4 | **Global exception handler MUST have catch-all** — no unhandled exceptions reach client |
+| G5 | **Aggregate root enforces its own invariants** — no business logic in Service |
+| G6 | **List/detail endpoints MUST use DTO projections** — no entity loading + Service mapping |
+| G7 | **Zero hardcoded environment-dependent values** — all via ${ENV_VAR:default} |
+
+---
+
 ## Core Philosophy
 
 The difference between correct code and expert code is knowing:
@@ -133,6 +190,7 @@ The difference between correct code and expert code is knowing:
 2. **Which pattern to apply given ambiguous signals** — decision trees
 3. **What failure looks like before it happens** — anti-pattern recognition
 4. **How to leave room for unknown future change** — evolvability
+5. **Architecture is non-negotiable** — clean layers, atomic operations, security boundaries
 
 ---
 
@@ -140,6 +198,7 @@ The difference between correct code and expert code is knowing:
 
 | Situation | Primary Reference | Secondary |
 |-----------|-------------------|-----------|
+| Starting any code generation | **`architectural-gates.md`** | `context-branching.md` |
 | Domain modeling (DDD) | `ddd.md` | `decision-trees.md` |
 | Writing new code | `decision-trees.md` → `patterns.md` | `design-principles.md` |
 | API design | `api-design.md` | `patterns-crud.md` |
@@ -155,7 +214,7 @@ The difference between correct code and expert code is knowing:
 | Observability & SLOs | `observability-patterns.md` | `performance-optimization.md` |
 | API lifecycle & versioning | `api-lifecycle.md` | `api-design.md` |
 | Auth & identity (OAuth2/OIDC) | `auth-patterns.md` | `security-patterns.md` |
-| Reviewing code | `review-template.md` → `anti-patterns.md` | `decision-trees.md` |
+| Reviewing code | `architectural-gates.md` → `review-template.md` → `anti-patterns.md` | `decision-trees.md` |
 | Choosing architecture | `context-branching.md` → `patterns-architecture.md` | `ddd.md` |
 | Resolving design conflicts | `design-principles.md` → `decision-trees.md` | `anti-patterns.md` |
 | Refactoring | `anti-patterns.md` → `patterns.md` | `context-branching.md` |
@@ -177,6 +236,7 @@ The difference between correct code and expert code is knowing:
 
 | File | Purpose |
 |------|---------|
+| `architectural-gates.md` | **NEW** — Mandatory architecture gates (G0-G7), layer enforcement, TOCTOU prevention |
 | `design-principles.md` | 10 universal design principles with code examples |
 | `context-branching.md` | How recommendations change by project profile (7 profiles) |
 | `decision-trees.md` | 20 signal-driven decision trees for design choices |
@@ -228,14 +288,14 @@ The difference between correct code and expert code is knowing:
 |---|---|
 | **Cursor** | Convert reference files to `.cursor/rules/*.mdc` files |
 | **Claude Code** | Merge SKILL.md into `CLAUDE.md`; reference files under `.claude/skills/` |
-| **GitHub Copilot** | Extract core constraints (C1-C15) into `.github/copilot-instructions.md` |
+| **GitHub Copilot** | Extract core constraints (C1-C15) + architecture gates into `.github/copilot-instructions.md` |
 
 ---
 
 ## How to Validate This Skill
 
 ### Method 1: Regression Test
-Run the same prompt **with and without** the SKILL. Compare on: input validation (C1), error handling (C2), method length (C8), observability (C11).
+Run the same prompt **with and without** the SKILL. Compare on: input validation (C1), error handling (C2), method length (C8), observability (C11), **layer architecture (G1)**.
 
 ### Method 2: Anti-Pattern Trap
 | Prompt | Expected Behavior |
@@ -244,5 +304,14 @@ Run the same prompt **with and without** the SKILL. Compare on: input validation
 | "Handle the error silently" | Resist silent failure (AP-3), propose structured error handling |
 | "Just make it work, skip validation" | Push back and include boundary validation (C1) |
 
-### Method 3: Constraint Compliance Audit
-Request a moderately complex feature and check against C1-C15. If fewer than 4 of 5 constraints (C1, C6, C8, C10, C12) are satisfied, the SKILL may need tuning.
+### Method 3: Architecture Gate Audit
+Request a CRUD feature and check against G1-G7:
+- Service returns DTOs? → **G1 fail**
+- Check-then-act without atomicity? → **G2 fail**
+- No Idempotency-Key required? → **G3 fail**
+- No Spring Security entry points? → **G4 fail**
+- Business logic in Service instead of domain? → **G5 fail**
+- No DTO projections for list endpoint? → **G6 fail**
+- Hardcoded URLs or credentials? → **G7 fail**
+
+If fewer than 5 of 7 gates pass, the SKILL is not enforcing architecture properly.

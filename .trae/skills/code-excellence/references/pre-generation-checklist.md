@@ -4,6 +4,26 @@
 
 This checklist replaces the post-generation self-calibration rubric with **proactive quality gates**. Apply it **before** generating code to prevent quality issues rather than fixing them afterward.
 
+**CRITICAL**: Before applying this checklist, ALL Architecture Gates (G0-G7) from `architectural-gates.md` MUST pass.
+Architecture gates are checked FIRST — if any gate fails, redesign before proceeding to P0/P1/P2 checks.
+
+---
+
+## Architecture Gate Audit (MUST PASS BEFORE P0)
+
+| Gate | Check | Tool |
+|------|-------|------|
+| G0: Context Profile | Determined project context (MVP/Scale-Up/Enterprise)? | `context-branching.md` |
+| G1: Layer Architecture | Service returns domain objects? Controller returns DTOs? Dedicated Mapper? No entity leak? No HTTP types in Service? | `architectural-gates.md` §Gate 1 |
+| G2: TOCTOU Prevention | No check-then-act? Atomic patterns (unique constraint + catch, UPSERT, FOR UPDATE)? | `architectural-gates.md` §Gate 2 |
+| G3: Idempotency | POST requires `Idempotency-Key` header? No auto-UUID fallback? | `architectural-gates.md` §Gate 3 |
+| G4: Security Entry Points | Spring Security entry points configured? Global handler has catch-all? No stack trace leaks? | `architectural-gates.md` §Gate 4 |
+| G5: Aggregate Invariants | Business rules in domain objects? Service calls aggregate methods, not direct field mutation? | `architectural-gates.md` §Gate 5 |
+| G6: Projection Queries | List/detail endpoints use DTO projections (SELECT new ...)? No entity loading + Service mapping? | `architectural-gates.md` §Gate 6 |
+| G7: Config Externalization | Zero hardcoded URLs/credentials? All env-dependent values use `${ENV_VAR:default}`? | `architectural-gates.md` §Gate 7 |
+
+**If ANY gate above fails: STOP. Redesign. Re-evaluate gates. Do NOT proceed to P0.**
+
 ---
 
 ## P0 — Must Pass (Non-Negotiable)
