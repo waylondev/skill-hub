@@ -653,3 +653,293 @@ Before approving system design:
 - [ ] Module boundaries aligned with business capabilities?
 - [ ] Cross-module dependency direction is clear and acyclic?
 - [ ] Shared kernel is minimal and stable (no churn)?
+
+---
+
+## Pattern: Saga Orchestration vs Choreography
+
+**Use when**: You need to coordinate a multi-step distributed transaction. Choose between orchestration (central coordinator) and choreography (event-driven decentralized) based on complexity.
+
+### Decision Guide
+
+| Signal | Orchestration | Choreography |
+|--------|--------------|--------------|
+| Steps | > 4 steps or conditional branching | ≤ 4 linear steps |
+| Visibility | Need single view of saga state | Each step manages own state |
+| Coupling | Prefer loose coupling between steps | Steps know about each other via events |
+| Complexity | Complex error recovery, retries, timeouts | Simple compensation (undo last step) |
+| Debugging | Centralized saga log | Distributed tracing required |
+
+### Orchestration Pattern (Centralized Coordinator)
+
+```java
+// Saga orchestrator — manages the entire flow
+@Component
+public class OrderSagaOrchestrator {
+    private final InventoryService inventory;
+    private final PaymentService payment;
+    private final ShippingService shipping;
+    private final SagaStateRepository sagaStateRepo;
+
+    @Transactional
+    public SagaResult execute(OrderId orderId) {
+        var saga = sagaStateRepo.findById(orderId).orElse(new OrderSaga(orderId));
+
+        try {
+            if (saga.isStepPending(RESERVE_INVENTORY)) {
+                inventory.reserve(orderId, saga.getItems());
+                saga.advanceTo(PAYMENT);
+                sagaStateRepo.save(saga);
+            }
+
+            if (saga.isStepPending(PAYMENT)) {
+                payment.capture(orderId, saga.getTotal());
+                saga.advanceTo(SHIPPING);
+                sagaStateRepo.save(saga);
+            }
+
+            if (saga.isStepPending(SHIPPING)) {
+                shipping.createDelivery(orderId, saga.getAddress());
+                saga.complete();
+                sagaStateRepo.save(saga);
+                return SagaResult.success(orderId);
+            }
+
+        } catch (Exception e) {
+            compensate(saga, e);
+            sagaStateRepo.save(saga);
+            return SagaResult.failure(orderId, e.getMessage());
+        }
+    }
+
+    private void compensate(OrderSaga saga, Exception cause) {
+        // Compensate in reverse order
+        if (saga.isStepCompleted(SHIPPING)) shipping.cancel(saga.getOrderId());
+        if (saga.isStepCompleted(PAYMENT)) payment.refund(saga.getOrderId());
+        if (saga.isStepCompleted(RESERVE_INVENTORY)) inventory.release(saga.getOrderId());
+        saga.failed(cause.getMessage());
+    }
+}
+```
+
+### Choreography Pattern (Event-Driven Decentralized)
+
+```java
+// Each step reacts to events — no central coordinator
+@Component
+public class PaymentSagaStep {
+    private final PaymentService payment;
+    private final DomainEventPublisher publisher;
+
+    @EventListener
+    @Transactional
+    public void on(InventoryReservedEvent e) {
+        try {
+            payment.capture(e.orderId(), e.total());
+            publisher.publish(new PaymentCapturedEvent(e.orderId(), e.total()));
+        } catch (PaymentException ex) {
+            publisher.publish(new PaymentFailedEvent(e.orderId(), ex.getMessage()));
+        }
+    }
+
+    @EventListener
+    public void on(OrderSagaFailedEvent e) {
+        if (e.failedAt() != PAYMENT) return;
+        payment.refund(e.orderId()); // compensate
+    }
+}
+```
+
+**Expert note**: Start with **orchestration** for business-critical sagas. The centralized state provides auditability and simplifies debugging. Reserve choreography for simple, well-understood flows where adding an orchestrator feels like over-engineering.
+
+---
+
+## Pattern: Distributed Data Consistency
+
+**Use when**: Data spans multiple services or databases and you need to maintain consistency without distributed transactions.
+
+### Consistency Spectrum
+
+| Approach | Consistency | Latency | Complexity | When to Use |
+|----------|------------|---------|-----------|-------------|
+| **2PC/XA** | Strong | High | Low (framework handles) | Legacy systems, single vendor, non-performance-critical |
+| **Saga** | Eventual | Medium | Medium | Multi-service transactions |
+| **Outbox + CDC** | Eventual (low lag) | Low-Medium | Medium | Event sourcing, audit trails |
+| **Compensating Write** | Eventual | Low | High (custom logic) | High-throughput, tolerant of temporary inconsistency |
+
+### Outbox + CDC Pattern (Debezium)
+
+```sql
+-- Outbox table — same transaction as business data
+CREATE TABLE outbox_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    aggregate_type VARCHAR(255) NOT NULL,
+    aggregate_id VARCHAR(255) NOT NULL,
+    event_type VARCHAR(255) NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    -- Debezium uses this to route to Kafka topics
+    INDEX idx_aggregate (aggregate_type, aggregate_id)
+);
+```
+
+```java
+// Same transaction — data + event
+@Transactional
+public void approveOrder(Long orderId) {
+    var order = orderRepo.findById(orderId).orElseThrow();
+    order.approve();
+    orderRepo.save(order);
+
+    // Insert event in same DB transaction
+    outboxRepo.save(new OutboxEvent(
+        "Order", orderId.toString(), "OrderApproved",
+        Json.toJson(new OrderApprovedPayload(orderId, order.total()))
+    ));
+    // Debezium CDC connector picks this up from WAL and publishes to Kafka
+    // No dual-write problem — if transaction rolls back, event is too
+}
+```
+
+**Rule**: Never write to a database AND publish to Kafka in separate steps. The Outbox + CDC pattern is the only guaranteed-at-least-once approach without 2PC.
+
+---
+
+## Pattern: Idempotent Consumer
+
+**Use when**: Receiving messages from a queue that may deliver duplicates (at-least-once delivery). Every consumer must handle duplicate messages safely.
+
+```java
+@Component
+public class OrderEventHandler {
+    private final MessageProcessedRepository processedRepo;
+    private final OrderService orderService;
+
+    @KafkaListener(topics = "order-events")
+    @Transactional
+    public void handle(OrderEvent event, @Header("kafka_receivedMessageId") String messageId) {
+        // Idempotency check — skip if already processed
+        if (processedRepo.existsById(messageId)) {
+            log.info("Duplicate event {} already processed, skipping", messageId);
+            return;
+        }
+
+        orderService.process(event);
+        processedRepo.save(new ProcessedMessage(messageId, Instant.now()));
+    }
+}
+```
+
+**Expert note**: The `messageId` check AND the business processing MUST be in the same database transaction. Otherwise, a crash between check and save causes double processing.
+
+---
+
+## Pattern: API Gateway vs BFF (Backend for Frontend)
+
+**Use when**: Designing the entry point for client applications.
+
+### Decision Guide
+
+| Signal | API Gateway | BFF |
+|--------|------------|-----|
+| Clients | Multiple diverse clients (web, mobile, partner) | One specific client type |
+| Routing | Route to many backend services | Aggregate data from multiple services |
+| Transformation | Protocol translation, auth, rate limiting | Client-specific data shaping |
+| Ownership | Platform team | Client-facing team |
+
+### BFF Pattern
+
+```java
+// BFF for web app — aggregates data from multiple services
+@RestController
+@RequestMapping("/bff/web")
+public class WebBffController {
+    private final OrderClient orderClient;
+    private final UserClient userClient;
+    private final RecommendationClient recommendationClient;
+
+    @GetMapping("/dashboard/{userId}")
+    public WebDashboardResponse getDashboard(@PathVariable Long userId) {
+        // Parallel fetch from multiple services
+        var userFuture = userClient.getUserAsync(userId);
+        var ordersFuture = orderClient.getRecentOrdersAsync(userId, 5);
+        var recsFuture = recommendationClient.getForUserAsync(userId);
+
+        CompletableFuture.allOf(userFuture, ordersFuture, recsFuture).join();
+
+        return new WebDashboardResponse(
+            userFuture.join(),
+            ordersFuture.join(),
+            recsFuture.join()
+        );
+    }
+}
+```
+
+**Rule**: The BFF is owned by the frontend team and shaped by frontend needs. It changes when the UI changes. Backend services change when business logic changes. These are separate release cadences.
+
+---
+
+## Pattern: Graceful Degradation
+
+**Use when**: A dependency fails and you need to keep the system partially functional rather than fully unavailable.
+
+```java
+@Component
+public class ProductCatalogService {
+    private final ProductRepository repo;
+    private final CacheManager cache;
+    private final RecommendationService recommendations;
+
+    public ProductDetailPage getProductPage(Long productId) {
+        var product = repo.findById(productId).orElseThrow();
+
+        // Recommendations may fail — degrade gracefully
+        List<Product> recommendations;
+        try {
+            recommendations = recommendations.getForProduct(productId);
+        } catch (Exception e) {
+            metrics.recommendationFailure.increment();
+            log.warn("Recommendations unavailable for product {}, returning without them", productId);
+            recommendations = List.of(); // empty list — page still works
+        }
+
+        // Reviews — try cache first, then DB
+        var reviews = cache.getReviews(productId)
+            .orElseGet(() -> repo.findReviews(productId, limit = 10));
+
+        return new ProductDetailPage(product, reviews, recommendations);
+    }
+}
+```
+
+**Degradation Levels**:
+
+| Level | Strategy | Example |
+|-------|----------|---------|
+| **Full** | All dependencies available | Complete product page with recommendations, reviews, related items |
+| **Partial** | Non-critical dependency failed | Product page without recommendations |
+| **Minimal** | Only core data available | Product name, price, image — cached from last successful fetch |
+| **Static** | All dynamic systems down | "Service unavailable" with static HTML, cached product catalog |
+
+---
+
+## Quick Architecture Checklist (Extended)
+
+Before approving system design:
+
+- [ ] ADR written for every major technology choice?
+- [ ] C4 Container diagram exists and is up to date?
+- [ ] Bounded contexts identified with explicit relationship types?
+- [ ] Multi-tenancy strategy chosen and documented?
+- [ ] Technical debt quantified for known shortcuts?
+- [ ] Fitness functions (ArchUnit) checking structural rules?
+- [ ] Zero-downtime migration strategy for schema changes?
+- [ ] Module boundaries aligned with business capabilities?
+- [ ] Cross-module dependency direction is clear and acyclic?
+- [ ] Shared kernel is minimal and stable (no churn)?
+- [ ] Saga uses orchestration for complex flows, choreography for simple flows?
+- [ ] Outbox + CDC used for atomic event publishing?
+- [ ] Consumers are idempotent (handles duplicate messages)?
+- [ ] Graceful degradation paths defined for each dependency?
+- [ ] BFF separates client-specific logic from backend services?

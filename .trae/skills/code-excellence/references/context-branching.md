@@ -351,3 +351,108 @@ determinant of what "good code" means.
 - [ ] Architecture decisions (monolith, database, caching) fit current scale
 - [ ] Context-specific anti-patterns reviewed
 - [ ] Plan for context evolution documented (when to upgrade patterns)
+
+---
+
+## Language-Specific Constraint Adaptation
+
+Generation constraints (C1-C15) may need language-specific interpretation. This section defines how each constraint adapts per language.
+
+### Method Length (C8) by Language
+
+| Language | Limit | Rationale |
+|----------|-------|-----------|
+| **Java** | ≤ 60 lines | Standard convention, fits on screen |
+| **Kotlin** | ≤ 40 lines | Concise syntax; 40 Kotlin lines ≈ 60 Java lines in expressiveness |
+| **Go** | ≤ 50 lines | Go favors flat, explicit code over nested abstractions |
+| **Python** | ≤ 40 lines | Python's indentation consumes horizontal space; vertical clarity matters |
+| **TypeScript** | ≤ 50 lines | Mix of types + logic; types don't count toward limit if separated |
+
+### Error Handling (C2) by Language
+
+| Language | Strategy | Detail |
+|----------|----------|--------|
+| **Java** | Typed exceptions + Result type for expected failures | `throws` for checked, RuntimeException for unexpected, sealed interface for business outcomes |
+| **Kotlin** | Result type preferred, exceptions for truly exceptional | `Result<T>` for validation, `throw` for programmer error |
+| **Go** | Explicit error returns, never ignore | `if err != nil` must handle; use sentinel errors for comparison |
+| **Python** | Exception hierarchy + custom exceptions | Define domain-specific exceptions; use `logging.exception()` with context |
+| **TypeScript** | Result type + try/catch boundary | `Result<T, E>` pattern; throw only at boundaries, return Result internally |
+
+### Input Validation (C1) by Language
+
+| Language | Approach | Detail |
+|----------|----------|--------|
+| **Java** | Bean Validation (JSR-380) + constructor validation | `@Valid`, `@NotNull`, custom validators; fail fast in constructor |
+| **Kotlin** | Constructor init blocks + value classes | `init { require(...) }`; inline classes for typed primitives |
+| **Go** | Validation functions, never trust input | Struct tags + validator library; validate before business logic |
+| **Python** | Pydantic models + type hints | `pydantic.BaseModel` with validators; reject at entry point |
+| **TypeScript** | Zod/io-ts schema validation | Runtime validation at API boundary; `zod.parse()` before processing |
+
+### Resource Cleanup (C7) by Language
+
+| Language | Pattern | Detail |
+|----------|---------|--------|
+| **Java** | try-with-resources | `AutoCloseable` for DB connections, streams, HTTP clients |
+| **Kotlin** | `use {}` extension | `use {}` for any `Closeable`; `coroutineScope` for structured concurrency |
+| **Go** | `defer` | `defer file.Close()`, `defer resp.Body.Close()` — right after resource acquisition |
+| **Python** | `with` statement / context managers | `with open(...)`, `@contextmanager`, `__enter__`/`__exit__` |
+| **TypeScript** | `try/finally` + async disposal | `finally { await client.disconnect() }`; `using` (ES2024 Disposable) |
+
+### Atomicity (C9) by Language
+
+| Language | Approach | Detail |
+|----------|----------|--------|
+| **Java** | `@Transactional` + compensating actions | Spring TX for DB, Saga for distributed |
+| **Kotlin** | `transaction {}` (Exposed) + `@Transactional` (Spring) | Same as Java, plus coroutine transaction integration |
+| **Go** | Manual transaction with defer rollback | `tx, _ := db.Begin(); defer tx.Rollback()` — rollback if commit not reached |
+| **Python** | Context manager for transaction | `with db.transaction():` or `@transaction.atomic` |
+| **TypeScript** | Explicit transaction scope | Prisma `$transaction`, TypeORM `manager.transaction` |
+
+### Idempotency (C10) by Language
+
+| Language | Typical Implementation | Detail |
+|----------|----------------------|--------|
+| **Java** | Idempotency store + `@Transactional` | Redis or DB-based deduplication with key TTL |
+| **Kotlin** | Same as Java + `suspend` function support | Coroutine-scoped idempotency check |
+| **Go** | Redis SET NX + DB unique constraint | Two-layer protection: cache first, DB constraint as safety net |
+| **Python** | Database unique index on idempotency key | `INSERT ... ON CONFLICT DO NOTHING` + check affected rows |
+| **TypeScript** | Redis-based with Prisma/Drizzle | `SET idempotency_key EX 86400 NX` — atomic check-and-set |
+
+### Observability (C11) by Language
+
+| Language | Instrumentation | Detail |
+|----------|----------------|--------|
+| **Java** | Micrometer + OpenTelemetry | Auto-instrumentation for Spring; manual `@Timed` for business metrics |
+| **Kotlin** | Same as Java + coroutine context propagation | OpenTelemetry with `CoroutineContext` for trace propagation |
+| **Go** | `otel-go` + `prometheus/client_golang` | Context-based trace propagation; middleware for HTTP/gRPC |
+| **Python** | OpenTelemetry SDK + structlog | `@trace` decorators; structured JSON logging with `extra` context |
+| **TypeScript** | OpenTelemetry JS + Pino logger | AsyncLocalStorage for trace context; middleware injection |
+
+### Configuration Externalization (C12) by Language
+
+| Language | Approach | Detail |
+|----------|----------|--------|
+| **Java** | `@ConfigurationProperties` + environment variables | Spring Boot `application.yml` with `${ENV_VAR}` overrides |
+| **Kotlin** | Same as Java + Ktor configuration | `hocon` or `yaml` config with env variable substitution |
+| **Go** | Viper + env variables | `viper.BindEnv()`, `os.LookupEnv()` with defaults |
+| **Python** | `pydantic-settings` + `.env` files | `BaseSettings` with `env_file` and validation |
+| **TypeScript** | `dotenv` + runtime schema validation | `zod` schema for env variables; fail fast if required vars missing |
+
+### Dependency Minimalism (C15) by Language
+
+| Language | Guidance | Detail |
+|----------|----------|--------|
+| **Java** | Prefer Spring ecosystem; avoid duplicate functionality | Don't add Jackson if you already have Spring Boot (includes Jackson) |
+| **Kotlin** | Leverage stdlib (kotlinx.coroutines, kotlinx.serialization) | Many Java libraries are replaced by Kotlin-native alternatives |
+| **Go** | Stdlib is comprehensive; only add what's truly missing | `net/http`, `encoding/json`, `database/sql` cover most needs |
+| **Python** | Prefer stdlib; be cautious with heavy dependencies | `requests` > `urllib`, but avoid heavy frameworks for simple tasks |
+| **TypeScript** | Node.js ecosystem is vast; evaluate bundle impact | Every dependency adds to bundle size; prefer tree-shakeable imports |
+
+---
+
+## How to Apply Language-Specific Adaptation
+
+1. **Identify the project language**
+2. **Consult the language-specific row** for each constraint (C1-C15) you're applying
+3. **Follow the language-appropriate pattern** rather than the generic recommendation
+4. **When multi-language** (e.g., Java backend + TypeScript frontend), apply the appropriate adaptation per layer

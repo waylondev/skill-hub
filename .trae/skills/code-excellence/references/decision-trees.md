@@ -468,6 +468,148 @@ Is the dependency direction clear and acyclic?
 
 ---
 
+## DT-21: Concurrency Strategy
+
+```
+Does this operation involve shared mutable state?
+├── NO (pure function, stateless, thread-local) → No concurrency control needed
+└── YES → Is the shared state read-heavy (> 90% reads)?
+    ├── YES → Use immutable data structures + copy-on-write
+    │   └── Readers never block. Writers create new version.
+    └── NO (significant write contention) → Is the critical section SHORT (< 1ms)?
+        ├── YES → Synchronized / ReentrantLock / CAS (Compare-And-Swap)
+        │   ├── Simple state (counter, flag) → Atomic* (CAS)
+        │   ├── Complex state → synchronized or ReentrantLock
+        │   └── Multiple independent state pieces → ReadWriteLock
+        └── NO (critical section involves I/O, external calls) → Actor model / Message queue
+            ├── Within single JVM → Akka Actors / java.util.concurrent.Executor
+            └── Across services → Kafka/RabbitMQ + idempotent consumer
+
+Is this a producer-consumer pattern?
+├── YES → Bounded queue + thread pool
+│   ├── Producer rate >> Consumer rate → Bounded queue with backpressure
+│   └── Burst traffic → Unbounded queue risks OOM; prefer bounded + rejection policy
+└── NO → Direct coordination (CountDownLatch, CyclicBarrier, CompletableFuture)
+
+Performance target:
+├── Latency-critical (< 1ms p99) → Avoid locks. Use lock-free data structures (ConcurrentLinkedQueue).
+└── Throughput-critical (> 10K ops/sec) → Partition work. Each partition uses local lock.
+```
+
+---
+
+## DT-22: Performance Optimization Strategy
+
+```
+Has profiling identified this as a bottleneck?
+├── NO → Don't optimize. Write clear code first. Premature optimization is anti-pattern.
+└── YES → What type of bottleneck?
+    ├── CPU-bound → Algorithmic improvement
+    │   ├── O(n²) → O(n log n)? Sort first, use hash map, or binary search
+    │   ├── Repeated computation → Memoize / cache results
+    │   ├── Sequential processing → Parallelize (Stream.parallel, parallel workers)
+    │   └── String concatenation in loop → StringBuilder
+    ├── I/O-bound → Reduce I/O operations
+    │   ├── N+1 queries → Batch fetch / JOIN FETCH
+    │   ├── Sequential API calls → Parallel (CompletableFuture.allOf)
+    │   ├── No caching → Add cache for hot data (DT-8)
+    │   └── Large payload transfer → Compression / pagination / field selection
+    ├── Memory-bound → Reduce allocations
+    │   ├── Creating objects in tight loop → Object pool / reuse
+    │   ├── Loading entire dataset → Streaming / pagination
+    │   ├── Memory leak → Resource cleanup (C7), weak references
+    │   └── Large collections → Primitive collections (Eclipse Collections, fastutil)
+    └── Database-bound → Query optimization
+        ├── Missing index → Add index on filter/join/sort columns
+        ├── Full table scan → Covering index, partition pruning
+        ├── SELECT * → Select only needed columns
+        └── Lock contention → Optimize transaction scope, reduce lock duration
+```
+
+**Expert rule of thumb**: The order of optimization impact:
+1. **Algorithm change** (O(n²) → O(n log n)) — 100x-1000x improvement
+2. **I/O reduction** (N+1 → batch) — 10x-100x improvement
+3. **Caching** (cache-aside) — 5x-50x improvement
+4. **Parallelization** — 2x-8x improvement (limited by cores)
+5. **Micro-optimization** (StringBuilder, primitive arrays) — 1.1x-2x improvement
+
+---
+
+## DT-23: Logging Strategy
+
+```
+What is the purpose of this log?
+├── Audit trail (compliance, forensic) → Structured, immutable log, include actor + action + result
+├── Debugging (developer troubleshooting) → Include context: requestId, userId, key params
+├── Metrics (monitoring, alerting) → Use metrics, not logs. Logs are for humans, metrics for machines
+└── Business analytics → Use events, not logs. Events go to analytics pipeline
+
+What level should this be?
+├── ERROR → System failure that requires human attention (page on-call)
+├── WARN  → Recoverable issue that may become a problem (alert, not page)
+├── INFO  → Significant business event (order created, payment processed)
+├── DEBUG → Detailed flow information (enabled in staging/dev)
+└── TRACE → Low-level execution detail (enabled only when actively debugging)
+
+Should this log include sensitive data?
+├── Never log: passwords, tokens, PII (full SSN, credit card), health data
+├── Mask before logging: email (a***@example.com), card (****1234), phone (***-***-1234)
+├── OK to log: user ID, order ID, sanitized error message, request ID
+└── When in doubt: Don't log it. You can always add logs; you can't remove them from a SIEM.
+```
+
+---
+
+## DT-24: Collection Type Selection
+
+```
+Do you need ordered elements?
+├── YES (insertion order matters) → List
+│   ├── Frequent add/remove at end → ArrayList / vector
+│   ├── Frequent add/remove at beginning/middle → LinkedList
+│   ├── Read-heavy, random access → ArrayList (O(1) get)
+│   └── Thread-safe reads, occasional writes → CopyOnWriteArrayList
+└── NO → Do you need uniqueness?
+    ├── YES → Set
+    │   ├── Hash-based, fast lookup → HashSet
+    │   ├── Sorted iteration → TreeSet
+    │   └── Insertion-order iteration → LinkedHashSet
+    └── NO (key-value mapping) → Map
+        ├── Standard → HashMap
+        ├── Sorted by key → TreeMap
+        │   └── O(log n) operations, ordered iteration
+        ├── Thread-safe → ConcurrentHashMap
+        ├── Insertion-order → LinkedHashMap
+        └── Multiple values per key → Map<K, List<V>> or Guava Multimap
+```
+
+---
+
+## DT-25: Configuration Management Strategy
+
+```
+Where does configuration live?
+├── Build-time constant (never changes) → Code constant / enum
+├── Deploy-time (per environment) → Environment variable / ConfigMap
+├── Runtime (can change without restart) → Feature flag service / dynamic config
+└── User-specific (per tenant/customer) → Database / user preferences store
+
+How complex is the configuration?
+├── Simple key-value → Environment variables
+│   └── DATABASE_URL=postgres://host:5432/db
+├── Structured (hierarchy) → YAML/JSON config file + validation
+│   └── Spring @ConfigurationProperties with JSR-380 validation
+├── Dynamic (changes at runtime) → Config server (Spring Cloud Config, Consul)
+│   └── @RefreshScope beans reload on config change
+└── Feature-specific → Feature flag platform (LaunchDarkly, Unleash)
+    └── Per-user, per-tenant, percentage rollout targeting
+
+Rule: Never hardcode configuration values in source code.
+Exception: Default values that are valid for any environment (e.g., default port 8080).
+```
+
+---
+
 ## How to Use Decision Trees
 
 When making a design choice during code generation:
