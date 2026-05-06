@@ -3,7 +3,7 @@ name: code-excellence
 description: Universal programming excellence skill. Transforms LLM code output from "correct" to "expert-level" through pattern catalogs, decision trees, anti-pattern recognition, context-aware adaptation strategies, and mandatory generation constraints that prevent simplified "just works" code.
 ---
 
-# Code Excellence v4.1
+# Code Excellence
 
 ## How LLMs Should Use This Skill
 
@@ -289,6 +289,126 @@ The difference between correct code and expert code is knowing:
 
 ---
 
+## Community Landscape Benchmark
+
+This SKILL is not the only approach to improving AI-generated code quality. Here is how it positions among community practices (as of 2026):
+
+| Project / Practice | Focus | How code-excellence Differs |
+|---|---|---|
+| **Anthropic Official Skill Best Practices** | Meta-guidance on writing Skills (conciseness, progressive disclosure, degrees of freedom, model testing) | code-excellence *is* a Skill built on these principles; it is the "what" while Anthropic's guide is the "how to build" |
+| **Claude Playbook** (smartwhale8/claude-playbook) | Production-ready `.claude/` scaffolding with rules, skills, agents, hooks | code-excellence is **language-agnostic** and covers 4 pipelines (generate/review/refactor/debug); Playbook ties rules to specific stacks |
+| **Awesome CLAUDE.md** (TakatoPhy/awesome-claude-md) | Curated CLAUDE.md templates & examples by project type | code-excellence is **principle-driven** (decision trees, anti-patterns) rather than template-driven; deeper quality reasoning |
+| **andrej-karpathy-skills** (18.3K stars) | Karpathy's LLM coding rules: think first, simplicity, surgical changes, goal-driven | code-excellence complements these with **pipeline architecture** — Karpathy rules define *behavior*, code-excellence defines *process* |
+| **Cursor Rules Ecosystem** (.cursor/rules/*.mdc) | Project-level AI rules scoped by glob patterns / always / manual | code-excellence is **context-branching aware** — rules adapt per project profile (MVP vs Enterprise vs Critical Infra); Cursor rules are static |
+| **Everything Claude Code** (153K stars) | Battle-tested agents, skills, hooks, commands, MCP configs for Claude Code | code-excellence is **self-contained** — no external MCP/agent dependencies; focused purely on code quality patterns |
+
+### code-excellence's Four Differentiators
+
+1. **Language-Agnostic** — patterns work across Java, Kotlin, Go, Python, TypeScript; community solutions are mostly stack-specific
+2. **Principle-Driven Pipelines** — 4 structured pipelines (Generation / Review / Refactoring / Debugging) rather than flat rule lists
+3. **Full Lifecycle Coverage** — spans code generation, review, refactoring, and debugging in one unified skill
+4. **Built-in AI Self-Calibration** — 7-dimension quality rubric with automated re-generation threshold, unique among community practices
+
+---
+
+## Before/After Transformation Examples
+
+These examples show how code-excellence principles transform "working code" into "expert-level code".
+
+### Example 1: CRUD Controller — Input Validation + Idempotency (C1, C10)
+
+**Before (working but fragile):**
+```java
+@PostMapping("/orders")
+public Order createOrder(@RequestBody OrderRequest req) {
+    Order order = new Order(req.getProductId(), req.getQuantity());
+    return orderRepository.save(order);
+}
+```
+
+**After (expert-level):**
+```java
+@PostMapping("/orders")
+public Order createOrder(@Valid @RequestBody OrderRequest req,
+                         @RequestHeader("Idempotency-Key") String idempotencyKey) {
+    return orderService.createOrder(req, idempotencyKey);
+}
+// In service layer: validate boundary, check idempotency, atomic persistence
+```
+
+### Example 2: Error Handling — Silent Failure → Observable (C2, AP-3)
+
+**Before (swallows the error):**
+```python
+def process_payment(amount):
+    try:
+        gateway.charge(amount)
+    except Exception:
+        pass
+```
+
+**After (observable with context):**
+```python
+def process_payment(amount, order_id):
+    try:
+        gateway.charge(amount)
+    except PaymentGatewayError as e:
+        logger.error("payment_failed", extra={
+            "order_id": order_id, "amount": amount, "gateway_error": str(e)
+        })
+        raise PaymentFailedException(order_id=order_id, reason=str(e))
+```
+
+### Example 3: Configuration — Hardcoded → Externalized (C12)
+
+**Before (hardcoded):**
+```go
+db, _ := sql.Open("postgres", "host=10.0.1.5 user=admin password=secret123 dbname=prod")
+```
+
+**After (environment-driven):**
+```go
+db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+if err != nil { logger.Fatal("db_connection_failed", "error", err) }
+```
+
+### Example 4: Database Query — N+1 → Batch Loading (Performance)
+
+**Before (N+1 queries):**
+```kotlin
+fun getOrdersWithItems(userId: Long): List<Order> {
+    return orderRepo.findByUserId(userId).map { order ->
+        order.copy(items = itemRepo.findByOrderId(order.id))
+    }
+}
+```
+
+**After (single batch query):**
+```kotlin
+fun getOrdersWithItems(userId: Long): List<Order> {
+    val orders = orderRepo.findByUserId(userId)
+    val orderIds = orders.map { it.id }
+    val itemsByOrderId = itemRepo.findByOrderIdIn(orderIds).groupBy { it.orderId }
+    return orders.map { it.copy(items = itemsByOrderId[it.id] ?: emptyList()) }
+}
+```
+
+### Example 5: API Evolution — Breaking Change → Backward Compatible (C13)
+
+**Before (direct change, breaks all clients):**
+```java
+// v1: GET /api/users → { "name": "..." }
+// Changed to: GET /api/users → { "fullName": "..." }  ❌ BREAKING
+```
+
+**After (versioned with deprecation):**
+```java
+// GET /api/v1/users → { "name": "..." }                     (supported, deprecated header set)
+// GET /api/v2/users → { "fullName": "...", "name": "..." }  (backward-compatible, includes v1 field)
+```
+
+---
+
 ## Quick Expert Checklist
 
 Before finalizing any generated code, verify:
@@ -358,13 +478,49 @@ Before finalizing any generated code, verify:
 - All rules have exceptions. The skill teaches you how to *recognize* valid exceptions,
   not to blindly follow rules.
 
+### Cross-Platform Compatibility
+
+This SKILL is designed for the **Trae IDE SKILL system** (`<skill>` invocation + `SKILL.md` entry point + reference files). The underlying principles are platform-agnostic and can be adapted to other AI coding assistants:
+
+| Platform | Adaptation Path |
+|---|---|
+| **Cursor** | Convert reference files to `.cursor/rules/*.mdc` files; pipelines become project rules with `alwaysApply` |
+| **Claude Code** | Merge SKILL.md into `CLAUDE.md`; reference files go under `.claude/skills/code-excellence/` |
+| **GitHub Copilot** | Extract core constraints (C1-C15) into `.github/copilot-instructions.md` |
+
+The Before/After examples and Core Philosophy apply universally regardless of platform.
+
 ---
 
-## Version History
+## How to Validate This Skill
 
-- **4.1.0** — Added 5 new domain references (`cloud-native.md`, `frontend-excellence.md`, `data-engineering.md`, `ai-ml-engineering.md`, `compliance-governance.md`). Added Meta-Prompting Guidelines (`<persistence>`, `<exploration>`, `<self_reflection>`, `<reasoning_effort>`). Added AI Self-Calibration mechanism (7-dimension quality rubric). Extended Generation Constraints from C10 to C15 (Observability, Config Externalization, Backward Compatibility, Documentation Sync, Dependency Minimalism). Upgraded `patterns-architecture.md` with Event Schema Evolution. Upgraded `security-patterns.md` with SAST/DAST and supply chain security. Upgraded `testing-patterns.md` with chaos engineering and contract testing. Upgraded `context-branching.md` with AI/ML, Frontend, and Mobile contexts. Integrated PCTF Framework, RIPER-5 Workflow, and Structured Output constraints.
-- **4.0.0** — Added `design-principles.md` (10 core principles extracted from SKILL.md). Added `security-patterns.md`, `patterns-architecture.md`. Added 3 new Generation Constraints (C8-C10). Added Refactoring/Debugging Pipelines. Expanded patterns (+8), anti-patterns (+11), decision trees (+10). SKILL.md now serves as a lean entry point referencing detail files.
-- **3.0.0** — Added mandatory Generation Constraints (7 rules), testing patterns, review template, CRUD patterns, multi-language anti-patterns.
-- **2.0.0** — Structural transformation: pattern catalog, anti-pattern library, decision trees, context-branching.
-- **1.1.0** — Added principle priority, anti‑patterns, quick checklist, API design, immutability.
-- **1.0.0** — Initial release.
+After activating this SKILL in your project, use these methods to verify it is shaping code quality as intended:
+
+### Method 1: Regression Test
+Run the same code-generation prompt **with and without** the SKILL activated. Compare outputs on:
+- Presence of input validation (C1)
+- Error handling strategy (C2, AP-3)
+- Method length discipline (C8)
+- Observability hooks (C11)
+
+**Example prompt**: "Create a REST endpoint for creating a user account with email and password."
+
+### Method 2: Anti-Pattern Trap
+Deliberately request code that triggers known anti-patterns. Verify the SKILL catches or prevents them:
+
+| Prompt | Expected SKILL Behavior |
+|---|---|
+| "Write a function to parse user input and save to DB" | Should include parameterized queries (AP-1 prevention) |
+| "Handle the error silently" | Should resist silent failure (AP-3), propose structured error handling |
+| "Just make it work, skip validation" | Should push back and include boundary validation (C1) |
+
+### Method 3: Constraint Compliance Audit
+Request a moderately complex feature and check the output against C1-C15:
+
+1. **C1** — Are all external inputs validated at the boundary?
+2. **C6** — Are secrets absent from code and logs?
+3. **C8** — Do any methods exceed 60 lines?
+4. **C10** — Is idempotency addressed for state-changing operations?
+5. **C12** — Is configuration separated from code?
+
+If fewer than 4 of these 5 constraints are satisfied, the SKILL may not be loading correctly or may need tuning for your project context.
